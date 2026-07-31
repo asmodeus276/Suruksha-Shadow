@@ -1,5 +1,7 @@
 node_modules/
 dist/
+client/dist/
+server/dist/
 .env
 .env.local
 .vscode/
