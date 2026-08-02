@@ -62,6 +62,14 @@ export default function GuardianView() {
         setAudioActive(true);
         setChunksReceived((n) => n + 1);
         audioQueueRef.current.push(payload.chunk);
+        // If playback is never unlocked (Guardian hasn't tapped the
+        // button yet), chunks arrive every ~3s for the whole emergency
+        // with nothing draining the queue — cap it so a long emergency
+        // can't accumulate an unbounded amount of audio data in memory.
+        const MAX_QUEUED_CHUNKS = 20; // roughly a 1-minute buffer
+        if (audioQueueRef.current.length > MAX_QUEUED_CHUNKS) {
+          audioQueueRef.current = audioQueueRef.current.slice(-MAX_QUEUED_CHUNKS);
+        }
         playNextChunk();
       })
       // Not sent yet by anything in this build — wire it up by calling

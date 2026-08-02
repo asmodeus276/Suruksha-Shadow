@@ -47,14 +47,15 @@ export default function TrustedContacts({ apiBaseUrl, userId, onContactsChange }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, name, phone, relationship }),
       });
-      if (!res.ok) throw new Error(`Server responded ${res.status}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Server responded ${res.status}`);
       setName("");
       setPhone("");
       setRelationship("");
       await loadContacts();
     } catch (err) {
       console.error("Failed to add trusted contact:", err);
-      setError("Couldn't add that contact — double-check the phone number and try again.");
+      setError(err.message || "Couldn't add that contact — try again.");
     } finally {
       setSubmitting(false);
     }

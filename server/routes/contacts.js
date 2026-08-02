@@ -44,6 +44,16 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ error: "userId, name, and phone are required" });
   }
 
+  // Light validation — digits only (optionally a leading +), 10-15 of
+  // them. Not full E.164 validation, just enough to catch obvious typos
+  // before they sit silently in the database until an SMS fails later.
+  const digitsOnly = phone.replace(/[\s-]/g, "");
+  if (!/^\+?\d{10,15}$/.test(digitsOnly)) {
+    return res.status(400).json({
+      error: "That phone number doesn't look right — include the country code, e.g. 9198xxxxxxx",
+    });
+  }
+
   try {
     const { data, error } = await supabase
       .from("trusted_contacts")
