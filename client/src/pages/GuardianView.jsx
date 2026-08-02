@@ -59,7 +59,6 @@ export default function GuardianView() {
         setEmergency((prev) => (prev ? { ...prev, ...payload } : prev));
       })
       .on("broadcast", { event: "ambient_audio_chunk" }, ({ payload }) => {
-        console.log("Ambient audio chunk received:", payload?.chunk?.slice(0, 40), "…");
         setAudioActive(true);
         setChunksReceived((n) => n + 1);
         audioQueueRef.current.push(payload.chunk);
@@ -71,9 +70,7 @@ export default function GuardianView() {
       .on("broadcast", { event: "timeline_update" }, ({ payload }) => {
         setTimeline((prev) => [...prev, payload]);
       })
-      .subscribe((status) => {
-        console.log("Guardian realtime channel status:", status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -114,78 +111,123 @@ const SILENT_WAV =
   "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
   const enableAudio = () => {
-    console.log("enableAudio: button clicked, ref exists?", Boolean(audioElRef.current));
     const el = audioElRef.current;
     if (!el) return;
 
     try {
       if (!el.src) el.src = SILENT_WAV; // give it something real to play
-      const playResult = el.play();
-      console.log("enableAudio: play() call returned", playResult);
-      Promise.resolve(playResult)
-        .then(() => console.log("enableAudio: play() resolved"))
-        .catch((err) => console.log("enableAudio: play() rejected:", err?.name, err?.message))
-        .finally(() => {
-          console.log("enableAudio: marking unlocked");
-          setAudioUnlocked(true);
-        });
+      Promise.resolve(el.play())
+        .catch((err) => console.warn("Audio unlock playback rejected:", err?.name))
+        .finally(() => setAudioUnlocked(true));
     } catch (err) {
-      console.log("enableAudio: play() threw synchronously:", err?.name, err?.message);
+      console.warn("Audio unlock threw synchronously:", err?.name);
       setAudioUnlocked(true);
     }
   };
 
-  if (error) return <p>{error}</p>;
-  if (!emergency) return <p>Loading…</p>;
+  useEffect(() => {
+    document.body.classList.toggle("is-emergency", emergency?.status === "active");
+    return () => document.body.classList.remove("is-emergency");
+  }, [emergency?.status]);
+
+  if (error) return <p style={{ padding: 24, color: "var(--alarm-strong)" }}>{error}</p>;
+  if (!emergency) return <p style={{ padding: 24, color: "var(--mist)" }}>Loading…</p>;
 
   return (
-    <div className="guardian-view">
-      <h1>Live status</h1>
-      <p>Status: {emergency.status}</p>
+    <div>
+      <header className="header rise-fade">
+        <div className="wordmark">
+          Suraksha <em>Shadow</em>
+        </div>
+        <p className="tagline">Guardian view</p>
+      </header>
 
-      <section>
-        <h2>Location</h2>
-        {emergency.lat != null ? (
-          <a
-            href={`https://maps.google.com/?q=${emergency.lat},${emergency.lng}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            View on map
-          </a>
-        ) : (
-          <p>Waiting for the first location update…</p>
-        )}
+      <div
+        className={`callout rise-fade`}
+        style={{
+          marginBottom: 22,
+          background: emergency.status === "active" ? "var(--alarm-dim)" : "var(--safe-dim)",
+          borderColor: emergency.status === "active" ? "#e8546b40" : "#6fbf8b40",
+          color: emergency.status === "active" ? "var(--alarm-strong)" : "var(--safe)",
+          fontWeight: 600,
+        }}
+      >
+        {emergency.status === "active" ? "● Emergency active" : "✓ Resolved"}
+      </div>
+
+      <section className="section">
+        <p className="eyebrow">Location</p>
+        <div className="card">
+          {emergency.lat != null ? (
+            <a
+              className="btn-primary"
+              style={{ display: "inline-block", textDecoration: "none" }}
+              href={`https://maps.google.com/?q=${emergency.lat},${emergency.lng}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View on map
+            </a>
+          ) : (
+            <p style={{ fontSize: 13 }}>Waiting for the first location update…</p>
+          )}
+        </div>
       </section>
 
-      <section>
-        <h2>Device</h2>
-        <p>Battery: {emergency.battery_pct != null ? `${emergency.battery_pct}%` : "—"}</p>
-        <p>Movement: {emergency.movement_status || "—"}</p>
+      <section className="section">
+        <p className="eyebrow">Device</p>
+        <div className="card" style={{ display: "flex", gap: 24 }}>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--mist-dim)" }}>Battery</div>
+            <div style={{ fontSize: 18, fontWeight: 600 }}>
+              {emergency.battery_pct != null ? `${emergency.battery_pct}%` : "—"}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--mist-dim)" }}>Movement</div>
+            <div style={{ fontSize: 18, fontWeight: 600 }}>{emergency.movement_status || "—"}</div>
+          </div>
+        </div>
       </section>
 
-      <section>
-        <h2>Ambient Audio</h2>
-        {audioActive ? (
-          <p>🔊 Live — {chunksReceived} chunk(s) received so far</p>
-        ) : (
-          <p>No ambient audio received yet (either not consented, or nothing streamed).</p>
-        )}
-        <button onClick={enableAudio}>
-          {audioUnlocked ? "✅ Audio playback enabled" : "Tap to enable audio playback"}
-        </button>
-        <audio ref={audioElRef} style={{ display: "none" }} />
+      <section className="section">
+        <p className="eyebrow">Ambient Audio</p>
+        <div className="card">
+          {audioActive ? (
+            <p style={{ fontSize: 13, color: "var(--safe)" }}>● Live — {chunksReceived} chunk(s) received so far</p>
+          ) : (
+            <p style={{ fontSize: 13 }}>No ambient audio received yet (either not consented, or nothing streamed).</p>
+          )}
+          <button onClick={enableAudio} style={{ marginTop: 10 }} className={audioUnlocked ? "" : "btn-primary"}>
+            {audioUnlocked ? "✓ Audio playback enabled" : "Tap to enable audio playback"}
+          </button>
+          <audio ref={audioElRef} style={{ display: "none" }} />
+        </div>
       </section>
 
-      <section>
-        <h2>Timeline</h2>
-        <ul>
-          {timeline.map((entry, i) => (
-            <li key={i}>
-              {new Date(entry.created_at).toLocaleTimeString()} — {entry.details}
-            </li>
-          ))}
-        </ul>
+      <section className="section">
+        <p className="eyebrow">Timeline</p>
+        <div className="card" style={{ textAlign: "left" }}>
+          {timeline.length === 0 ? (
+            <p style={{ fontSize: 13 }}>No timeline entries yet.</p>
+          ) : (
+            timeline.map((entry, i) => (
+              <div
+                key={i}
+                style={{
+                  fontSize: 13,
+                  padding: "8px 0",
+                  borderBottom: i < timeline.length - 1 ? "1px solid var(--line)" : "none",
+                }}
+              >
+                <span className="tag" style={{ marginRight: 8 }}>
+                  {new Date(entry.created_at).toLocaleTimeString()}
+                </span>
+                {entry.details}
+              </div>
+            ))
+          )}
+        </div>
       </section>
     </div>
   );

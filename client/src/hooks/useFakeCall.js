@@ -1,5 +1,21 @@
 import { useCallback, useRef } from "react";
 
+const MAX_AI_CYCLES = 2; // ~2 rounds of fresh AI dialogue, then switch to
+// a local filler script — the previous version re-fetched from Gemini on
+// EVERY loop iteration for as long as the fake call ran, silently
+// burning the daily quota in the background during any extended test or
+// demo. This caps the real API usage while keeping the call going.
+const FILLER_LINES = [
+  "Mm-hmm.",
+  "Yeah, totally.",
+  "Oh for sure.",
+  "Right, right.",
+  "Haha, yeah.",
+  "One sec.",
+  "Okay, go on.",
+  "Uh-huh.",
+];
+
 /**
  * Shield's fake-call deception — FR-3 / TR-4. Plays back an
  * AI-generated, ordinary-sounding one-sided conversation through the
@@ -11,15 +27,24 @@ export function useFakeCall({ apiBaseUrl }) {
 
   const start = useCallback(async () => {
     stopRef.current = false;
+    let aiCycles = 0;
 
     while (!stopRef.current) {
       let lines = [];
-      try {
-        const res = await fetch(`${apiBaseUrl}/api/fake-call/lines`, { method: "POST" });
-        const data = await res.json();
-        lines = data.lines || [];
-      } catch (_) {
-        lines = ["Hey, can you hear me?", "Okay, one sec."];
+
+      if (aiCycles < MAX_AI_CYCLES) {
+        try {
+          const res = await fetch(`${apiBaseUrl}/api/fake-call/lines`, { method: "POST" });
+          const data = await res.json();
+          lines = data.lines || [];
+          aiCycles += 1;
+        } catch (_) {
+          lines = ["Hey, can you hear me?", "Okay, one sec."];
+        }
+      } else {
+        // No more API calls this session — keep the call sounding alive
+        // with local filler instead of fetching indefinitely.
+        lines = FILLER_LINES;
       }
 
       for (const line of lines) {

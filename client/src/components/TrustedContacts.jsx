@@ -76,59 +76,38 @@ export default function TrustedContacts({ apiBaseUrl, userId, onContactsChange }
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: "0 auto 24px", textAlign: "left" }}>
-      <h3 style={{ marginBottom: 4 }}>Trusted Contacts</h3>
-      <p style={{ fontSize: 13, opacity: 0.7, marginTop: 0 }}>
-        These people get notified (location + status) the moment Shield fires.
-        At least one is required.
+    <div>
+      <p style={{ fontSize: 13, color: "var(--mist)", marginBottom: 14 }}>
+        These people get notified (location + status) the moment Shield fires. At least one is required.
       </p>
 
-      {error && (
-        <p style={{ color: "#ff8080", fontSize: 13 }}>{error}</p>
-      )}
+      {error && <p className="error-text">{error}</p>}
 
       {loading ? (
-        <p style={{ fontSize: 13, opacity: 0.7 }}>Loading…</p>
+        <p style={{ fontSize: 13, color: "var(--mist-dim)" }}>Loading…</p>
       ) : contacts.length === 0 ? (
-        <p style={{ fontSize: 13, opacity: 0.7 }}>
-          No trusted contacts yet — add one below.
-        </p>
+        <p style={{ fontSize: 13, color: "var(--mist-dim)" }}>No trusted contacts yet — add one below.</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, marginBottom: 16 }}>
+        <div style={{ marginBottom: 6 }}>
           {contacts.map((c) => (
-            <li
-              key={c.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "8px 0",
-                borderBottom: "1px solid #333",
-              }}
-            >
+            <div className="contact-row" key={c.id}>
               <span>
-                <strong>{c.name}</strong> — {c.phone}
-                {c.relationship ? ` (${c.relationship})` : ""}
+                <div className="name">{c.name}</div>
+                <div className="meta">
+                  {c.phone}
+                  {c.relationship ? ` · ${c.relationship}` : ""}
+                </div>
               </span>
-              <button
-                onClick={() => removeContact(c.id)}
-                style={{ fontSize: 12, opacity: 0.8 }}
-              >
+              <button className="btn-quiet" onClick={() => removeContact(c.id)}>
                 Remove
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
-      <form onSubmit={addContact} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
+      <form onSubmit={addContact} className="form-stack">
+        <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
         <input
           type="tel"
           placeholder="Phone (with country code, e.g. 9198xxxxxxx)"
@@ -142,7 +121,7 @@ export default function TrustedContacts({ apiBaseUrl, userId, onContactsChange }
           value={relationship}
           onChange={(e) => setRelationship(e.target.value)}
         />
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="btn-primary" disabled={submitting}>
           {submitting ? "Adding…" : "Add Trusted Contact"}
         </button>
       </form>

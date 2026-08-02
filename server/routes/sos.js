@@ -79,25 +79,34 @@ router.post("/", async (req, res) => {
  * shapes like this can drift over time.
  */
 async function sendSms(numbers, message) {
-  const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
-    method: "POST",
-    headers: {
-      authorization: process.env.FAST2SMS_API_KEY,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      route: "q",
-      message,
-      language: "english",
-      flash: 0,
-      numbers,
-    }),
-  });
+  try {
+    const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+      method: "POST",
+      headers: {
+        authorization: process.env.FAST2SMS_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        route: "q",
+        message,
+        language: "english",
+        flash: 0,
+        numbers,
+      }),
+    });
 
-  if (!response.ok) {
-    console.error("Fast2SMS request failed:", await response.text());
+    if (!response.ok) {
+      console.error("Fast2SMS request failed:", await response.text());
+    }
+    return response;
+  } catch (err) {
+    // A network-level failure here (not just a non-2xx response) must
+    // not reject the Promise.all in the route above — that would make
+    // the whole SOS dispatch report as failed even though the emergency
+    // event was already created and most/all other contacts were texted.
+    console.error("Fast2SMS request threw:", err.message);
+    return null;
   }
-  return response;
 }
 
 export default router;

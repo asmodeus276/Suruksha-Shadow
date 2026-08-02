@@ -50,25 +50,24 @@ export default function ConsentToggle({ apiBaseUrl, userId, onConsentChange }) {
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: "0 auto 24px", textAlign: "left" }}>
-      <h3 style={{ marginBottom: 4 }}>Ambient Audio Consent</h3>
-      <p style={{ fontSize: 13, opacity: 0.7, marginTop: 0 }}>
-        Off by default. If you turn this on, Trusted Contacts can hear ambient
-        audio during an active emergency — nothing is ever recorded or shared
-        otherwise. You can turn this off again at any time, even mid-emergency.
+    <div>
+      <p style={{ fontSize: 13, color: "var(--mist)", marginBottom: 14 }}>
+        Off by default. If you turn this on, Trusted Contacts can hear ambient audio during an active
+        emergency — nothing is ever recorded or shared otherwise. You can turn this off again at any
+        time, even mid-emergency.
       </p>
 
-      {error && <p style={{ color: "#ff8080", fontSize: 13 }}>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
       {consent === null ? (
-        <p style={{ fontSize: 13, opacity: 0.7 }}>Loading…</p>
+        <p style={{ fontSize: 13, color: "var(--mist-dim)" }}>Loading…</p>
       ) : (
-        <button onClick={toggle} disabled={saving}>
-          {saving
-            ? "Saving…"
-            : consent
-            ? "🔊 Ambient audio: ON — tap to turn off"
-            : "🔇 Ambient audio: OFF — tap to turn on"}
+        <button
+          className={`consent-toggle-btn ${consent ? "is-on" : "is-off"}`}
+          onClick={toggle}
+          disabled={saving}
+        >
+          {saving ? "Saving…" : consent ? "Ambient audio: ON — tap to turn off" : "Ambient audio: OFF — tap to turn on"}
         </button>
       )}
     </div>
