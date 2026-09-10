@@ -132,6 +132,50 @@ export default function GuardianView() {
     };
   }, [token]);
 
+  const [guardianLoc, setGuardianLoc] = useState(null);
+
+  // Query Guardian's own device location to compute live distance to victim
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && "geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setGuardianLoc({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 6000 }
+      );
+    }
+  }, []);
+
+  // Periodic polling fallback to guarantee live updates even without active WebSocket
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/emergency/guardian/${token}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.emergency) {
+            setEmergency((prev) => ({ ...prev, ...data.emergency }));
+            if (data.locations && data.locations.length > 0) {
+              setLocations(data.locations);
+            }
+            if (data.timeline && data.timeline.length > 0) {
+              setTimeline(data.timeline);
+            }
+          }
+        }
+      } catch {
+        /* ignore polling errors */
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [token]);
+
   // Realtime Broadcast subscriptions
   useEffect(() => {
     const channel = supabase
@@ -227,6 +271,19 @@ export default function GuardianView() {
   const currentLat = latestLoc ? latestLoc.lat : emergency?.lat;
   const currentLng = latestLoc ? latestLoc.lng : emergency?.lng;
 
+  let distanceToVictimKm = null;
+  if (guardianLoc && currentLat != null && currentLng != null) {
+    const R = 6371;
+    const dLat = ((currentLat - guardianLoc.lat) * Math.PI) / 180;
+    const dLng = ((currentLng - guardianLoc.lng) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((guardianLoc.lat * Math.PI) / 180) *
+        Math.cos((currentLat * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+    distanceToVictimKm = (2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+  }
+
   // Resolve human-readable street/area address (must run before early returns to preserve hook order)
   useEffect(() => {
     if (currentLat != null && currentLng != null) {
@@ -296,6 +353,9 @@ export default function GuardianView() {
             </div>
             <p className="text-xs text-dim" style={{ marginTop: 2 }}>
               {resolvedAddress ? `📍 ${resolvedAddress}` : "Tracking live distress coordinates"}
+              {distanceToVictimKm != null && (
+                <span style={{ color: "var(--ember)", fontWeight: 600 }}> · ~{distanceToVictimKm} km away from you</span>
+              )}
             </p>
           </div>
           {currentLat != null && currentLng != null && (

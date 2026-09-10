@@ -43,7 +43,7 @@ export function getOrCreateDefaultContacts(userId) {
   return inMemoryContacts.get(userId);
 }
 
-export function createInMemoryEmergency(userId, triggerType) {
+export function createInMemoryEmergency(userId, triggerType, lat = null, lng = null) {
   const eventId = "sos-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6);
   const shareToken = "token-" + crypto.randomBytes(6).toString("hex");
 
@@ -56,8 +56,8 @@ export function createInMemoryEmergency(userId, triggerType) {
     start_time: new Date().toISOString(),
     end_time: null,
     share_token: shareToken,
-    lat: 28.6328,
-    lng: 77.2197,
+    lat: lat != null ? Number(lat) : null,
+    lng: lng != null ? Number(lng) : null,
     battery_pct: 85,
     movement_status: "stationary",
     last_ping_at: new Date().toISOString(),

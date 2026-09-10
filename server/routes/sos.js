@@ -28,7 +28,7 @@ const supabase = createClient(
  * every trusted contact within a target of 3 seconds.
  */
 router.post("/", async (req, res) => {
-  const { userId, triggerType } = req.body;
+  const { userId, triggerType, lat, lng } = req.body;
 
   if (!userId || !triggerType) {
     return res.status(400).json({ error: "userId and triggerType are required" });
@@ -53,7 +53,22 @@ router.post("/", async (req, res) => {
     eventId = event.id;
     shareToken = event.share_token;
 
-    // 2. Log the trigger on the timeline (FR-9)
+    // 2. Log initial location ping if available
+    if (lat != null && lng != null) {
+      try {
+        await supabase.from("location_pings").insert({
+          emergency_event_id: event.id,
+          lat: Number(lat),
+          lng: Number(lng),
+          battery_pct: 85,
+          movement_status: "stationary",
+        });
+      } catch {
+        /* best effort */
+      }
+    }
+
+    // 3. Log the trigger on the timeline (FR-9)
     await supabase.from("timeline_entries").insert({
       emergency_event_id: event.id,
       event_type: "triggered",
@@ -67,7 +82,16 @@ router.post("/", async (req, res) => {
       created_at: new Date().toISOString(),
     });
 
-    // 3. Notify every trusted contact
+    if (lat != null && lng != null) {
+      broadcastToGuardian(event.share_token, "location_update", {
+        lat: Number(lat),
+        lng: Number(lng),
+        battery_pct: 85,
+        movement_status: "stationary",
+      });
+    }
+
+    // 4. Notify every trusted contact
     const { data: contacts, error: contactsError } = await supabase
       .from("trusted_contacts")
       .select("name, phone")
@@ -106,7 +130,7 @@ router.post("/", async (req, res) => {
     // IN-MEMORY RESILIENCE FALLBACK:
     // Guarantees that local dev, demos, hackathon judges, and offline situations
     // continue operating smoothly without 500 errors.
-    const memoryEvent = createInMemoryEmergency(userId, triggerType);
+    const memoryEvent = createInMemoryEmergency(userId, triggerType, lat, lng);
     eventId = memoryEvent.id;
     shareToken = memoryEvent.share_token;
 

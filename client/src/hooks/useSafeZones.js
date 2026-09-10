@@ -84,8 +84,19 @@ export function useSafeZones({ enabled, onExpire }) {
   }, []);
 
   const addCurrentLocationAsZone = useCallback((name) => {
-    if (!currentPosition) return null;
-    return addZone(name, currentPosition.lat, currentPosition.lng);
+    if (currentPosition) {
+      return addZone(name, currentPosition.lat, currentPosition.lng);
+    }
+    if (typeof navigator !== "undefined" && "geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          addZone(name, pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => console.warn("Could not get current GPS for safe zone:", err),
+        { enableHighAccuracy: true, timeout: 6000 }
+      );
+    }
+    return null;
   }, [currentPosition, addZone]);
 
   const removeZone = useCallback((zoneId) => {

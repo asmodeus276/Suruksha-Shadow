@@ -8,18 +8,18 @@ const MOVEMENT_THRESHOLD_METERS = 15; // beyond typical GPS jitter, so status do
  * an emergency is active — FR-4 / FR-7 / FR-8 / TR-5. The backend
  * persists each ping and broadcasts it live to the Guardian view.
  */
-export function useGuardianPing({ eventId, apiBaseUrl, enabled }) {
+export function useGuardianPing({ eventId, apiBaseUrl, enabled, onLocationUpdate }) {
   const lastPositionRef = useRef(null);
 
   useEffect(() => {
     if (!enabled || !eventId) return;
 
-    const interval = setInterval(async () => {
+    const doPing = async () => {
       const position = await getCurrentPosition().catch(() => null);
       if (!position) return;
 
-      const { latitude: lat, longitude: lng } = position.coords;
-      const movementStatus = classifyMovement(lastPositionRef.current, { lat, lng });
+      const { latitude: lat, longitude: lng, accuracy, speed } = position.coords;
+      const movementStatus = classifyMovement(lastPositionRef.current, { lat, lng }, speed);
       lastPositionRef.current = { lat, lng };
 
       const batteryPct = await getBatteryPct();
@@ -27,12 +27,27 @@ export function useGuardianPing({ eventId, apiBaseUrl, enabled }) {
       fetch(`${apiBaseUrl}/api/emergency/${eventId}/ping`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lat, lng, batteryPct, movementStatus }),
+        body: JSON.stringify({ lat, lng, accuracy: Math.round(accuracy || 15), batteryPct, movementStatus }),
       }).catch((err) => console.warn("Ping failed:", err));
-    }, PING_INTERVAL_MS);
+
+      if (typeof onLocationUpdate === "function") {
+        onLocationUpdate({
+          lat,
+          lng,
+          accuracy: Math.round(accuracy || 15),
+          batteryPct,
+          movementStatus,
+          created_at: new Date().toISOString(),
+        });
+      }
+    };
+
+    // Immediate initial ping, then periodic
+    doPing();
+    const interval = setInterval(doPing, PING_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [enabled, eventId, apiBaseUrl]);
+  }, [enabled, eventId, apiBaseUrl, onLocationUpdate]);
 }
 
 function getCurrentPosition() {
@@ -40,13 +55,16 @@ function getCurrentPosition() {
     if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: true,
-      timeout: 5000,
+      maximumAge: 2000,
+      timeout: 6000,
     });
   });
 }
 
-function classifyMovement(prev, curr) {
-  if (!prev) return "unknown";
+function classifyMovement(prev, curr, speed) {
+  if (speed != null && speed > 4.2) return `in vehicle (~${Math.round(speed * 3.6)} km/h)`;
+  if (speed != null && speed > 0.8) return `moving (walking ~${Math.round(speed * 3.6)} km/h)`;
+  if (!prev) return "stationary";
   const distance = haversineMeters(prev, curr);
   return distance > MOVEMENT_THRESHOLD_METERS ? "moving" : "stationary";
 }

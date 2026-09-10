@@ -49,7 +49,12 @@ import {
   NavigationIcon,
 } from "./components/icons";
 import { getUserId } from "./lib/user";
-import { getWhatsAppAlertUrl, shareEmergencyAlert } from "./lib/geo";
+import {
+  getWhatsAppAlertUrl,
+  shareEmergencyAlert,
+  reverseGeocode,
+  formatCoords,
+} from "./lib/geo";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL !== undefined
@@ -95,40 +100,121 @@ export default function App() {
   const [isBlackoutOpen, setIsBlackoutOpen] = useState(false);
   const [emergencyElapsedSecs, setEmergencyElapsedSecs] = useState(0);
   const [liveLocations, setLiveLocations] = useState([]);
+  const [currentCoords, setCurrentCoords] = useState(null); // { lat, lng, accuracy, address, speed, timestamp }
+  const [gpsStatus, setGpsStatus] = useState("acquiring"); // 'acquiring' | 'locked' | 'denied' | 'unavailable'
 
-  // Query device coordinates or seed default for map
+  // Continuous Real-Time High-Accuracy Device Geolocation Watcher
   useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLiveLocations([
-            {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        },
-        () => {
-          setLiveLocations([
-            {
-              lat: 28.6328,
-              lng: 77.2197,
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        },
-        { timeout: 4000 }
-      );
-    } else {
-      setLiveLocations([
-        {
-          lat: 28.6328,
-          lng: 77.2197,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+    if (!("geolocation" in navigator)) {
+      setGpsStatus("unavailable");
+      const fallback = { lat: 28.6328, lng: 77.2197, accuracy: 50 };
+      setCurrentCoords(fallback);
+      setLiveLocations([{ ...fallback, created_at: new Date().toISOString() }]);
+      return;
     }
+
+    let isMounted = true;
+
+    const handlePos = (pos) => {
+      if (!isMounted) return;
+      const { latitude: lat, longitude: lng, accuracy, speed, heading } = pos.coords;
+      const point = {
+        lat,
+        lng,
+        accuracy: Math.round(accuracy || 15),
+        speed: speed != null ? Math.round(speed * 3.6) : null,
+        heading,
+        timestamp: pos.timestamp || Date.now(),
+      };
+
+      setGpsStatus("locked");
+      setCurrentCoords((prev) => ({
+        ...prev,
+        ...point,
+      }));
+
+      // Append to liveLocations breadcrumb trail if sufficiently distinct (> 4m or first point)
+      setLiveLocations((prev) => {
+        if (prev.length === 0) {
+          return [{ lat, lng, accuracy: point.accuracy, created_at: new Date().toISOString() }];
+        }
+        const last = prev[prev.length - 1];
+        const dist = Math.hypot((lat - last.lat) * 111320, (lng - last.lng) * 111320 * Math.cos(lat * Math.PI / 180));
+        if (dist >= 4) {
+          return [...prev, { lat, lng, accuracy: point.accuracy, created_at: new Date().toISOString() }];
+        }
+        return prev;
+      });
+
+      // Asynchronously resolve street address with reverse geocoding
+      reverseGeocode(lat, lng).then((addr) => {
+        if (isMounted && addr) {
+          setCurrentCoords((prev) => (prev ? { ...prev, address: addr } : prev));
+        }
+      }).catch(() => {});
+    };
+
+    const handleErr = (err) => {
+      if (!isMounted) return;
+      console.warn("GPS watch position error:", err.code, err.message);
+      if (err.code === 1) {
+        setGpsStatus("denied");
+      } else {
+        setGpsStatus("unavailable");
+      }
+    };
+
+    // Immediate fix request with high accuracy
+    navigator.geolocation.getCurrentPosition(handlePos, handleErr, {
+      enableHighAccuracy: true,
+      maximumAge: 3000,
+      timeout: 10000,
+    });
+
+    // Continuous real-time stream
+    const watchId = navigator.geolocation.watchPosition(handlePos, handleErr, {
+      enableHighAccuracy: true,
+      maximumAge: 2000,
+      timeout: 15000,
+    });
+
+    return () => {
+      isMounted = false;
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+    };
+  }, []);
+
+  const refreshGpsFix = useCallback(() => {
+    if (!("geolocation" in navigator)) return;
+    setGpsStatus("acquiring");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng, accuracy, speed } = pos.coords;
+        const point = {
+          lat,
+          lng,
+          accuracy: Math.round(accuracy || 15),
+          speed: speed != null ? Math.round(speed * 3.6) : null,
+          timestamp: Date.now(),
+        };
+        setGpsStatus("locked");
+        setCurrentCoords((prev) => ({
+          ...prev,
+          ...point,
+        }));
+        setLiveLocations((prev) => [
+          ...prev,
+          { lat, lng, accuracy: point.accuracy, created_at: new Date().toISOString() },
+        ]);
+        reverseGeocode(lat, lng).then((addr) => {
+          if (addr) setCurrentCoords((prev) => (prev ? { ...prev, address: addr } : prev));
+        });
+      },
+      (err) => {
+        setGpsStatus(err.code === 1 ? "denied" : "unavailable");
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
+    );
   }, []);
 
   const decoyTapTimes = useRef([]);
@@ -216,11 +302,21 @@ export default function App() {
           /* ignore unsupported device policy */
         }
       }
+
+      // Extract latest high-accuracy coordinates
+      const sendLat = currentCoords?.lat ?? (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lat : null);
+      const sendLng = currentCoords?.lng ?? (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lng : null);
+
       try {
         const res = await fetch(`${API_BASE_URL}/api/sos`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: USER_ID, triggerType }),
+          body: JSON.stringify({
+            userId: USER_ID,
+            triggerType,
+            lat: sendLat,
+            lng: sendLng,
+          }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `Server responded ${res.status}`);
@@ -242,7 +338,7 @@ export default function App() {
         setSosError(err.message || "Failed to dispatch SOS — tap to retry");
       }
     },
-    [fakeCall, evidenceVault, emergencySms, contacts, activeEventId]
+    [fakeCall, evidenceVault, emergencySms, contacts, activeEventId, currentCoords, liveLocations]
   );
 
   const {
@@ -281,10 +377,24 @@ export default function App() {
     resetGestureRef.current = resetGesture;
   }, [resetGesture]);
 
+  const handleLocationUpdateFromPing = useCallback((newLoc) => {
+    setLiveLocations((prev) => [...prev, newLoc]);
+    if (newLoc.lat && newLoc.lng) {
+      setCurrentCoords((prev) => ({
+        ...prev,
+        lat: newLoc.lat,
+        lng: newLoc.lng,
+        accuracy: newLoc.accuracy || prev?.accuracy || 15,
+        speed: newLoc.speed || prev?.speed || null,
+      }));
+    }
+  }, []);
+
   useGuardianPing({
     eventId: activeEventId,
     apiBaseUrl: API_BASE_URL,
     enabled: Boolean(activeEventId),
+    onLocationUpdate: handleLocationUpdateFromPing,
   });
 
   // Passive Feature 1: Heartbeat Silence Monitoring
@@ -615,11 +725,22 @@ export default function App() {
 
           {/* Real-Time GPS Tracking Map */}
           <div className="section mb-4">
-            <div className="flex-center-gap mb-2" style={{ justifyContent: "space-between" }}>
-              <p className="eyebrow" style={{ margin: 0 }}>Live Emergency GPS Trail</p>
+            <div className="flex-center-gap mb-2" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
+              <div>
+                <p className="eyebrow" style={{ margin: 0 }}>Live Emergency GPS Trail</p>
+                {currentCoords?.address && (
+                  <p className="text-xs text-dim" style={{ margin: "2px 0 0" }}>
+                    📍 {currentCoords.address}
+                  </p>
+                )}
+              </div>
               <span className="tag tag-alarm flex-center-gap">
                 <RadioIcon size={11} />
-                <span>Pinging Contacts</span>
+                <span>
+                  {currentCoords?.accuracy
+                    ? `±${currentCoords.accuracy}m GPS`
+                    : "Pinging Contacts"}
+                </span>
               </span>
             </div>
             <div className="card" style={{ padding: 0, overflow: "hidden", border: "1px solid var(--line)" }}>
@@ -770,6 +891,73 @@ export default function App() {
                     <div>Heard: {transcript ? `"${transcript}"` : "waiting for speech…"}</div>
                   </div>
                 )}
+
+                {/* Live Real-Time Device GPS Location Badge */}
+                <div className="mt-3" style={{ display: "flex", justifyContent: "center" }}>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "6px 14px",
+                      borderRadius: 20,
+                      background: "rgba(255, 255, 255, 0.04)",
+                      border: "1px solid var(--line)",
+                      fontSize: 12,
+                      color: "var(--paper)",
+                      maxWidth: "92%",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background:
+                          gpsStatus === "locked"
+                            ? "#2ecc71"
+                            : gpsStatus === "acquiring"
+                            ? "var(--ember)"
+                            : "var(--alarm)",
+                        boxShadow: gpsStatus === "locked" ? "0 0 8px #2ecc71" : "none",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {gpsStatus === "locked"
+                        ? currentCoords?.address
+                          ? `📍 ${currentCoords.address}`
+                          : `📍 ${formatCoords(currentCoords?.lat, currentCoords?.lng)}`
+                        : gpsStatus === "acquiring"
+                        ? "🛰️ Acquiring live GPS fix…"
+                        : gpsStatus === "denied"
+                        ? "⚠️ GPS Permission Disabled"
+                        : "📍 GPS Offline"}
+                      {gpsStatus === "locked" && currentCoords?.accuracy && (
+                        <span className="text-dim" style={{ marginLeft: 6 }}>
+                          (±{currentCoords.accuracy}m)
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={refreshGpsFix}
+                      title="Refresh High-Accuracy GPS Fix"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--ember)",
+                        cursor: "pointer",
+                        padding: "0 2px",
+                        fontSize: 13,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      ↻
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Quick Standout Feature Chips */}
