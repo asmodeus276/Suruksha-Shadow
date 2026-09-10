@@ -25,7 +25,6 @@ export default function DemoStudioBar({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSimulatingGps, setIsSimulatingGps] = useState(false);
-  const [gpsStep, setGpsStep] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
   const gpsIntervalRef = useRef(null);
 
@@ -67,14 +66,12 @@ export default function DemoStudioBar({
       }
     };
 
-    emitGps(gpsStep);
+    let step = 0;
+    emitGps(step);
 
     gpsIntervalRef.current = setInterval(() => {
-      setGpsStep((prev) => {
-        const next = prev + 1;
-        emitGps(next);
-        return next;
-      });
+      step += 1;
+      emitGps(step);
     }, 3500);
 
     return () => {

@@ -3,8 +3,8 @@ import TrustedContacts from "./TrustedContacts";
 import ConsentToggle from "./ConsentToggle";
 import PinSetup from "./PinSetup";
 import LiveMap from "./LiveMap";
-import { PhoneIcon, ShieldCheckIcon, AlertTriangleIcon, RadioIcon, MapPinIcon, ShieldIcon } from "./icons";
-import { reverseGeocode, formatCoords } from "../lib/geo";
+import { PhoneIcon, ShieldCheckIcon, AlertTriangleIcon, RadioIcon, MapPinIcon } from "./icons";
+import { reverseGeocode } from "../lib/geo";
 
 const HELPLINES = [
   {

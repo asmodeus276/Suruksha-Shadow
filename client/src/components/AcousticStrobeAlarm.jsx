@@ -41,7 +41,7 @@ export default function AcousticStrobeAlarm({ isOpen, onClose }) {
     return () => {
       stopAlarm();
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   function startAudioSiren() {
     try {

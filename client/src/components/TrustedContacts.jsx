@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { TrashIcon, CheckIcon } from "./icons";
+import { TrashIcon } from "./icons";
 
 const DEMO_CONTACTS_TEMPLATE = [
   {
@@ -53,7 +53,6 @@ function persistContacts(list) {
  */
 export default function TrustedContacts({ apiBaseUrl, userId, onContactsChange, onContactsLoaded }) {
   const [contacts, setContacts] = useState(getStoredContacts);
-  const [loading, setLoading] = useState(false);
   const [dbStatus, setDbStatus] = useState("checking"); // 'synced' | 'local_only' | 'checking'
   const [error, setError] = useState(null);
   const [name, setName] = useState("");
@@ -200,7 +199,7 @@ export default function TrustedContacts({ apiBaseUrl, userId, onContactsChange, 
 
       {error && <p className="error-text">{error}</p>}
 
-      {loading ? (
+      {dbStatus === "checking" ? (
         <div className="stack-2 mb-2">
           <div className="skeleton" style={{ width: "70%" }} />
           <div className="skeleton" style={{ width: "45%" }} />

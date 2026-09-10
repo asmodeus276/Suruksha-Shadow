@@ -110,7 +110,7 @@ const DIALOGUE_LINES = [
 
 export default function FakeCallOverlay({ isOpen, onClose, defaultCallerIndex = 0 }) {
   const [callState, setCallState] = useState("ringing"); // 'ringing' | 'connected'
-  const [caller, setCaller] = useState(DEFAULT_CALLERS[defaultCallerIndex] || DEFAULT_CALLERS[0]);
+  const [caller] = useState(DEFAULT_CALLERS[defaultCallerIndex] || DEFAULT_CALLERS[0]);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaker, setIsSpeaker] = useState(true);

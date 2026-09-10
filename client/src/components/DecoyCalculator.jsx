@@ -106,36 +106,37 @@ function useCalculator(onUnlock) {
   return { display, pressDigit, pressDecimal, pressOperator, pressEquals, pressClear, pressToggleSign, pressBackspace };
 }
 
+const BUTTON_TONES = {
+  num: { bg: "#3A3A3C", color: "#F5F5F5" },
+  op: { bg: "#E8935B", color: "#1A1206" },
+  fn: { bg: "#A5A5A5", color: "#1A1A1A" },
+};
+
+function Btn({ children, onClick, wide, tone = "num" }) {
+  const t = BUTTON_TONES[tone] || BUTTON_TONES.num;
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        gridColumn: wide ? "span 2" : "span 1",
+        background: t.bg,
+        color: t.color,
+        border: "none",
+        borderRadius: 999,
+        fontSize: 26,
+        fontWeight: 500,
+        padding: "18px 0",
+        textAlign: wide ? "left" : "center",
+        paddingLeft: wide ? 28 : 0,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function DecoyCalculator({ onUnlock }) {
   const calc = useCalculator(onUnlock);
-
-  const Btn = ({ children, onClick, wide, tone = "num" }) => {
-    const tones = {
-      num: { bg: "#3A3A3C", color: "#F5F5F5" },
-      op: { bg: "#E8935B", color: "#1A1206" },
-      fn: { bg: "#A5A5A5", color: "#1A1A1A" },
-    };
-    const t = tones[tone];
-    return (
-      <button
-        onClick={onClick}
-        style={{
-          gridColumn: wide ? "span 2" : "span 1",
-          background: t.bg,
-          color: t.color,
-          border: "none",
-          borderRadius: 999,
-          fontSize: 26,
-          fontWeight: 500,
-          padding: "18px 0",
-          textAlign: wide ? "left" : "center",
-          paddingLeft: wide ? 28 : 0,
-        }}
-      >
-        {children}
-      </button>
-    );
-  };
 
   return (
     <div

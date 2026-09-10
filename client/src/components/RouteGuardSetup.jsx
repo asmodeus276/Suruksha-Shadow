@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavigationIcon, MapPinIcon } from "./icons";
+import { NavigationIcon } from "./icons";
 
 /**
  * RouteGuardSetup — UI for starting a guarded walk and showing
@@ -7,7 +7,7 @@ import { NavigationIcon, MapPinIcon } from "./icons";
  */
 export default function RouteGuardSetup({
   isActive,
-  origin,
+  _origin,
   destination,
   currentSpeedKmh,
   distanceToDestM,
@@ -23,12 +23,6 @@ export default function RouteGuardSetup({
   const [destLng, setDestLng] = useState("");
   const [destName, setDestName] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
-
-  // Preset common destinations
-  const presets = [
-    { name: "Home", lat: null, lng: null },
-    { name: "Office", lat: null, lng: null },
-  ];
 
   const handleStartWithCoords = () => {
     const lat = parseFloat(destLat);

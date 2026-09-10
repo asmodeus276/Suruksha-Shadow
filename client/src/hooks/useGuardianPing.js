@@ -75,7 +75,7 @@ async function getBatteryPct() {
   try {
     const battery = await navigator.getBattery();
     return Math.round(battery.level * 100);
-  } catch (_) {
+  } catch {
     return null;
   }
 }

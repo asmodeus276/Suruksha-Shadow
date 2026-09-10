@@ -162,7 +162,7 @@ const OCCLUSION_GRACE_PERIOD_MS = 450; // Tolerates momentary dropped frames dur
  * Camera is strictly OFF by default and runs only when explicitly activated.
  */
 export function useGestureDetection({
-  enabled = true,
+  _enabled = true,
   onTrigger,
   holdDurationMs = DEFAULT_HOLD_DURATION_MS,
 }) {

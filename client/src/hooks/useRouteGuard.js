@@ -38,12 +38,6 @@ function haversineMeters(a, b) {
  * (accurate enough for distances < 50 km).
  */
 function pointToSegmentDistanceM(p, a, b) {
-  const toM = (deg, refLat) => {
-    const latM = deg * 111320;
-    const lngM = deg * 111320 * Math.cos((refLat * Math.PI) / 180);
-    return { latM, lngM };
-  };
-
   const ref = a.lat;
   const ax = 0, ay = 0;
   const bx = (b.lng - a.lng) * 111320 * Math.cos((ref * Math.PI) / 180);

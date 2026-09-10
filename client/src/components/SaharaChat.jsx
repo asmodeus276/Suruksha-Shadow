@@ -38,7 +38,7 @@ export default function SaharaChat({ apiBaseUrl, eventId, messages, setMessages 
           },
         ]);
       });
-  }, [apiBaseUrl, eventId, opened]);
+  }, [apiBaseUrl, eventId, opened, setMessages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

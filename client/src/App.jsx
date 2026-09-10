@@ -36,7 +36,6 @@ import {
   PhoneIcon,
   SirenIcon,
   RadioIcon,
-  CheckIcon,
   ShareIcon,
   WhatsAppIcon,
   CameraIcon,
@@ -45,9 +44,7 @@ import {
   EyeIcon,
   EyeOffIcon,
   HomeIcon,
-  CarIcon,
   HeartbeatIcon,
-  MapPinIcon,
   NavigationIcon,
 } from "./components/icons";
 import { getUserId } from "./lib/user";
@@ -250,20 +247,20 @@ export default function App() {
     transcript,
     micStatus,
     motionMagnitude,
-    lastError,
-    restartCount,
     reset: resetShield,
   } = useShieldDetection({
     codeWord,
     enabled: armed,
     onTrigger: fireSOS,
   });
-  resetShieldRef.current = resetShield;
+
+  useEffect(() => {
+    resetShieldRef.current = resetShield;
+  }, [resetShield]);
 
   const [cameraViewfinderOpen, setCameraViewfinderOpen] = useState(true);
 
   const {
-    status: cameraStatus,
     isCameraActive,
     gestureProgress,
     handDetected,
@@ -277,7 +274,10 @@ export default function App() {
   } = useGestureDetection({
     onTrigger: fireSOS,
   });
-  resetGestureRef.current = resetGesture;
+
+  useEffect(() => {
+    resetGestureRef.current = resetGesture;
+  }, [resetGesture]);
 
   useGuardianPing({
     eventId: activeEventId,

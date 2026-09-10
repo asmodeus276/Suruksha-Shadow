@@ -30,7 +30,7 @@ export function useFakeCall({ apiBaseUrl }) {
     let aiCycles = 0;
 
     while (!stopRef.current) {
-      let lines = [];
+      let lines;
 
       if (aiCycles < MAX_AI_CYCLES) {
         try {
@@ -38,7 +38,7 @@ export function useFakeCall({ apiBaseUrl }) {
           const data = await res.json();
           lines = data.lines || [];
           aiCycles += 1;
-        } catch (_) {
+        } catch {
           lines = ["Hey, can you hear me?", "Okay, one sec."];
         }
       } else {

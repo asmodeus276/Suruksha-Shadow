@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import {
-  MapPinIcon,
   BatteryIcon,
   ActivityIcon,
   MicIcon,
@@ -26,6 +25,13 @@ import {
 
 const SILENT_WAV =
   "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL !== undefined
+    ? import.meta.env.VITE_API_BASE_URL
+    : import.meta.env.DEV
+    ? "http://localhost:4000"
+    : "";
 
 export default function GuardianView() {
   const { token } = useParams();
@@ -51,18 +57,15 @@ export default function GuardianView() {
     return () => clearInterval(timer);
   }, []);
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL !== undefined
-    ? import.meta.env.VITE_API_BASE_URL
-    : import.meta.env.DEV
-    ? "http://localhost:4000"
-    : "";
-
   // Initial snapshot via Backend API (with Supabase service-role proxy)
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
+      if (!token) {
+        setError("Invalid or missing guardian tracking link.");
+        return;
+      }
       try {
         const res = await fetch(`${API_BASE_URL}/api/emergency/guardian/${token}`);
         if (res.ok) {

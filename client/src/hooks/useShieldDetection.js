@@ -184,7 +184,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
           current = createRecognition();
           try {
             current.start();
-          } catch (_) {
+          } catch {
             /* ignore */
           }
         }, delay);
@@ -208,7 +208,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     current = createRecognition();
     try {
       current.start();
-    } catch (_) {
+    } catch {
       /* ignore */
     }
 
@@ -219,7 +219,9 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         current.onend = null;
         try {
           current.stop();
-        } catch (_) {}
+        } catch {
+          /* ignore */
+        }
       }
     };
   }, [codeWord, enabled, fire]);
