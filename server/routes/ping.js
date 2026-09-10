@@ -95,12 +95,16 @@ router.get("/guardian/:token", async (req, res) => {
  * POST /api/emergency/:eventId/ping
  * body: { lat, lng, batteryPct, movementStatus }
  */
-router.post("/:eventId/ping", async (req, res) => {
-  const { eventId } = req.params;
+async function handlePing(req, res) {
+  const eventId = req.params.eventId || req.body.eventId;
   const { lat, lng, batteryPct, movementStatus } = req.body;
 
   if (lat == null || lng == null) {
     return res.status(400).json({ error: "lat and lng are required" });
+  }
+
+  if (!eventId) {
+    return res.json({ ok: true });
   }
 
   // Always update in-memory telemetry immediately
@@ -161,7 +165,10 @@ router.post("/:eventId/ping", async (req, res) => {
   }
 
   return res.json({ ok: true });
-});
+}
+
+router.post("/:eventId/ping", handlePing);
+router.post("/ping", handlePing);
 
 /**
  * POST /api/emergency/:eventId/resolve

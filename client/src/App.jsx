@@ -24,6 +24,7 @@ import PinCancelModal from "./components/PinCancelModal";
 import LiveMap from "./components/LiveMap";
 import SafeZoneManager from "./components/SafeZoneManager";
 import RouteGuardSetup from "./components/RouteGuardSetup";
+import BlackoutStealth from "./components/BlackoutStealth";
 import {
   ShieldIcon,
   ShieldAlertIcon,
@@ -91,6 +92,7 @@ export default function App() {
   // New Killer Features State
   const [isFakeCallOpen, setIsFakeCallOpen] = useState(false);
   const [isAlarmOpen, setIsAlarmOpen] = useState(false);
+  const [isBlackoutOpen, setIsBlackoutOpen] = useState(false);
   const [emergencyElapsedSecs, setEmergencyElapsedSecs] = useState(0);
   const [liveLocations, setLiveLocations] = useState([]);
 
@@ -828,6 +830,16 @@ export default function App() {
 
                   <button
                     className="demo-chip-btn"
+                    onClick={() => setIsBlackoutOpen(true)}
+                    style={{ padding: "10px 14px", borderColor: "rgba(255,255,255,0.25)" }}
+                    title="Disguise phone as turned off while background protection stays 100% active"
+                  >
+                    <EyeOffIcon size={14} style={{ marginRight: 6 }} />
+                    Blackout Screen
+                  </button>
+
+                  <button
+                    className="demo-chip-btn"
                     onClick={() => setShowSettings(!showSettings)}
                     style={{ padding: "10px 14px" }}
                   >
@@ -1521,6 +1533,14 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Blackout Stealth AMOLED Screen-Off Disguise */}
+      <BlackoutStealth
+        isOpen={isBlackoutOpen}
+        onClose={() => setIsBlackoutOpen(false)}
+        isArmed={armed}
+        activeEventId={activeEventId}
+      />
     </div>
   );
 }

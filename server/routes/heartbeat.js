@@ -37,7 +37,7 @@ const SCAN_INTERVAL_MS = 60 * 1000;          // check every 60 seconds
  *
  * Lightweight heartbeat ping from the client while Shield is armed.
  */
-router.post("/", (req, res) => {
+router.post(["/", "/pulse"], (req, res) => {
   const { userId, lat, lng } = req.body;
 
   if (!userId) {

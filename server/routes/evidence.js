@@ -113,4 +113,30 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
   }
 });
 
+/**
+ * POST /api/evidence/countersign
+ * Body: { eventId, clientSha256, clientTimestamp }
+ */
+router.post("/countersign", (req, res) => {
+  const { eventId, clientSha256, clientTimestamp } = req.body;
+  if (!clientSha256) {
+    return res.status(400).json({ error: "clientSha256 is required" });
+  }
+
+  const serverTimestamp = new Date().toISOString();
+  const countersignatureInput = `${clientSha256}|${serverTimestamp}|${eventId || "peacetime"}`;
+  const serverHmac = crypto
+    .createHmac("sha256", LEDGER_SIGNING_KEY)
+    .update(countersignatureInput)
+    .digest("hex");
+
+  res.json({
+    verified: true,
+    clientSha256,
+    serverTimestamp,
+    serverHmac,
+    standard: "BSA Section 63 Digital Evidence",
+  });
+});
+
 export default router;
