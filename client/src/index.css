@@ -1,8 +1,9 @@
 /* ============================================================
-   Suraksha Shadow — Tactical Camouflage & Vigil Design System
+   Suraksha Shadow — Mobile-First Tactical Design System
    Dual-Architecture Stealth Platform:
    - Undetectable in crisis (Hardware Camouflage)
    - Indisputable in court (Forensic Integrity / Section 63 BSA & FRE 902)
+   - 100% Mobile Optimized, Touch Ergonomic & Safe-Area Aware
    ============================================================ */
 
 :root {
@@ -72,6 +73,7 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html,
@@ -82,9 +84,11 @@ body {
   color: var(--paper);
   font-family: var(--sans);
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
 }
 
 body {
@@ -111,19 +115,19 @@ body.is-emergency {
   flex-direction: column;
 }
 
-/* Main Container Wrappers */
+/* Mobile-First App Viewport with Safe-Area Insets */
 .app-viewport {
   width: 100%;
   max-width: 960px;
   margin: 0 auto;
-  padding: 16px 16px 100px;
+  padding: max(12px, env(safe-area-inset-top)) 12px calc(80px + max(16px, env(safe-area-inset-bottom))) 12px;
   display: flex;
   flex-direction: column;
 }
 
 @media (min-width: 768px) {
   .app-viewport {
-    padding: 24px 24px 100px;
+    padding: 24px 24px 40px;
   }
 }
 
@@ -137,10 +141,10 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.25;
 }
 
-h1 { font-size: 32px; }
-h2 { font-size: 24px; }
-h3 { font-size: 18px; font-weight: 600; }
-h4 { font-size: 16px; font-weight: 600; }
+h1 { font-size: clamp(24px, 5vw, 32px); }
+h2 { font-size: clamp(20px, 4vw, 24px); }
+h3 { font-size: clamp(16px, 3.5vw, 18px); font-weight: 600; }
+h4 { font-size: 15px; font-weight: 600; }
 
 p {
   margin: 0;
@@ -171,7 +175,7 @@ a:hover {
   gap: 6px;
 }
 
-/* Buttons */
+/* Buttons with Mobile Touch Targets */
 button {
   font-family: var(--sans);
   font-size: 14px;
@@ -179,10 +183,15 @@ button {
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   padding: 10px 16px;
+  min-height: 44px; /* Apple & Android HIG 44px touch target */
   cursor: pointer;
   transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   color: var(--paper);
   background: var(--surface-high);
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 button:hover:not(:disabled) {
@@ -191,7 +200,7 @@ button:hover:not(:disabled) {
 }
 
 button:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 button:disabled {
@@ -219,6 +228,7 @@ button:disabled {
   color: var(--mist);
   padding: 6px 10px;
   font-size: 13px;
+  min-height: 38px;
 }
 
 .btn-quiet:hover:not(:disabled) {
@@ -227,7 +237,7 @@ button:disabled {
   border-color: transparent;
 }
 
-/* Form Controls */
+/* Form Controls with Mobile Comfort */
 input[type="text"],
 input[type="tel"],
 input[type="number"],
@@ -235,12 +245,13 @@ input[type="password"],
 textarea,
 select {
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: 16px; /* 16px prevents automatic iOS Safari zoom */
   color: var(--paper);
   background: var(--surface-lowest);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 11px 14px;
+  padding: 12px 14px;
+  min-height: 46px;
   width: 100%;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -263,10 +274,16 @@ textarea::placeholder {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 16px 14px;
   box-shadow: var(--shadow-card);
   position: relative;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: 20px;
+  }
 }
 
 .card:hover {
@@ -312,9 +329,9 @@ textarea::placeholder {
 .tactical-header {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -322,7 +339,7 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 
 .brand-badge {
@@ -342,6 +359,7 @@ textarea::placeholder {
   justify-content: center;
   position: relative;
   box-shadow: var(--shadow-glow-gold);
+  flex-shrink: 0;
 }
 
 .brand-icon-shield .pulse-dot {
@@ -363,18 +381,24 @@ textarea::placeholder {
 
 .brand-title {
   font-family: var(--display);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--paper);
   line-height: 1.15;
 }
 
+@media (min-width: 640px) {
+  .brand-title {
+    font-size: 20px;
+  }
+}
+
 .brand-subtitle {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--mist-dim);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -382,7 +406,7 @@ textarea::placeholder {
   display: none;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .header-telemetry-pills {
     display: flex;
     align-items: center;
@@ -398,39 +422,42 @@ textarea::placeholder {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .vigil-status-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: var(--radius-sm);
   background: var(--surface-low);
   border: 1px solid var(--line);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--ember);
 }
 
 /* ============================================================
-   Navigation Tabs (Peacetime Mode)
+   Navigation Tabs (Desktop Top Bar vs Mobile Bottom Bar)
    ============================================================ */
+/* Top Tabs: Hidden on mobile (< 768px) to eliminate clutter; visible on desktop */
 .tactical-nav-tabs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--surface-lowest);
-  border: 1px solid var(--line);
-  padding: 4px;
-  border-radius: var(--radius);
-  overflow-x: auto;
-  scrollbar-width: none;
+  display: none;
 }
 
-.tactical-nav-tabs::-webkit-scrollbar {
-  display: none;
+@media (min-width: 768px) {
+  .tactical-nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface-lowest);
+    border: 1px solid var(--line);
+    padding: 4px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
 }
 
 .tactical-tab-btn {
@@ -446,6 +473,7 @@ textarea::placeholder {
   font-weight: 500;
   white-space: nowrap;
   transition: all 0.18s ease;
+  min-height: 38px;
 }
 
 .tactical-tab-btn:hover {
@@ -461,21 +489,30 @@ textarea::placeholder {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-/* Bottom Nav Bar for Mobile */
+/* Bottom Nav Bar for Mobile Devices */
 .bottom-nav-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
   z-index: 900;
-  background: rgba(17, 19, 27, 0.94);
-  backdrop-filter: blur(16px);
+  background: rgba(17, 19, 27, 0.96);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   border-top: 1px solid var(--line);
-  padding: 6px 12px 14px;
+  padding: 6px 8px max(10px, env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .bottom-nav-bar {
+    display: none; /* Desktop uses top tab bar instead */
+  }
 }
 
 .bottom-nav-inner {
-  max-width: 560px;
+  max-width: 500px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -486,19 +523,23 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   background: transparent;
   border: none;
   color: var(--mist-dim);
   font-size: 11px;
   font-weight: 500;
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
+  min-width: 58px;
+  min-height: 48px;
   transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.nav-tab-btn:hover {
-  color: var(--paper);
+.nav-tab-btn:active {
+  transform: scale(0.92);
 }
 
 .nav-tab-btn.is-active {
@@ -506,20 +547,54 @@ textarea::placeholder {
   background: var(--ember-dim);
 }
 
+/* Sub-Tab Switcher Pills (Safety Hub, etc.) */
+.safety-hub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.safety-hub-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.safety-tab-pill {
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: var(--surface-low);
+  border: 1px solid var(--line);
+  color: var(--mist);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-height: 38px;
+  transition: all 0.15s ease;
+}
+
+.safety-tab-pill.is-active {
+  color: var(--ember);
+  background: var(--surface-high);
+  border-color: var(--line-gold);
+}
+
 /* ============================================================
-   The Signature Guardian Circle & Audio Aura
+   The Signature Guardian Circle & Audio Aura (Mobile Ergonomic)
    ============================================================ */
 .guardian-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 0 16px;
+  padding: 20px 0 12px;
   position: relative;
 }
 
 .guardian-circle {
-  width: 172px;
-  height: 172px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
   border: 2px solid var(--line-highlight);
   background: radial-gradient(circle at 35% 35%, var(--surface-high) 0%, var(--surface-lowest) 100%);
@@ -527,30 +602,29 @@ textarea::placeholder {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   cursor: pointer;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   z-index: 5;
+  touch-action: manipulation;
 }
 
-.guardian-circle:hover:not(:disabled) {
-  border-color: var(--ember);
-  box-shadow: 0 0 32px var(--ember-glow), 0 8px 32px rgba(0, 0, 0, 0.6);
-  transform: scale(1.02);
+.guardian-circle:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .guardian-circle .icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   color: var(--ember);
   transition: color 0.3s ease;
 }
 
 .guardian-circle .label {
   font-family: var(--display);
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--paper);
   letter-spacing: -0.01em;
@@ -558,7 +632,7 @@ textarea::placeholder {
 
 .guardian-circle .sub {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--mist);
   letter-spacing: 0.05em;
 }
@@ -585,8 +659,8 @@ textarea::placeholder {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 250px;
-  height: 250px;
+  width: 230px;
+  height: 230px;
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -602,20 +676,20 @@ textarea::placeholder {
 }
 
 .aura-ring.ring-1 {
-  width: 200px;
-  height: 200px;
+  width: 185px;
+  height: 185px;
   animation: ring-pulse 2.8s infinite linear;
 }
 
 .aura-ring.ring-2 {
-  width: 235px;
-  height: 235px;
+  width: 215px;
+  height: 215px;
   animation: ring-pulse 2.8s infinite linear 0.9s;
 }
 
 .aura-ring.ring-3 {
-  width: 270px;
-  height: 270px;
+  width: 245px;
+  height: 245px;
   animation: ring-pulse 2.8s infinite linear 1.8s;
 }
 
@@ -624,8 +698,8 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   gap: 3px;
-  height: 36px;
-  top: -18px;
+  height: 32px;
+  top: -16px;
 }
 
 .spectrum-bar {
@@ -646,7 +720,7 @@ textarea::placeholder {
   border-radius: var(--radius);
   background: var(--surface-low);
   border: 1px solid var(--line);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 @media (min-width: 640px) {
@@ -658,7 +732,7 @@ textarea::placeholder {
 .telemetry-card {
   display: flex;
   flex-direction: column;
-  padding: 14px;
+  padding: 12px;
   border-radius: var(--radius-sm);
   background: var(--surface-lowest);
   border: 1px solid rgba(255, 255, 255, 0.03);
@@ -668,49 +742,49 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .telemetry-card-label {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--mist-dim);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
 }
 
 .telemetry-card-value {
   font-family: var(--mono);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--ember);
 }
 
 .telemetry-card-desc {
   font-family: var(--sans);
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--mist-dim);
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 /* ============================================================
-   Active Emergency Command Center
+   Active Emergency Command Center (High Panic Legibility)
    ============================================================ */
 .emergency-command-center {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .emergency-status-banner {
-  background: linear-gradient(135deg, rgba(147, 0, 10, 0.85) 0%, rgba(55, 10, 15, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(147, 0, 10, 0.9) 0%, rgba(55, 10, 15, 0.98) 100%);
   border: 1.5px solid var(--alarm);
   border-radius: var(--radius);
-  padding: 16px 20px;
+  padding: 14px 16px;
   box-shadow: var(--shadow-glow-alarm);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   animation: pulse-border 2s infinite ease-in-out;
 }
 
@@ -721,8 +795,8 @@ textarea::placeholder {
 }
 
 .emergency-live-dot {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--alarm-strong);
   box-shadow: 0 0 10px var(--alarm-strong);
@@ -731,7 +805,7 @@ textarea::placeholder {
 
 .emergency-banner-title {
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.12em;
   color: var(--paper);
@@ -739,11 +813,11 @@ textarea::placeholder {
 
 .emergency-banner-timer {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--alarm-strong);
 }
 
-/* Rapid Distress Action Matrix */
+/* Rapid Distress Action Matrix (2x2 Thumb-Friendly Grid) */
 .emergency-action-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -760,24 +834,25 @@ textarea::placeholder {
   background: var(--surface-low);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 14px 12px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.18s ease;
+  min-height: 88px;
 }
 
-.emergency-action-card:hover {
+.emergency-action-card:active {
+  transform: scale(0.96);
   background: var(--surface-high);
-  border-color: var(--line-gold);
-  transform: translateY(-2px);
 }
 
 .action-card-icon {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -801,40 +876,41 @@ textarea::placeholder {
 
 .action-card-title {
   font-family: var(--sans);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--paper);
 }
 
 .action-card-desc {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--mist-dim);
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 /* Safe Resolution Button */
 .emergency-resolve-wrap {
   display: flex;
   justify-content: center;
-  margin: 12px 0;
+  margin: 10px 0;
 }
 
 .btn-resolve-emergency {
   background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
   border: 1px solid rgba(46, 204, 113, 0.4);
   color: #fff;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 700;
   padding: 14px 28px;
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 20px rgba(46, 204, 113, 0.35);
   cursor: pointer;
+  width: 100%;
+  max-width: 380px;
   transition: all 0.2s ease;
 }
 
-.btn-resolve-emergency:hover {
-  box-shadow: 0 6px 28px rgba(46, 204, 113, 0.5);
-  transform: translateY(-2px);
+.btn-resolve-emergency:active {
+  transform: scale(0.97);
 }
 
 /* ============================================================
@@ -843,11 +919,11 @@ textarea::placeholder {
 .event-stream-container {
   display: flex;
   flex-direction: column;
-  height: 420px;
+  height: 380px;
   background: var(--surface-low);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 14px;
 }
 
 .event-stream-scroll {
@@ -855,35 +931,100 @@ textarea::placeholder {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-right: 4px;
+  gap: 8px;
+  padding-right: 2px;
 }
 
 .event-stream-scroll::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
 
 .event-stream-scroll::-webkit-scrollbar-thumb {
   background: var(--surface-highest);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .event-stream-card {
-  padding: 10px 12px;
+  padding: 9px 11px;
   border-radius: var(--radius-sm);
   background: var(--surface-lowest);
   border: 1px solid rgba(255, 255, 255, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 .event-stream-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+/* ============================================================
+   Demo Studio Floating Dock (Mobile Optimized)
+   ============================================================ */
+.demo-studio-dock {
+  position: fixed;
+  bottom: calc(72px + max(10px, env(safe-area-inset-bottom)));
+  left: 12px;
+  z-index: 800;
+}
+
+@media (min-width: 768px) {
+  .demo-studio-dock {
+    bottom: 20px;
+    left: 20px;
+  }
+}
+
+.demo-studio-pill-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(29, 31, 40, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--line-gold);
+  color: var(--ember);
+  font-size: 11.5px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.demo-studio-expanded {
+  background: rgba(17, 19, 27, 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--line-gold);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  max-width: 340px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
+}
+
+.demo-studio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.demo-studio-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--paper);
+}
+
+.demo-studio-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* ============================================================
@@ -922,12 +1063,12 @@ textarea::placeholder {
 }
 
 @keyframes rise-fade {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .rise-fade {
-  animation: rise-fade 0.35s ease both;
+  animation: rise-fade 0.3s ease both;
 }
 
 /* Utility Helpers */
@@ -959,15 +1100,21 @@ textarea::placeholder {
 .demo-chip-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
   background: var(--surface-high);
   border: 1px solid var(--line);
   color: var(--paper);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
+  min-height: 40px;
   transition: all 0.15s ease;
+}
+
+.demo-chip-btn:active {
+  transform: scale(0.96);
 }
 
 .demo-chip-btn:hover {
