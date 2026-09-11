@@ -1127,3 +1127,441 @@ textarea::placeholder {
   border-color: var(--ember-container);
   color: var(--ember);
 }
+
+/* ============================================================
+   PHOTOREALISTIC FAKE CALL OVERLAY (Escape Simulator)
+   ============================================================ */
+.fake-call-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: radial-gradient(circle at 50% 20%, #1e2230 0%, #0a0b10 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(30px + env(safe-area-inset-top)) 24px calc(40px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  color: #fff;
+  user-select: none;
+}
+
+.fake-call-ambient-glow {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(78, 201, 148, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.fake-call-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 20px;
+  z-index: 2;
+}
+
+.fake-call-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #2a2e3d, #191c26);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--ember);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  margin-bottom: 16px;
+}
+
+.fake-call-caller-name {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
+}
+
+.fake-call-caller-number {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 8px 0;
+}
+
+.fake-call-status {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--mint, #4ec994);
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+.fake-call-middle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 360px;
+  z-index: 2;
+  padding: 10px 0;
+}
+
+.fake-call-speech-bubble {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 16px 20px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.fake-call-wave-bars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 20px;
+  margin-bottom: 10px;
+}
+
+.wave-bar {
+  width: 3px;
+  background: var(--mint, #4ec994);
+  border-radius: 2px;
+  animation: wave-bar-dance 1.2s infinite ease-in-out;
+}
+
+.bar-1 { height: 8px; animation-delay: 0.1s; }
+.bar-2 { height: 16px; animation-delay: 0.2s; }
+.bar-3 { height: 12px; animation-delay: 0.3s; }
+.bar-4 { height: 18px; animation-delay: 0.4s; }
+.bar-5 { height: 6px; animation-delay: 0.5s; }
+
+@keyframes wave-bar-dance {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1.3); }
+}
+
+.fake-call-speech-text {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.45;
+  margin: 0;
+  font-style: italic;
+}
+
+.fake-call-bottom {
+  width: 100%;
+  max-width: 340px;
+  z-index: 2;
+}
+
+.fake-call-ringing-actions {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+}
+
+.call-action-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.fake-call-circle-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  color: #fff;
+  transition: transform 0.15s ease;
+}
+
+.fake-call-circle-btn:active {
+  transform: scale(0.92);
+}
+
+.btn-accept {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  box-shadow: 0 0 24px rgba(46, 204, 113, 0.45);
+}
+
+.btn-decline {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  box-shadow: 0 0 24px rgba(231, 76, 60, 0.45);
+}
+
+.pulse-subtle {
+  animation: pulse-subtle-btn 2s infinite ease-in-out;
+}
+
+@keyframes pulse-subtle-btn {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.action-label {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.fake-call-connected-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+}
+
+.incall-buttons-matrix {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+.incall-tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.incall-tool-btn span {
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.incall-tool-btn.is-active {
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.fake-call-end-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================================
+   ACOUSTIC & HIGH-INTENSITY STROBE ALARM MODAL
+   ============================================================ */
+.strobe-alarm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.strobe-flash-layer {
+  position: absolute;
+  inset: 0;
+  animation: strobe-flash 0.12s infinite;
+  pointer-events: none;
+}
+
+@keyframes strobe-flash {
+  0%, 49% { background: #ff0033; }
+  50%, 100% { background: #ffffff; }
+}
+
+.strobe-content {
+  position: relative;
+  z-index: 2;
+  background: rgba(14, 16, 22, 0.96);
+  backdrop-filter: blur(20px);
+  border: 2px solid #ff0033;
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 60px rgba(255, 0, 51, 0.5);
+  color: #fff;
+}
+
+.strobe-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 0, 51, 0.2);
+  border: 1px solid #ff0033;
+  color: #ff3355;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.strobe-title {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.01em;
+}
+
+.strobe-sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+}
+
+.strobe-timer {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 24px;
+}
+
+.strobe-timer span {
+  color: #ff3355;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.strobe-disarm-btn {
+  width: 100%;
+  padding: 16px 24px;
+  border-radius: var(--radius);
+  background: #ff0033;
+  border: none;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(255, 0, 51, 0.6);
+  transition: transform 0.15s ease, background 0.15s ease;
+  touch-action: manipulation;
+}
+
+.strobe-disarm-btn:active {
+  transform: scale(0.97);
+  background: #cc0029;
+}
+
+.strobe-footnote {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 14px 0 0 0;
+}
+
+/* ============================================================
+   PIN CANCEL / DURESS ESCALATION MODAL
+   ============================================================ */
+.pin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.pin-modal-card {
+  background: rgba(22, 24, 34, 0.98);
+  border: 1px solid var(--line-gold);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+  animation: rise-fade 0.25s ease both;
+}
+
+.pin-modal-title {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--paper);
+  margin: 0 0 6px 0;
+}
+
+.pin-input {
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  font-family: var(--mono);
+  font-size: 26px;
+  letter-spacing: 14px;
+  text-align: center;
+  background: var(--surface-lowest);
+  border: 1.5px solid var(--line-highlight);
+  border-radius: var(--radius);
+  color: var(--paper);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.pin-input:focus {
+  border-color: var(--ember);
+  box-shadow: 0 0 16px var(--ember-dim);
+}
+
+.pin-modal-success {
+  border-color: rgba(46, 204, 113, 0.5);
+  padding: 36px 24px;
+}
+
+.pin-success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(46, 204, 113, 0.15);
+  border: 1.5px solid #2ecc71;
+  color: #2ecc71;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 0 24px rgba(46, 204, 113, 0.3);
+}

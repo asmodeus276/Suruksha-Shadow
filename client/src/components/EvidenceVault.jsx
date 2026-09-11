@@ -316,16 +316,18 @@ ${rows || "| 1 | AUD-BURST-01 | " + timestamp + " | 30.0s | audio/webm | 9f83c68
             className="btn-quiet"
             onClick={() => setShowMerkleModal(true)}
             style={{
-              fontFamily: "var(--mono)",
-              fontSize: 11,
+              fontFamily: "var(--sans)",
+              fontSize: 12,
+              fontWeight: 600,
               background: "var(--surface-high)",
               border: "1px solid var(--line-gold)",
               borderRadius: "var(--radius-sm)",
               color: "var(--ember)",
-              padding: "6px 12px",
+              padding: "6px 14px",
+              cursor: "pointer",
             }}
           >
-            VALIDATE_MERKLE_PROOF()
+            🛡️ Verify Cryptographic Proof
           </button>
         </div>
       </div>

@@ -465,7 +465,7 @@ export default function App() {
     enabled: Boolean(activeEventId),
   });
 
-  const canArm = contactCount !== null && contactCount > 0;
+  const canArm = true;
   useBackgroundKeepAlive({ enabled: armed });
 
   // Manual demo trigger: Alt+Shift+B
@@ -480,14 +480,29 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeEventId, fireSOS]);
 
-  const arm = async () => {
-    if (!canArm) return;
-    await requestMotionPermission();
-    setArmed(true);
+  const toggleArm = async () => {
+    if (activeEventId) return;
+    if (armed) {
+      setArmed(false);
+      resetShield();
+      resetGesture();
+    } else {
+      await requestMotionPermission();
+      setArmed(true);
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try {
+          navigator.vibrate([40]);
+        } catch {
+          /* ignore vibrate policy */
+        }
+      }
+    }
   };
 
+  const arm = toggleArm;
+
   const handleToggleCamera = async () => {
-    if (!isCameraActive && !armed && canArm) {
+    if (!isCameraActive && !armed) {
       await arm();
     }
     toggleCameraWatch();
@@ -551,10 +566,15 @@ export default function App() {
     setActiveEventId(null);
   };
 
-  // Decoy triple-tap trigger (Mobile touch & click compatible)
+  // Decoy triple-tap trigger (Mobile touch & click compatible with debounce)
+  const lastTapTimeRef = useRef(0);
   const handleDecoyTrigger = useCallback((e) => {
     if (e && e.stopPropagation) e.stopPropagation();
     const now = Date.now();
+    // Guard against touchEnd + click double-dispatch on mobile WebKit/Chromium
+    if (now - lastTapTimeRef.current < 80) return;
+    lastTapTimeRef.current = now;
+
     decoyTapTimes.current = [...decoyTapTimes.current.filter((t) => now - t < DECOY_TAP_WINDOW_MS), now];
     if (decoyTapTimes.current.length >= DECOY_TAP_COUNT) {
       decoyTapTimes.current = [];
@@ -596,104 +616,119 @@ export default function App() {
 
   return (
     <div className="app-viewport">
+      {/* --- Global Secret Stealth Hitboxes (Tap 3x in any corner to launch Calculator disguise) --- */}
+      <div
+        onClick={handleDecoyTrigger}
+        onTouchEnd={handleDecoyTrigger}
+        title="Secret stealth zone (tap 3x)"
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          width: 90,
+          height: 75,
+          zIndex: 99998,
+          cursor: "default",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      />
+      <div
+        onClick={handleDecoyTrigger}
+        onTouchEnd={handleDecoyTrigger}
+        title="Secret stealth zone (tap 3x)"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: 90,
+          height: 75,
+          zIndex: 99998,
+          cursor: "default",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      />
+
       {/* --- Tactical Brand Header & Status Bar --- */}
       <header className="tactical-header rise-fade" style={{ position: "relative" }}>
-        {/* Invisible Secret Stealth Tap Zone (Top-Right Corner — Tap 3x) */}
-        <div
-          onClick={handleDecoyTrigger}
-          onTouchEnd={handleDecoyTrigger}
-          title="Secret stealth zone (tap 3x)"
-          style={{
-            position: "absolute",
-            top: -12,
-            right: -12,
-            width: 80,
-            height: 70,
-            zIndex: 60,
-            cursor: "default",
-          }}
-        />
-
-        {/* Invisible Secret Stealth Tap Zone (Top-Left Corner — Tap 3x) */}
-        <div
-          onClick={handleDecoyTrigger}
-          onTouchEnd={handleDecoyTrigger}
-          title="Secret stealth zone (tap 3x)"
-          style={{
-            position: "absolute",
-            top: -12,
-            left: -12,
-            width: 140,
-            height: 70,
-            zIndex: 50,
-            cursor: "default",
-          }}
-        />
-
         <div className="header-top-bar" style={{ position: "relative", zIndex: 40 }}>
           <div
             className="brand-badge"
             onClick={handleDecoyTrigger}
             onTouchEnd={handleDecoyTrigger}
-            style={{ cursor: "pointer" }}
-            title="Secret stealth zone (tap 3x)"
+            style={{ cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+            title="Secret stealth zone (tap 3x to launch Decoy Calculator)"
           >
             <div
               className="brand-icon-shield"
               title="Secret stealth zone (tap 3x to launch Decoy Calculator)"
             >
-              <GuardianGlyph size={22} style={{ color: activeEventId ? "var(--alarm)" : "var(--ember)" }} />
-              <span className="pulse-dot" style={{ background: activeEventId ? "var(--alarm)" : "var(--ember-container)" }} />
+              <GuardianGlyph size={22} style={{ color: activeEventId ? "var(--alarm)" : armed ? "var(--safe)" : "var(--ember)" }} />
+              <span className="pulse-dot" style={{ background: activeEventId ? "var(--alarm)" : armed ? "var(--safe)" : "var(--ember-container)" }} />
             </div>
             <div className="brand-title-group">
               <span className="brand-title">
                 Suraksha <em style={{ fontStyle: "normal", color: "var(--ember)" }}>Shadow</em>
               </span>
-              <span className="brand-subtitle">Camouflage &amp; Vigil Mesh</span>
+              <span className="brand-subtitle">Personal Safety &amp; Legal Shield</span>
             </div>
           </div>
 
           <div className="header-telemetry-pills">
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ember-container)" }} />
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--mist-dim)" }}>Enclave:</span>
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--paper)", fontWeight: 600 }}>Secure</span>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: armed ? "var(--safe)" : "var(--ember-container)" }} />
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--mist-dim)" }}>Shield:</span>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: armed ? "var(--safe)" : "var(--paper)", fontWeight: 600 }}>
+                {armed ? "Armed" : "Standby"}
+              </span>
             </div>
             <div style={{ height: 12, width: 1, background: "var(--line)" }} />
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--secondary)" }} />
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--mist-dim)" }}>Guardian:</span>
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--paper)", fontWeight: 600 }}>Active Sync</span>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--mist-dim)" }}>Guardians:</span>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--paper)", fontWeight: 600 }}>
+                {contacts.length > 0 ? `${contacts.length} Synced` : "Active"}
+              </span>
             </div>
           </div>
 
           <div className="header-actions">
-            <div className="vigil-status-pill hidden sm:flex">
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: armed ? "var(--safe)" : "var(--ember)",
-                  boxShadow: "0 0 6px currentColor",
-                }}
-              />
-              <span>{armed ? "SHIELD ARMED" : "VIGIL READY"}</span>
-            </div>
-            {!armed && !activeEventId && (
-              <button
-                className="btn-primary"
-                onClick={arm}
-                style={{ padding: "7px 14px", fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6 }}
-              >
-                <ShieldIcon size={14} />
-                <span>Arm Mode</span>
-              </button>
+            {!activeEventId && (
+              armed ? (
+                <button
+                  className="btn-quiet flex-center-gap"
+                  onClick={toggleArm}
+                  style={{
+                    padding: "6px 13px",
+                    fontSize: 12,
+                    borderRadius: 20,
+                    background: "rgba(46, 204, 113, 0.15)",
+                    border: "1px solid rgba(46, 204, 113, 0.4)",
+                    color: "#2ecc71",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                  title="Shield is actively monitoring. Tap to pause."
+                >
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2ecc71", boxShadow: "0 0 8px #2ecc71" }} />
+                  <span>● Armed</span>
+                </button>
+              ) : (
+                <button
+                  className="btn-primary"
+                  onClick={arm}
+                  style={{ padding: "7px 14px", fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <ShieldIcon size={14} />
+                  <span>Arm Shield</span>
+                </button>
+              )
             )}
           </div>
         </div>
 
-        {/* Top Tactical Navigation Bar (Peacetime) */}
+        {/* Top Navigation Tabs (Peacetime Desktop / Tablet) */}
         {!activeEventId && (
           <nav className="tactical-nav-tabs mt-2">
             <button
@@ -702,13 +737,6 @@ export default function App() {
             >
               <ShieldIcon size={15} />
               <span>Shield</span>
-            </button>
-            <button
-              className={`tactical-tab-btn ${activeTab === "overview" ? "is-active" : ""}`}
-              onClick={() => setActiveTab("overview")}
-            >
-              <RadioIcon size={15} />
-              <span>Overview &amp; Architecture</span>
             </button>
             <button
               className={`tactical-tab-btn ${activeTab === "checkin" ? "is-active" : ""}`}
@@ -722,7 +750,7 @@ export default function App() {
               onClick={() => setActiveTab("vault")}
             >
               <FolderIcon size={15} />
-              <span>Evidence Locker</span>
+              <span>Evidence Vault</span>
             </button>
             <button
               className={`tactical-tab-btn ${activeTab === "safety" ? "is-active" : ""}`}
@@ -975,31 +1003,29 @@ export default function App() {
                   isActive={Boolean(activeEventId)}
                 />
 
-                {!canArm && (
-                  <p className="callout mb-4" style={{ maxWidth: 340 }}>
-                    Add at least one Trusted Contact in the Safety Hub tab before arming Shield.
-                  </p>
-                )}
-
                 <button
                   className={`guardian-circle ${guardianState === "listening" ? "is-listening" : ""} ${
                     guardianState === "active" ? "is-active" : ""
                   }`}
-                  onClick={arm}
-                  disabled={!canArm || armed}
-                  aria-label={guardianState === "idle" ? "Arm Shield" : "Shield is armed"}
+                  onClick={toggleArm}
+                  disabled={Boolean(activeEventId)}
+                  aria-label={guardianState === "active" ? "Active Emergency" : armed ? "Shield is armed. Tap to pause." : "Arm Shield Protection"}
                 >
                   <GuardianGlyph className="icon" />
                   <span className="label">
                     {guardianState === "active"
                       ? "Active"
-                      : guardianState === "listening"
-                      ? "Listening"
+                      : armed
+                      ? "Armed"
                       : "Arm Shield"}
                   </span>
-                  {guardianState !== "idle" && (
-                    <span className="sub">say &ldquo;{codeWord}&rdquo;</span>
-                  )}
+                  <span className="sub">
+                    {guardianState === "active"
+                      ? "alerting contacts"
+                      : armed
+                      ? `tap to pause · say "${codeWord}"`
+                      : "tap to protect"}
+                  </span>
                 </button>
 
                 {/* Live Diagnostics Pill */}
@@ -1389,48 +1415,107 @@ export default function App() {
                       Server expects a GPS ping every 30s while Shield is armed. If contact is lost for &gt;3 minutes (phone powered off, confiscated, destroyed, or airplane mode), the server autonomously creates an SOS event and alerts your guardians with your last known location.
                     </p>
                   </div>
+
+                  {/* Safety Drills & Simulation Lab */}
+                  <div className="pt-3" style={{ borderTop: "1px solid var(--line)" }}>
+                    <details>
+                      <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--ember)", padding: "4px 0" }}>
+                        🛠️ Safety Drills &amp; Sensor Simulations (Test Lab)
+                      </summary>
+                      <div style={{ padding: "12px 0 4px", display: "flex", flexDirection: "column", gap: 8 }}>
+                        <p className="text-xs text-dim" style={{ margin: 0 }}>
+                          Test all automatic detection engines and distress actions safely without false alarms:
+                        </p>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
+                          <button
+                            type="button"
+                            className="btn-quiet"
+                            style={{ fontSize: 11.5, padding: "8px 10px", textAlign: "left", borderRadius: 8, background: "rgba(255,255,255,0.04)" }}
+                            onClick={() => fireSOS({ triggerType: "simulated_impact", mode: "simulated", confidence: 0.98, details: "Safety Drill: High-G physical shock & violent drop simulation" })}
+                          >
+                            ⚡ Test Impact SOS
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-quiet"
+                            style={{ fontSize: 11.5, padding: "8px 10px", textAlign: "left", borderRadius: 8, background: "rgba(255,255,255,0.04)" }}
+                            onClick={() => fireSOS({ triggerType: "simulated_codeword", mode: "simulated", confidence: 0.95, details: `Safety Drill: Voice codeword trigger ("${codeWord}")` })}
+                          >
+                            🎙️ Test Voice SOS
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-quiet"
+                            style={{ fontSize: 11.5, padding: "8px 10px", textAlign: "left", borderRadius: 8, background: "rgba(255,255,255,0.04)" }}
+                            onClick={() => setIsFakeCallOpen(true)}
+                          >
+                            📞 Test Fake Call
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-quiet"
+                            style={{ fontSize: 11.5, padding: "8px 10px", textAlign: "left", borderRadius: 8, background: "rgba(255,255,255,0.04)" }}
+                            onClick={() => setIsAlarmOpen(true)}
+                          >
+                            🚨 Test Strobe Siren
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-quiet"
+                            style={{ fontSize: 11.5, padding: "8px 10px", textAlign: "left", borderRadius: 8, background: "rgba(255,255,255,0.04)" }}
+                            onClick={() => setDecoyMode(true)}
+                          >
+                            🧮 Test Decoy Calculator
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-quiet"
+                            style={{ fontSize: 11.5, padding: "8px 10px", textAlign: "left", borderRadius: 8, background: "rgba(255,255,255,0.04)" }}
+                            onClick={() => setIsBlackoutOpen(true)}
+                          >
+                            🕶️ Test Blackout Screen
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
                 </div>
               )}
 
               {/* Stealth Tip Card */}
               <div className="card mt-5" style={{ background: "rgba(30, 27, 46, 0.45)" }}>
                 <p className="text-xs text-dim">
-                  💡 <strong style={{ color: "var(--paper)" }}>Discreet Stealth Mode:</strong> Tap the top-right corner of the screen 3 times or press <code style={{ color: "var(--ember)" }}>Alt+Shift+D</code> to instantly hide this app behind a fully functioning calculator. Type <code style={{ color: "var(--ember)" }}>112=</code> to return.
+                  💡 <strong style={{ color: "var(--paper)" }}>Discreet Stealth Mode:</strong> Tap any top corner of your screen 3 times or press <code style={{ color: "var(--ember)" }}>Alt+Shift+D</code> to instantly disguise this app behind a fully functioning calculator. Type <code style={{ color: "var(--ember)" }}>112=</code> to return.
                 </p>
               </div>
             </div>
           )}
 
-          {/* TAB 2: TACTICAL OVERVIEW & ARCHITECTURE */}
-          {activeTab === "overview" && (
-            <div className="rise-fade">
-              <TacticalOverview
-                onArm={arm}
-                armed={armed}
-                onSelectTab={setActiveTab}
-                onOpenDecoy={() => setDecoyMode(true)}
-                onOpenFakeCall={() => setIsFakeCallOpen(true)}
-                onOpenBlackout={() => setIsBlackoutOpen(true)}
-              />
-            </div>
-          )}
-
-          {/* TAB 3: SCHEDULED CHECK-IN */}
+          {/* TAB 2: SCHEDULED CHECK-IN & ROUTE GUARD */}
           {activeTab === "checkin" && (
             <div className="rise-fade section">
-              <p className="eyebrow">Scheduled Check-In (Dead-Man's Switch)</p>
-              <div className="card">
-                <ScheduledCheckIn
-                  onExpire={() => fireSOS("checkin")}
-                  apiBaseUrl={API_BASE_URL}
-                  userId={USER_ID}
-                  disabled={Boolean(activeEventId)}
-                />
+              <div className="mb-4">
+                <p className="eyebrow">Scheduled Check-In (Dead-Man's Switch)</p>
+                <div className="card">
+                  <ScheduledCheckIn
+                    onExpire={() => fireSOS("checkin")}
+                    apiBaseUrl={API_BASE_URL}
+                    userId={USER_ID}
+                    disabled={Boolean(activeEventId)}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <p className="eyebrow">Passive Route Guard Corridor</p>
+                <div className="card">
+                  <RouteGuardSetup {...routeGuard} />
+                </div>
               </div>
             </div>
           )}
 
-          {/* TAB 4: EVIDENCE VAULT */}
+          {/* TAB 3: EVIDENCE VAULT */}
           {activeTab === "vault" && (
             <div className="rise-fade section">
               <EvidenceVault
@@ -1440,7 +1525,7 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 5: SAFETY HUB */}
+          {/* TAB 4: SAFETY HUB */}
           {activeTab === "safety" && (
             <div className="rise-fade">
               <SafetyHub
@@ -1457,7 +1542,7 @@ export default function App() {
       )}
 
       {/* ============================================================
-          PERSISTENT BOTTOM NAVIGATION BAR (Peacetime)
+          PERSISTENT BOTTOM NAVIGATION BAR (Mobile & Desktop)
           ============================================================ */}
       {!activeEventId && (
         <nav className="bottom-nav-bar">
@@ -1468,14 +1553,6 @@ export default function App() {
             >
               <ShieldIcon size={18} />
               <span>Shield</span>
-            </button>
-
-            <button
-              className={`nav-tab-btn ${activeTab === "overview" ? "is-active" : ""}`}
-              onClick={() => setActiveTab("overview")}
-            >
-              <RadioIcon size={18} />
-              <span>Overview</span>
             </button>
 
             <button
@@ -1530,20 +1607,6 @@ export default function App() {
           onResolved={handlePinResolved}
         />
       )}
-
-      {/* 4. Cinematic Demo Studio Toolbar for Video Recording */}
-      <DemoStudioBar
-        apiBaseUrl={API_BASE_URL}
-        activeEventId={activeEventId}
-        activeShareToken={activeShareToken}
-        onTriggerSOS={fireSOS}
-        onTriggerFakeCall={() => setIsFakeCallOpen(true)}
-        onTriggerAlarm={() => setIsAlarmOpen(true)}
-        onToggleDecoy={() => setDecoyMode(true)}
-        armed={armed}
-        onArm={arm}
-        onGpsUpdate={(loc) => setLiveLocations((prev) => [...prev, loc])}
-      />
 
       {/* 5. Camera Watch Viewfinder HUD & Persistent Video Element */}
       <div

@@ -75,7 +75,15 @@ function useCalculator(onUnlock) {
   };
 
   const pressEquals = () => {
-    if (sequence === "112" || sequence === "8042") {
+    const isCode =
+      display === "112" ||
+      display === "8042" ||
+      sequence === "112" ||
+      sequence === "8042" ||
+      sequence.endsWith("112") ||
+      sequence.endsWith("8042");
+
+    if (isCode) {
       reset();
       onUnlock();
       return;
@@ -97,6 +105,7 @@ function useCalculator(onUnlock) {
   };
 
   const pressBackspace = () => {
+    setSequence((s) => (s.length > 0 ? s.slice(0, -1) : ""));
     setDisplay((cur) => {
       if (overwrite || cur.length <= 1 || (cur.length === 2 && cur.startsWith("-"))) return "0";
       return cur.slice(0, -1);
