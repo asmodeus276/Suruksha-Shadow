@@ -23,16 +23,33 @@ const supabase = createClient(
 
 /**
  * POST /api/sos
- * body: { userId, triggerType: "voice" | "motion" | "manual" | "gesture" | "checkin" }
+ * body: { userId, triggerType: "voice" | "motion" | "manual" | "gesture" | "checkin", mode: "live" | "simulated", confidence, details }
  * FR-2 / TR-3 — creates the emergency, logs it, and dispatches SMS to
  * every trusted contact within a target of 3 seconds.
  */
 router.post("/", async (req, res) => {
-  const { userId, triggerType, lat, lng } = req.body;
+  const { userId, triggerType, lat, lng, mode, confidence, details } = req.body;
 
   if (!userId || !triggerType) {
     return res.status(400).json({ error: "userId and triggerType are required" });
   }
+
+  const isSimulated =
+    mode === "simulated" ||
+    triggerType.includes("simulation") ||
+    triggerType.includes("demo");
+
+  const detectionMode = isSimulated ? "simulated" : "live";
+  const detectionConfidence =
+    confidence != null ? Number(confidence) : isSimulated ? 1.0 : 0.90;
+
+  const formattedDetails =
+    details ||
+    (isSimulated
+      ? `🧪 [SIMULATED DEMO TRIGGER] Fired via Demo Studio (${triggerType})`
+      : `🚨 [LIVE SENSOR TRIGGER] Fired (${triggerType}) · Confidence: ${Math.round(detectionConfidence * 100)}%`);
+
+  console.log(`[SURAKSHA SOS ROUTE] ${formattedDetails}`);
 
   let eventId;
   let shareToken;
@@ -44,7 +61,10 @@ router.post("/", async (req, res) => {
     // 1. Create the emergency event in Supabase
     const { data: event, error: eventError } = await supabase
       .from("emergency_events")
-      .insert({ user_id: userId, trigger_type: dbTriggerType })
+      .insert({
+        user_id: userId,
+        trigger_type: dbTriggerType,
+      })
       .select()
       .single();
 
@@ -68,17 +88,19 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // 3. Log the trigger on the timeline (FR-9)
+    // 3. Log the trigger on the timeline (FR-9) with honest live vs simulated watermark
     await supabase.from("timeline_entries").insert({
       emergency_event_id: event.id,
       event_type: "triggered",
-      details: `Silent trigger fired (${triggerType})`,
+      details: formattedDetails,
     });
 
     // Broadcast to Guardian so the timeline updates live
     broadcastToGuardian(event.share_token, "timeline_update", {
       event_type: "triggered",
-      details: `Silent trigger fired (${triggerType})`,
+      details: formattedDetails,
+      detection_mode: detectionMode,
+      confidence: detectionConfidence,
       created_at: new Date().toISOString(),
     });
 
@@ -101,11 +123,12 @@ router.post("/", async (req, res) => {
 
     const guardianUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/guardian/${event.share_token}`;
 
+    const smsTag = isSimulated ? "DEMO ALERT (Simulation)" : "EMERGENCY ALERT";
     await Promise.all(
       (contacts || []).map((contact) =>
         sendSms(
           contact.phone,
-          `Suraksha Shadow alert: your contact may need help. Live status: ${guardianUrl}`
+          `Suraksha Shadow [${smsTag}]: your contact may need help. Live status: ${guardianUrl}`
         )
       )
     );
@@ -113,7 +136,7 @@ router.post("/", async (req, res) => {
     const notifyEntry = {
       emergency_event_id: event.id,
       event_type: "contacts_notified",
-      details: `${(contacts || []).length} trusted contact(s) notified`,
+      details: `${(contacts || []).length} trusted contact(s) notified (${detectionMode} mode)`,
     };
     await supabase.from("timeline_entries").insert(notifyEntry);
 
@@ -123,7 +146,12 @@ router.post("/", async (req, res) => {
       created_at: new Date().toISOString(),
     });
 
-    return res.json({ eventId: event.id, shareToken: event.share_token });
+    return res.json({
+      eventId: event.id,
+      shareToken: event.share_token,
+      mode: detectionMode,
+      confidence: detectionConfidence,
+    });
   } catch (err) {
     console.warn("Supabase SOS insert unavailable, executing in-memory fallback:", err.message || err);
 
@@ -131,13 +159,17 @@ router.post("/", async (req, res) => {
     // Guarantees that local dev, demos, hackathon judges, and offline situations
     // continue operating smoothly without 500 errors.
     const memoryEvent = createInMemoryEmergency(userId, triggerType, lat, lng);
+    memoryEvent.detection_mode = detectionMode;
+    memoryEvent.detection_confidence = detectionConfidence;
     eventId = memoryEvent.id;
     shareToken = memoryEvent.share_token;
 
-    // Broadcast trigger to Guardian
+    // Broadcast trigger to Guardian with honest tags
     broadcastToGuardian(shareToken, "timeline_update", {
       event_type: "triggered",
-      details: `Silent trigger fired (${triggerType})`,
+      details: formattedDetails,
+      detection_mode: detectionMode,
+      confidence: detectionConfidence,
       created_at: new Date().toISOString(),
     });
 
@@ -147,11 +179,12 @@ router.post("/", async (req, res) => {
     const guardianUrl = `${clientUrl}/guardian/${shareToken}`;
 
     // Dispatch SMS in demo or live mode
+    const smsTag = isSimulated ? "DEMO ALERT (Simulation)" : "EMERGENCY ALERT";
     Promise.all(
       contacts.map((contact) =>
         sendSms(
           contact.phone,
-          `Suraksha Shadow alert: your contact may need help. Live status: ${guardianUrl}`
+          `Suraksha Shadow [${smsTag}]: your contact may need help. Live status: ${guardianUrl}`
         )
       )
     ).catch(() => {});
@@ -159,7 +192,7 @@ router.post("/", async (req, res) => {
     const notifyEntry = {
       emergency_event_id: eventId,
       event_type: "contacts_notified",
-      details: `${contacts.length} trusted contact(s) notified (SMS simulation active)`,
+      details: `${contacts.length} trusted contact(s) notified (${detectionMode} mode active)`,
       created_at: new Date().toISOString(),
     };
 
@@ -169,7 +202,12 @@ router.post("/", async (req, res) => {
 
     broadcastToGuardian(shareToken, "timeline_update", notifyEntry);
 
-    return res.json({ eventId, shareToken });
+    return res.json({
+      eventId,
+      shareToken,
+      mode: detectionMode,
+      confidence: detectionConfidence,
+    });
   }
 });
 

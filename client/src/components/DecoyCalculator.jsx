@@ -75,7 +75,7 @@ function useCalculator(onUnlock) {
   };
 
   const pressEquals = () => {
-    if (sequence === "112") {
+    if (sequence === "112" || sequence === "8042") {
       reset();
       onUnlock();
       return;
@@ -107,9 +107,9 @@ function useCalculator(onUnlock) {
 }
 
 const BUTTON_TONES = {
-  num: { bg: "#3A3A3C", color: "#F5F5F5" },
-  op: { bg: "#E8935B", color: "#1A1206" },
-  fn: { bg: "#A5A5A5", color: "#1A1A1A" },
+  num: { bg: "#282a32", color: "#e1e1ed" },
+  op: { bg: "#e8c468", color: "#241a00" },
+  fn: { bg: "#434653", color: "#e1e1ed" },
 };
 
 function Btn({ children, onClick, wide, tone = "num" }) {
@@ -123,11 +123,13 @@ function Btn({ children, onClick, wide, tone = "num" }) {
         color: t.color,
         border: "none",
         borderRadius: 999,
-        fontSize: 26,
+        fontSize: 24,
         fontWeight: 500,
-        padding: "18px 0",
+        padding: "16px 0",
         textAlign: wide ? "left" : "center",
         paddingLeft: wide ? 28 : 0,
+        cursor: "pointer",
+        transition: "opacity 0.1s ease",
       }}
     >
       {children}

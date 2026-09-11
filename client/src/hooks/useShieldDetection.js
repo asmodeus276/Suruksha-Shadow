@@ -100,7 +100,7 @@ function isFuzzyCodeWordMatch(spokenText, targetWord) {
 /**
  * Shield's silent trigger — FR-1 / TR-1 / TR-2.
  * Listens for a spoken code word (Web Speech API) and for a sudden,
- * sustained motion anomaly / shake (Device Motion API).
+ * sustained motion anomaly / shake (Device Motion API) with baseline calibration.
  */
 export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const [transcript, setTranscript] = useState("");
@@ -109,15 +109,30 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const [lastError, setLastError] = useState(null);
   const [restartCount, setRestartCount] = useState(0);
 
+  // Calibration state for baseline motion filtering
+  const [calibration, setCalibration] = useState({
+    isCalibrating: false,
+    progress: 0,
+    baseline: 0,
+  });
+
+  const baselineMagnitudeRef = useRef(0);
+  const calibrationSamplesRef = useRef([]);
   const motionBufferRef = useRef([]);
   const shakeCounterRef = useRef({ count: 0, lastSign: 0, lastTime: 0 });
   const triggeredRef = useRef(false);
 
   const fire = useCallback(
-    (type) => {
+    (type, confidence = 0.90, details = "") => {
       if (triggeredRef.current) return;
       triggeredRef.current = true;
-      onTrigger?.(type);
+      console.log(`[SURAKSHA SHIELD] LIVE sensor trigger fired: ${type} (Confidence: ${Math.round(confidence * 100)}%)`);
+      onTrigger?.({
+        triggerType: type,
+        mode: "live",
+        confidence,
+        details: details || `Live sensor trigger: ${type}`,
+      });
     },
     [onTrigger]
   );
@@ -142,7 +157,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      // Use device default or en-US/en-IN
       recognition.lang = navigator.language || "en-US";
       recognition.maxAlternatives = 5;
 
@@ -160,11 +174,30 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         setTranscript(display);
 
         let matched = false;
+        let matchConfidence = 0.85;
+
         for (const result of event.results) {
           for (let i = 0; i < result.length; i++) {
-            const alt = result[i].transcript;
-            if (isFuzzyCodeWordMatch(alt, codeWord)) {
+            const alt = result[i].transcript.toLowerCase();
+            const cleanTarget = (codeWord || "").toLowerCase().trim();
+
+            if (cleanTarget && alt.includes(cleanTarget)) {
               matched = true;
+              matchConfidence = 0.98; // Exact substring match
+              break;
+            }
+
+            for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
+              if (alt.includes(universal)) {
+                matched = true;
+                matchConfidence = 0.95; // Universal emergency keyword
+                break;
+              }
+            }
+
+            if (!matched && isFuzzyCodeWordMatch(alt, codeWord)) {
+              matched = true;
+              matchConfidence = 0.80; // Fuzzy phonetic match
               break;
             }
           }
@@ -172,7 +205,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         }
 
         if (matched) {
-          fire("voice");
+          fire("voice", matchConfidence, `Spoken keyword matched in transcript: "${display.slice(-40)}"`);
         }
       };
 
@@ -226,7 +259,46 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     };
   }, [codeWord, enabled, fire]);
 
-  // --- Motion trigger: spike in acceleration & violent shake detection ---
+  // --- Motion Calibration (3-second baseline capture upon arming) ---
+  useEffect(() => {
+    if (!enabled) {
+      setCalibration({ isCalibrating: false, progress: 0, baseline: 0 });
+      baselineMagnitudeRef.current = 0;
+      calibrationSamplesRef.current = [];
+      return;
+    }
+
+    setCalibration({ isCalibrating: true, progress: 0, baseline: 0 });
+    calibrationSamplesRef.current = [];
+
+    const CALIBRATION_DURATION_MS = 2500;
+    const startTime = Date.now();
+
+    const calInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(100, Math.round((elapsed / CALIBRATION_DURATION_MS) * 100));
+
+      if (calibrationSamplesRef.current.length > 0) {
+        const sum = calibrationSamplesRef.current.reduce((a, b) => a + b, 0);
+        const avg = sum / calibrationSamplesRef.current.length;
+        baselineMagnitudeRef.current = avg;
+        setCalibration({
+          isCalibrating: progress < 100,
+          progress,
+          baseline: Math.round(avg * 10) / 10,
+        });
+      }
+
+      if (progress >= 100) {
+        clearInterval(calInterval);
+        console.log(`[SURAKSHA SHIELD] Motion calibrated. Baseline: ${baselineMagnitudeRef.current.toFixed(2)} m/s²`);
+      }
+    }, 200);
+
+    return () => clearInterval(calInterval);
+  }, [enabled]);
+
+  // --- Motion trigger: spike in acceleration & violent shake detection with dynamic threshold ---
   useEffect(() => {
     if (!enabled) return;
     if (typeof window === "undefined" || typeof DeviceMotionEvent === "undefined") {
@@ -234,8 +306,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     }
 
     const WINDOW_SIZE = 8;
-    const SUSTAINED_THRESHOLD = 20; // m/s^2
-    const VIOLENT_SHAKE_THRESHOLD = 16;
     let lastUiUpdate = 0;
     const UI_UPDATE_INTERVAL_MS = 350;
 
@@ -243,6 +313,14 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       const { x = 0, y = 0, z = 0 } = event.acceleration || {};
       const magnitude = Math.sqrt(x * x + y * y + z * z);
       const now = Date.now();
+
+      // Collect samples if calibrating
+      if (calibration.isCalibrating) {
+        calibrationSamplesRef.current.push(magnitude);
+        if (calibrationSamplesRef.current.length > 40) {
+          calibrationSamplesRef.current.shift();
+        }
+      }
 
       const buf = motionBufferRef.current;
       buf.push(magnitude);
@@ -255,22 +333,34 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         lastUiUpdate = now;
       }
 
+      // Dynamic thresholds adjusted by calibrated baseline
+      const base = baselineMagnitudeRef.current || 0;
+      const dynamicSustainedThreshold = Math.max(18, base + 14);
+      const dynamicViolentShakeThreshold = Math.max(15, base + 11);
+
       // 1. Sustained linear acceleration (e.g. violent struggle / being dragged)
-      if (buf.length === WINDOW_SIZE && avg > SUSTAINED_THRESHOLD) {
-        fire("motion");
+      if (buf.length === WINDOW_SIZE && avg > dynamicSustainedThreshold) {
+        const conf = Math.min(0.99, Math.round((avg / dynamicSustainedThreshold) * 0.88 * 100) / 100);
+        fire("motion", conf, `Sustained struggle acceleration (${avg.toFixed(1)} m/s², baseline: ${base.toFixed(1)})`);
       }
 
       // 2. Multi-axis violent shake detection (rapid alternating direction)
       const maxAxis = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
-      const dominantSign = (Math.abs(x) > Math.abs(y) && Math.abs(x) > Math.abs(z)) ? Math.sign(x) : (Math.abs(y) > Math.abs(z) ? Math.sign(y) : Math.sign(z));
+      const dominantSign =
+        Math.abs(x) > Math.abs(y) && Math.abs(x) > Math.abs(z)
+          ? Math.sign(x)
+          : Math.abs(y) > Math.abs(z)
+          ? Math.sign(y)
+          : Math.sign(z);
 
       const shake = shakeCounterRef.current;
-      if (maxAxis > VIOLENT_SHAKE_THRESHOLD) {
+      if (maxAxis > dynamicViolentShakeThreshold) {
         if (shake.lastSign !== 0 && dominantSign !== shake.lastSign && now - shake.lastTime < 450) {
           shake.count += 1;
           if (shake.count >= 4) {
             shake.count = 0;
-            fire("motion");
+            const conf = Math.min(0.98, Math.round((maxAxis / dynamicViolentShakeThreshold) * 0.90 * 100) / 100);
+            fire("motion", conf, `Violent struggle shake (${shake.count} rapid directional shifts, peak: ${maxAxis.toFixed(1)} m/s²)`);
           }
         }
         shake.lastSign = dominantSign;
@@ -282,7 +372,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
 
     window.addEventListener("devicemotion", handleMotion);
     return () => window.removeEventListener("devicemotion", handleMotion);
-  }, [enabled, fire]);
+  }, [enabled, calibration.isCalibrating, fire]);
 
   const reset = useCallback(() => {
     triggeredRef.current = false;
@@ -290,7 +380,15 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     shakeCounterRef.current = { count: 0, lastSign: 0, lastTime: 0 };
   }, []);
 
-  return { reset, transcript, micStatus, motionMagnitude, lastError, restartCount };
+  return {
+    reset,
+    transcript,
+    micStatus,
+    motionMagnitude,
+    lastError,
+    restartCount,
+    calibration,
+  };
 }
 
 /**

@@ -1,45 +1,71 @@
 /* ============================================================
-   Suraksha Shadow — design system
-   A silent guardian, not a dashboard. Dark by default on purpose:
-   less visible glow in public, at night, in the exact moments
-   this app matters most.
+   Suraksha Shadow — Tactical Camouflage & Vigil Design System
+   Dual-Architecture Stealth Platform:
+   - Undetectable in crisis (Hardware Camouflage)
+   - Indisputable in court (Forensic Integrity / Section 63 BSA & FRE 902)
    ============================================================ */
 
 :root {
-  /* --- Palette --- */
-  --ink: #12101c;          /* the shadow — base background */
-  --ink-raised: #17152280; /* subtle raise over ink */
-  --dusk: #1e1b2e;         /* card / panel surface */
-  --dusk-soft: #26223a;    /* hover / secondary surface */
-  --line: #322d47;         /* hairline borders */
-  --mist: #a9a4bf;         /* secondary text */
-  --mist-dim: #736d8c;     /* tertiary text, placeholders */
-  --paper: #f3f1f8;        /* primary text */
+  /* --- Curated Tactical Gold & Obsidian Palette --- */
+  --ink: #11131b;                     /* Deepest background base */
+  --surface-lowest: #0c0e16;          /* Deep recessed panels */
+  --surface-low: #191b23;             /* Secondary container */
+  --surface: #1d1f28;                 /* Primary card surface */
+  --surface-high: #282a32;            /* Elevated card surface */
+  --surface-highest: #33343d;         /* Highlighted pill/border surface */
+  --surface-bright: #373942;          /* Interactive hover highlight */
 
-  --ember: #f2a65a;        /* guardian light — watching / primary action */
-  --ember-dim: #f2a65a26;
-  --ember-strong: #f7b876;
+  --paper: #e1e1ed;                   /* Primary text (high contrast) */
+  --mist: #d0c5b2;                    /* Warm body secondary text */
+  --mist-dim: #99907e;                /* Subdued captions & metadata */
+  
+  --line: #2e3039;                    /* Structural hairline borders */
+  --line-highlight: #4d4637;          /* Gold-tinged hairline borders */
+  --line-gold: rgba(232, 196, 104, 0.25);
 
-  --alarm: #e8546b;        /* reserved for active-emergency state ONLY */
-  --alarm-dim: #e8546b22;
-  --alarm-strong: #ef7086;
+  /* --- Amber / Gold Tactical Accents --- */
+  --ember: #ffe19a;                   /* Primary gold brand color */
+  --ember-container: #e8c468;         /* Vibrant golden yellow */
+  --ember-dim: rgba(232, 196, 104, 0.15);
+  --ember-glow: rgba(232, 196, 104, 0.25);
+  --ember-strong: #ffdf93;
+  --on-ember: #241a00;
 
-  --safe: #6fbf8b;         /* consent granted / checklist complete */
-  --safe-dim: #6fbf8b22;
+  /* --- Secondary Forensic Slate --- */
+  --secondary: #c4c6d5;               /* Forensic slate text */
+  --secondary-container: #434653;     /* Slate badge background */
+  --secondary-dim: rgba(196, 198, 213, 0.15);
 
-  /* --- Type --- */
-  --display: "Fraunces", ui-serif, Georgia, serif;
-  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  /* --- Crisis & Emergency Crimson --- */
+  --alarm: #ffb4ab;                   /* High-contrast coral red */
+  --alarm-container: #93000a;         /* Crimson container */
+  --alarm-dim: rgba(232, 84, 107, 0.18);
+  --alarm-glow: rgba(232, 84, 107, 0.35);
+  --alarm-strong: #ffdad6;
+  --on-alarm: #690005;
 
-  /* --- Scale --- */
+  /* --- Safe & Verified Emerald --- */
+  --safe: #6fbf8b;                    /* Verified green */
+  --safe-container: #1b382b;
+  --safe-dim: rgba(111, 191, 139, 0.16);
+
+  /* --- Typography --- */
+  --display: "Fraunces", Georgia, serif;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* --- Geometry & Shadows --- */
+  --radius-xs: 4px;
   --radius-sm: 8px;
   --radius: 14px;
-  --radius-lg: 22px;
-  --radius-full: 999px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+  --radius-full: 9999px;
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px -8px rgba(0, 0, 0, 0.4);
-  --shadow-pop: 0 4px 12px rgba(0, 0, 0, 0.3), 0 16px 40px -12px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.45), 0 12px 32px -8px rgba(0, 0, 0, 0.65);
+  --shadow-glow-gold: 0 0 24px rgba(232, 196, 104, 0.18);
+  --shadow-glow-alarm: 0 0 28px rgba(232, 84, 107, 0.28);
 
   color-scheme: dark;
 }
@@ -52,55 +78,69 @@ html,
 body {
   margin: 0;
   padding: 0;
+  background-color: var(--ink);
+  color: var(--paper);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--ink);
-  background-image: radial-gradient(ellipse 900px 500px at 50% -10%, #2a1f3a 0%, transparent 60%);
-  background-attachment: fixed;
-  color: var(--paper);
-  font-family: var(--sans);
-  font-size: 16px;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
   min-height: 100svh;
-  transition: background-color 0.6s ease;
+  background-image: 
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(232, 196, 104, 0.06) 0%, transparent 60%),
+    radial-gradient(circle at 85% 30%, rgba(232, 84, 107, 0.03) 0%, transparent 50%);
+  background-attachment: fixed;
+  transition: background-color 0.5s ease, background-image 0.5s ease;
 }
 
-/* When an emergency is active, the whole page's temperature shifts
-   from amber ("watching") to coral ("active") — the signature moment. */
+/* Ambient Crimson Shift During Active Emergency */
 body.is-emergency {
-  background-image: radial-gradient(ellipse 900px 500px at 50% -10%, #3a1f28 0%, transparent 60%);
+  background-image: 
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(147, 0, 10, 0.28) 0%, transparent 65%),
+    radial-gradient(circle at 85% 30%, rgba(232, 84, 107, 0.15) 0%, transparent 60%);
 }
 
 #root {
-  max-width: 560px;
-  margin: 0 auto;
+  min-height: 100vh;
   min-height: 100svh;
-  padding: 28px 20px 64px;
+  display: flex;
+  flex-direction: column;
 }
 
-h1,
-h2,
-h3 {
+/* Main Container Wrappers */
+.app-viewport {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px 16px 100px;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .app-viewport {
+    padding: 24px 24px 100px;
+  }
+}
+
+/* Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--display);
   font-weight: 500;
   color: var(--paper);
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
 }
 
-h1 {
-  font-size: 28px;
-}
-h2 {
-  font-size: 20px;
-}
-h3 {
-  font-size: 16px;
-  font-weight: 600;
-}
+h1 { font-size: 32px; }
+h2 { font-size: 24px; }
+h3 { font-size: 18px; font-weight: 600; }
+h4 { font-size: 16px; font-weight: 600; }
 
 p {
   margin: 0;
@@ -109,1583 +149,592 @@ p {
 
 a {
   color: var(--ember);
+  text-decoration: none;
+  transition: color 0.15s ease;
 }
 
-/* Eyebrow label — small caps section marker. Orients someone
-   scanning fast under stress, not decorative. */
+a:hover {
+  color: var(--ember-strong);
+}
+
+/* Precision Overline / Eyebrow Header */
 .eyebrow {
   font-family: var(--mono);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--mist-dim);
+  color: var(--ember-container);
   margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-/* --- Buttons --- */
+/* Buttons */
 button {
   font-family: var(--sans);
   font-size: 14px;
   font-weight: 600;
   border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  padding: 11px 18px;
+  border: 1px solid var(--line);
+  padding: 10px 16px;
   cursor: pointer;
-  transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   color: var(--paper);
-  background: var(--dusk-soft);
-  border-color: var(--line);
+  background: var(--surface-high);
 }
+
 button:hover:not(:disabled) {
-  border-color: var(--mist-dim);
+  background: var(--surface-bright);
+  border-color: var(--line-highlight);
 }
+
 button:active:not(:disabled) {
   transform: scale(0.98);
 }
+
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--ember);
-  outline-offset: 2px;
-}
 
 .btn-primary {
   background: var(--ember);
-  border-color: var(--ember);
-  color: #21160a;
+  border-color: var(--ember-container);
+  color: var(--on-ember);
+  font-weight: 600;
+  box-shadow: var(--shadow-glow-gold);
 }
+
 .btn-primary:hover:not(:disabled) {
-  background: var(--ember-strong);
-  border-color: var(--ember-strong);
+  background: var(--ember-container);
+  border-color: var(--ember);
+  box-shadow: 0 0 28px rgba(232, 196, 104, 0.35);
 }
 
 .btn-quiet {
   background: transparent;
   border-color: transparent;
   color: var(--mist);
-  padding: 6px 4px;
+  padding: 6px 10px;
   font-size: 13px;
 }
+
 .btn-quiet:hover:not(:disabled) {
   color: var(--paper);
+  background: rgba(255, 255, 255, 0.05);
   border-color: transparent;
 }
 
-/* --- Inputs --- */
+/* Form Controls */
 input[type="text"],
 input[type="tel"],
-textarea {
+input[type="number"],
+input[type="password"],
+textarea,
+select {
   font-family: var(--sans);
   font-size: 14px;
   color: var(--paper);
-  background: var(--ink);
+  background: var(--surface-lowest);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 11px 13px;
+  padding: 11px 14px;
   width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--ember-container);
+  box-shadow: 0 0 0 3px rgba(232, 196, 104, 0.15);
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--mist-dim);
 }
 
-input[type="checkbox"] {
-  accent-color: var(--ember);
-  width: 17px;
-  height: 17px;
-}
-
-/* --- Cards --- */
+/* Cards & Surface Containers */
 .card {
-  background: var(--dusk);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: 20px;
   box-shadow: var(--shadow-card);
+  position: relative;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* --- Tags (citations, verified data) --- */
+.card:hover {
+  border-color: rgba(232, 196, 104, 0.2);
+}
+
+/* Status Badges & Pills */
 .tag {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.02em;
+  font-size: 11px;
+  letter-spacing: 0.04em;
   color: var(--mist);
+  background: var(--surface-high);
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 2px 7px;
-  display: inline-block;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
+
 .tag-safe {
   color: var(--safe);
-  border-color: var(--safe-dim);
+  background: var(--safe-dim);
+  border-color: rgba(111, 191, 139, 0.3);
 }
 
-/* --- Motion --- */
-@keyframes breathe {
-  0%, 100% { box-shadow: 0 0 0 0 var(--ember-dim); }
-  50% { box-shadow: 0 0 0 18px transparent; }
-}
-@keyframes rise-fade {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.rise-fade {
-  animation: rise-fade 0.35s ease both;
+.tag-alarm {
+  color: var(--alarm);
+  background: var(--alarm-dim);
+  border-color: rgba(232, 84, 107, 0.35);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.001ms !important;
-    transition-duration: 0.001ms !important;
-  }
+.tag-gold {
+  color: var(--ember);
+  background: var(--ember-dim);
+  border-color: var(--line-gold);
 }
 
 /* ============================================================
-   Layout structure
+   Header & Tactical Telemetry Bar
    ============================================================ */
-
-.header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-.header .wordmark {
-  font-family: var(--display);
-  font-size: 26px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-.header .wordmark em {
-  font-style: normal;
-  color: var(--ember);
-}
-.header .tagline {
-  font-size: 13px;
-  margin-top: 4px;
-  color: var(--mist-dim);
-}
-
-.section {
-  margin-bottom: 22px;
-}
-.section-body {
-  margin-top: 10px;
-}
-
-/* --- The Guardian Circle: the signature element --- */
-.guardian-wrap {
+.tactical-header {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 36px 0 8px;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
 
-.guardian-circle {
-  width: 168px;
-  height: 168px;
-  border-radius: 50%;
-  border: 1.5px solid var(--line);
-  background: var(--dusk);
+.header-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-icon-shield {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-high);
+  border: 1px solid var(--line-gold);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  gap: 4px;
-  cursor: pointer;
-  transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
-  color: var(--paper);
-  font-family: var(--sans);
-}
-.guardian-circle:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-.guardian-circle .icon {
-  font-size: 30px;
-  line-height: 1;
-}
-.guardian-circle .label {
-  font-size: 14px;
-  font-weight: 600;
-}
-.guardian-circle .sub {
-  font-size: 11px;
-  color: var(--mist-dim);
-  font-family: var(--mono);
+  position: relative;
+  box-shadow: var(--shadow-glow-gold);
 }
 
-.guardian-circle.is-listening {
-  border-color: var(--ember);
-  background: radial-gradient(circle at 50% 35%, #2a2036, var(--dusk));
-  animation: breathe 2.6s ease-in-out infinite;
-}
-.guardian-circle.is-listening .icon {
-  color: var(--ember);
-}
-
-.guardian-circle.is-active {
-  border-color: var(--alarm);
-  background: radial-gradient(circle at 50% 35%, #3a1f28, var(--dusk));
-  animation: breathe-alarm 1.6s ease-in-out infinite;
-}
-.guardian-circle.is-active .icon {
-  color: var(--alarm);
-}
-
-@keyframes breathe-alarm {
-  0%, 100% { box-shadow: 0 0 0 0 var(--alarm-dim); }
-  50% { box-shadow: 0 0 0 20px transparent; }
-}
-
-.status-line {
-  margin-top: 14px;
-  font-size: 13px;
-  color: var(--mist);
-  text-align: center;
-  max-width: 320px;
-}
-.status-line.is-active {
-  color: var(--alarm-strong);
-  font-weight: 600;
-}
-
-.diagnostics {
-  margin-top: 14px;
-  font-size: 12px;
-  color: var(--mist-dim);
-  text-align: center;
-  line-height: 1.7;
-}
-
-.callout {
-  background: var(--ember-dim);
-  border: 1px solid #f2a65a40;
-  border-radius: var(--radius-sm);
-  padding: 10px 13px;
-  font-size: 13px;
-  color: var(--ember-strong);
-  text-align: center;
-}
-
-/* ============================================================
-   Trusted Contacts
-   ============================================================ */
-
-.contact-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-}
-.contact-row:last-of-type {
-  border-bottom: none;
-}
-.contact-row .name {
-  font-weight: 600;
-  color: var(--paper);
-}
-.contact-row .meta {
-  font-size: 13px;
-  color: var(--mist-dim);
-}
-
-.form-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  margin-top: 14px;
-}
-
-.error-text {
-  color: var(--alarm-strong);
-  font-size: 13px;
-  text-align: left;
-  margin-top: 8px;
-}
-
-/* ============================================================
-   Consent toggle
-   ============================================================ */
-
-.consent-toggle-btn {
-  width: 100%;
-  text-align: left;
-  padding: 13px 15px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.consent-toggle-btn.is-on {
-  background: var(--safe-dim);
-  border-color: var(--safe);
-  color: var(--safe);
-}
-.consent-toggle-btn.is-off {
-  background: var(--dusk);
-}
-
-/* ============================================================
-   Sahara chat
-   ============================================================ */
-
-.chat-frame {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--ink);
-  padding: 14px;
-  max-height: 340px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.bubble-row {
-  display: flex;
-  flex-direction: column;
-  max-width: 84%;
-}
-.bubble-row.from-user {
-  align-self: flex-end;
-  align-items: flex-end;
-}
-.bubble-row.from-sahara {
-  align-self: flex-start;
-  align-items: flex-start;
-}
-
-.bubble {
-  border-radius: 16px;
-  padding: 10px 14px;
-  font-size: 14px;
-  line-height: 1.5;
-}
-.bubble-row.from-sahara .bubble {
-  background: var(--dusk-soft);
-  color: var(--paper);
-  border-bottom-left-radius: 4px;
-}
-.bubble-row.from-user .bubble {
-  background: var(--ember);
-  color: #21160a;
-  border-bottom-right-radius: 4px;
-}
-
-.bubble-tags {
-  display: flex;
-  gap: 4px;
-  margin-top: 4px;
-}
-
-.typing-indicator {
-  font-size: 12px;
-  color: var(--mist-dim);
-  font-style: italic;
-  align-self: flex-start;
-}
-
-.chat-input-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-.chat-input-row input {
-  flex: 1;
-}
-
-.disclaimer {
-  font-size: 11px;
-  color: var(--mist-dim);
-  margin-top: 6px;
-}
-
-/* ============================================================
-   Guided Next Steps (accordion)
-   ============================================================ */
-
-.accordion-item {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  margin-bottom: 8px;
-  overflow: hidden;
-  background: var(--dusk);
-}
-.accordion-trigger {
-  width: 100%;
-  text-align: left;
-  padding: 13px 15px;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-}
-.accordion-trigger:hover {
-  border-color: transparent;
-  background: var(--dusk-soft);
-}
-.accordion-panel {
-  padding: 4px 15px 16px;
-  text-align: left;
-}
-
-.step-list {
-  font-size: 13.5px;
-  padding-left: 20px;
-  margin: 0 0 14px;
-  color: var(--paper);
-}
-.step-list li {
-  margin-bottom: 7px;
-}
-
-.doc-block {
-  margin-bottom: 12px;
-  font-size: 13.5px;
-}
-.doc-block .doc-title {
-  color: var(--paper);
-  font-weight: 600;
-  font-size: 13.5px;
-}
-.doc-block p {
-  margin-top: 3px;
-  color: var(--mist);
-}
-
-.checklist-item {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--line);
-  cursor: pointer;
-}
-.checklist-item:last-child {
-  border-bottom: none;
-}
-.checklist-item input {
-  margin-top: 3px;
-  flex-shrink: 0;
-}
-.checklist-item .item-label {
-  font-size: 14px;
-  color: var(--paper);
-}
-.checklist-item .item-note {
-  font-size: 12px;
-  color: var(--mist-dim);
-  margin-top: 2px;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid var(--line);
-  margin: 14px 0;
-}
-
-.draft-box {
-  width: 100%;
-  font-family: var(--sans);
-  font-size: 13.5px;
-  line-height: 1.5;
-  min-height: 140px;
-}
-
-/* ============================================================
-   Craft pass — spacing scale, elevation, and the small details
-   ============================================================ */
-
-:root {
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 20px;
-  --sp-6: 24px;
-  --sp-7: 32px;
-  --sp-8: 40px;
-
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.stack-1 > * + * { margin-top: var(--sp-1); }
-.stack-2 > * + * { margin-top: var(--sp-2); }
-.stack-3 > * + * { margin-top: var(--sp-3); }
-.stack-4 > * + * { margin-top: var(--sp-4); }
-
-.text-sm { font-size: 13px; }
-.text-xs { font-size: 12px; }
-.text-muted { color: var(--mist); }
-.text-dim { color: var(--mist-dim); }
-.text-center { text-align: center; }
-.text-safe { color: var(--safe); }
-.text-alarm { color: var(--alarm-strong); }
-
-.icon {
-  display: inline-flex;
-  flex-shrink: 0;
-}
-
-/* Cards get a touch more depth on hover — a real product responds to
-   the cursor, even subtly. Skipped entirely on touch/reduced-motion. */
-.card {
-  transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
-}
-@media (hover: hover) {
-  .card:hover {
-    border-color: #3d3758;
-  }
-}
-
-/* --- Skeleton loading — replaces plain "Loading…" text --- */
-.skeleton {
-  background: linear-gradient(90deg, var(--dusk-soft) 25%, #322d47 37%, var(--dusk-soft) 63%);
-  background-size: 400% 100%;
-  animation: skeleton-shine 1.4s ease infinite;
-  border-radius: 6px;
-  height: 14px;
-}
-@keyframes skeleton-shine {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* --- Accordion — animated height instead of an instant show/hide --- */
-.accordion-panel {
-  animation: accordion-open 0.22s var(--ease);
-}
-@keyframes accordion-open {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.accordion-trigger .chevron {
-  transition: transform 0.22s var(--ease);
-}
-.accordion-trigger.is-open .chevron {
-  transform: rotate(180deg);
-}
-
-/* --- Icon buttons (remove, etc.) — quiet until interacted with --- */
-.icon-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--mist-dim);
-  padding: 6px;
-  border-radius: var(--radius-sm);
-  display: inline-flex;
-}
-.icon-btn:hover:not(:disabled) {
-  color: var(--alarm-strong);
-  border-color: transparent;
-  background: var(--alarm-dim);
-}
-
-/* --- Section header with icon, used across Next Steps / cards --- */
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--paper);
-}
-.section-title .icon {
-  color: var(--ember);
-}
-
-/* --- Guardian circle icon sizing override (was a text glyph) --- */
-.guardian-circle .icon {
-  width: 34px;
-  height: 34px;
-}
-.guardian-circle.is-listening .icon,
-.guardian-circle.is-active .icon {
-  color: inherit;
-}
-
-/* --- Refined status pill (replaces raw text like "● Emergency active") --- */
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 14px;
-  border-radius: var(--radius-full);
-  font-size: 13px;
-  font-weight: 600;
-}
-.status-pill .dot {
-  width: 7px;
-  height: 7px;
+.brand-icon-shield .pulse-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: currentColor;
-}
-.status-pill.pill-alarm {
-  background: var(--alarm-dim);
-  color: var(--alarm-strong);
-}
-.status-pill.pill-safe {
-  background: var(--safe-dim);
-  color: var(--safe);
+  background: var(--ember-container);
+  box-shadow: 0 0 8px var(--ember-container);
+  animation: pulse-ring 2s infinite ease-in-out;
 }
 
-/* --- Stat blocks (battery/movement on Guardian view) --- */
-.stat-grid {
+.brand-title-group {
   display: flex;
-  gap: var(--sp-6);
+  flex-direction: column;
 }
-.stat-block .stat-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--mist-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-family: var(--mono);
-}
-.stat-block .stat-value {
+
+.brand-title {
+  font-family: var(--display);
   font-size: 20px;
   font-weight: 600;
-  margin-top: 3px;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+  line-height: 1.15;
 }
 
-/* --- Animated typing indicator (replaces plain "typing…" text) --- */
-.typing-indicator {
-  display: flex;
-  gap: 4px;
-  align-self: flex-start;
-  padding: 10px 4px;
-}
-.typing-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--mist-dim);
-  animation: typing-bounce 1.3s ease-in-out infinite;
-}
-.typing-dot:nth-child(2) { animation-delay: 0.15s; }
-.typing-dot:nth-child(3) { animation-delay: 0.3s; }
-@keyframes typing-bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-  30% { transform: translateY(-4px); opacity: 1; }
+.brand-subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--mist-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-/* --- Complaint type choice buttons --- */
-.choice-row {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
+.header-telemetry-pills {
+  display: none;
 }
-.choice-btn {
+
+@media (min-width: 640px) {
+  .header-telemetry-pills {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface-lowest);
+    border: 1px solid var(--line);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* Header Action Controls */
+.header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  min-width: 150px;
-  justify-content: center;
-  padding: 14px 12px;
-  background: var(--ink);
-}
-.choice-btn:hover:not(:disabled) {
-  border-color: var(--ember);
-  color: var(--ember-strong);
 }
 
-/* --- Evidence checklist progress bar --- */
-.progress-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.progress-track {
-  flex: 1;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--ink);
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: var(--ember);
-  border-radius: var(--radius-full);
-  transition: width 0.3s var(--ease);
-}
-
-/* --- Margin utilities, mapped to the spacing scale — used instead of
-   arbitrary inline pixel values, so spacing is consistent everywhere --- */
-.mt-1 { margin-top: var(--sp-1); }
-.mt-2 { margin-top: var(--sp-2); }
-.mt-3 { margin-top: var(--sp-3); }
-.mt-4 { margin-top: var(--sp-4); }
-.mt-5 { margin-top: var(--sp-5); }
-.mt-6 { margin-top: var(--sp-6); }
-.mt-7 { margin-top: var(--sp-7); }
-.mb-1 { margin-bottom: var(--sp-1); }
-.mb-2 { margin-bottom: var(--sp-2); }
-.mb-3 { margin-bottom: var(--sp-3); }
-.mb-4 { margin-bottom: var(--sp-4); }
-.mb-5 { margin-bottom: var(--sp-5); }
-.mb-6 { margin-bottom: var(--sp-6); }
-.mb-7 { margin-bottom: var(--sp-7); }
-
-.flex-center { display: flex; align-items: center; }
-.flex-center-gap { display: flex; align-items: center; gap: var(--sp-2); }
-.inline-btn { display: inline-flex; align-items: center; gap: var(--sp-2); }
-
-/* --- Small subheading pattern, used inside accordion panels --- */
-.subheading {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--paper);
-  margin-bottom: var(--sp-2);
-}
-
-/* ============================================================
-   Scheduled Check-In (FR-13)
-   ============================================================ */
-
-.checkin-presets {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-}
-.checkin-preset-btn {
-  display: flex;
+.vigil-status-pill {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 16px;
-  background: var(--ink);
-  font-size: 13px;
-}
-.checkin-preset-btn:hover:not(:disabled) {
-  border-color: var(--ember);
-  color: var(--ember-strong);
-}
-
-.checkin-custom {
-  display: flex;
-  gap: var(--sp-2);
-  align-items: center;
-}
-.checkin-custom input[type="number"] {
-  font-family: var(--sans);
-  font-size: 14px;
-  color: var(--paper);
-  background: var(--ink);
-  border: 1px solid var(--line);
+  padding: 6px 12px;
   border-radius: var(--radius-sm);
-  padding: 11px 13px;
-}
-
-.checkin-active {
-  text-align: center;
-  padding: 8px 0;
-}
-.checkin-countdown {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  background: var(--surface-low);
+  border: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 11px;
   color: var(--ember);
 }
-.checkin-time {
-  font-family: var(--mono);
-  font-size: 36px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
-.checkin-warning .checkin-countdown {
-  color: var(--alarm-strong);
-  animation: checkin-pulse 1s ease-in-out infinite;
-}
-.checkin-warning-text {
-  color: var(--alarm-strong);
-  font-weight: 600;
-  margin-top: var(--sp-2);
-}
-@keyframes checkin-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.checkin-safe-btn {
-  width: 100%;
-  font-size: 15px;
-  padding: 14px;
-}
 
 /* ============================================================
-   Live Map (Leaflet in Guardian View)
+   Navigation Tabs (Peacetime Mode)
    ============================================================ */
-
-.live-map-container {
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-/* Leaflet's default controls need dark-theme overrides */
-.live-map-container .leaflet-control-zoom a {
-  background: var(--dusk) !important;
-  color: var(--paper) !important;
-  border-color: var(--line) !important;
-}
-
-/* Pulsing current-position marker */
-.map-pulse-marker-wrap {
-  background: transparent !important;
-  border: none !important;
-}
-.map-pulse-marker {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  position: relative;
-}
-.map-pulse-marker.is-active {
-  background: var(--alarm);
-  box-shadow: 0 0 0 0 var(--alarm-dim);
-  animation: map-pulse-ring 1.6s ease-in-out infinite;
-}
-.map-pulse-marker.is-resolved {
-  background: var(--safe);
-}
-@keyframes map-pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(232, 84, 107, 0.5); }
-  70% { box-shadow: 0 0 0 14px rgba(232, 84, 107, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(232, 84, 107, 0); }
-}
-
-/* ============================================================
-   SOS Error Banner
-   ============================================================ */
-
-.sos-error-banner {
-  background: var(--alarm-dim);
-  border: 1px solid var(--alarm);
-  border-radius: var(--radius-sm);
-  padding: 12px 16px;
-  margin: 0 0 16px;
+.tactical-nav-tabs {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  color: var(--alarm-strong);
+  gap: 4px;
+  background: var(--surface-lowest);
+  border: 1px solid var(--line);
+  padding: 4px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tactical-nav-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tactical-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--mist);
   font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+.tactical-tab-btn:hover {
+  color: var(--paper);
+  background: var(--surface-high);
+}
+
+.tactical-tab-btn.is-active {
+  color: var(--ember);
+  background: var(--surface-high);
+  border-color: var(--line-gold);
   font-weight: 600;
-  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-/* ============================================================
-   Modern Bottom Navigation Bar
-   ============================================================ */
-
-.app-viewport {
-  padding-bottom: 90px;
-}
-
+/* Bottom Nav Bar for Mobile */
 .bottom-nav-bar {
   position: fixed;
   bottom: 0;
   left: 0;
-  right: 0;
-  z-index: 1000;
-  background: rgba(18, 16, 28, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(50, 45, 71, 0.7);
-  display: flex;
-  justify-content: center;
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  width: 100%;
+  z-index: 900;
+  background: rgba(17, 19, 27, 0.94);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+  padding: 6px 12px 14px;
 }
 
 .bottom-nav-inner {
+  max-width: 560px;
+  margin: 0 auto;
   display: flex;
-  width: 100%;
-  max-width: 520px;
-  justify-content: space-around;
   align-items: center;
+  justify-content: space-around;
 }
 
 .nav-tab-btn {
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 8px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  background: transparent;
+  border: none;
   color: var(--mist-dim);
   font-size: 11px;
   font-weight: 500;
-  transition: all 0.2s ease;
-  position: relative;
-  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
 }
 
-.nav-tab-btn:hover:not(:disabled) {
+.nav-tab-btn:hover {
   color: var(--paper);
-  border-color: transparent;
 }
 
 .nav-tab-btn.is-active {
   color: var(--ember);
-}
-
-.nav-tab-btn.is-active::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  width: 18px;
-  height: 2px;
-  background: var(--ember);
-  border-radius: 2px;
-  box-shadow: 0 0 8px var(--ember);
+  background: var(--ember-dim);
 }
 
 /* ============================================================
-   Audio Visualizer (Aura Pulse Ring)
+   The Signature Guardian Circle & Audio Aura
    ============================================================ */
+.guardian-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 0 16px;
+  position: relative;
+}
 
+.guardian-circle {
+  width: 172px;
+  height: 172px;
+  border-radius: 50%;
+  border: 2px solid var(--line-highlight);
+  background: radial-gradient(circle at 35% 35%, var(--surface-high) 0%, var(--surface-lowest) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 5;
+}
+
+.guardian-circle:hover:not(:disabled) {
+  border-color: var(--ember);
+  box-shadow: 0 0 32px var(--ember-glow), 0 8px 32px rgba(0, 0, 0, 0.6);
+  transform: scale(1.02);
+}
+
+.guardian-circle .icon {
+  width: 44px;
+  height: 44px;
+  color: var(--ember);
+  transition: color 0.3s ease;
+}
+
+.guardian-circle .label {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--paper);
+  letter-spacing: -0.01em;
+}
+
+.guardian-circle .sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--mist);
+  letter-spacing: 0.05em;
+}
+
+.guardian-circle.is-listening {
+  border-color: var(--ember-container);
+  box-shadow: 0 0 36px var(--ember-glow), inset 0 0 24px var(--ember-dim);
+  animation: breathe 3s infinite ease-in-out;
+}
+
+.guardian-circle.is-active {
+  border-color: var(--alarm);
+  box-shadow: 0 0 42px var(--alarm-glow), inset 0 0 24px var(--alarm-dim);
+  animation: pulse-alarm 1.2s infinite ease-in-out;
+}
+
+.guardian-circle.is-active .icon {
+  color: var(--alarm);
+}
+
+/* Audio Visualizer Spectrum */
 .audio-visualizer-container {
   position: absolute;
-  inset: -24px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 250px;
+  height: 250px;
   pointer-events: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 0;
+  z-index: 2;
 }
 
 .aura-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid transparent;
-  transition: all 0.3s ease;
+  border: 1px solid var(--ember-container);
+  opacity: 0.3;
 }
 
-.aura-listening .aura-ring.ring-1 {
-  width: 196px;
-  height: 196px;
-  border-color: rgba(242, 166, 90, 0.25);
-  animation: aura-expand 3s ease-out infinite;
+.aura-ring.ring-1 {
+  width: 200px;
+  height: 200px;
+  animation: ring-pulse 2.8s infinite linear;
 }
 
-.aura-listening .aura-ring.ring-2 {
-  width: 228px;
-  height: 228px;
-  border-color: rgba(242, 166, 90, 0.12);
-  animation: aura-expand 3s ease-out infinite 1s;
+.aura-ring.ring-2 {
+  width: 235px;
+  height: 235px;
+  animation: ring-pulse 2.8s infinite linear 0.9s;
 }
 
-.aura-active .aura-ring.ring-1 {
-  width: 196px;
-  height: 196px;
-  border-color: rgba(232, 84, 107, 0.4);
-  animation: aura-expand 1.8s ease-out infinite;
-}
-
-.aura-active .aura-ring.ring-2 {
-  width: 232px;
-  height: 232px;
-  border-color: rgba(232, 84, 107, 0.2);
-  animation: aura-expand 1.8s ease-out infinite 0.6s;
-}
-
-@keyframes aura-expand {
-  0% { transform: scale(0.92); opacity: 0.8; }
-  100% { transform: scale(1.15); opacity: 0; }
+.aura-ring.ring-3 {
+  width: 270px;
+  height: 270px;
+  animation: ring-pulse 2.8s infinite linear 1.8s;
 }
 
 .aura-spectrum-bars {
   position: absolute;
-  bottom: -32px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 3px;
-  height: 20px;
+  height: 36px;
+  top: -18px;
 }
 
 .spectrum-bar {
   width: 3px;
-  border-radius: 3px;
-  background: var(--ember);
-}
-
-.aura-active .spectrum-bar {
-  background: var(--alarm);
+  border-radius: 2px;
+  background: var(--ember-container);
+  box-shadow: 0 0 6px var(--ember);
 }
 
 /* ============================================================
-   Photorealistic Fake Call Overlay
+   Telemetry Strip (4 Critical Hardware Metrics)
    ============================================================ */
-
-.fake-call-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  background: #08070d;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: calc(48px + env(safe-area-inset-top, 0px)) 24px calc(48px + env(safe-area-inset-bottom, 0px));
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
-  overflow: hidden;
-}
-
-.fake-call-ambient-glow {
-  position: absolute;
-  top: 15%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(50, 45, 71, 0.45) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.fake-call-top {
-  text-align: center;
-  position: relative;
-  z-index: 2;
-}
-
-.fake-call-avatar {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3d3758, #26223a);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  margin: 0 auto 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 34px;
-  font-weight: 600;
-  color: #f3f1f8;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-}
-
-.fake-call-caller-name {
-  font-size: 28px;
-  font-weight: 600;
-  margin: 0 0 4px;
-  letter-spacing: -0.01em;
-  color: #ffffff;
-}
-
-.fake-call-caller-number {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-  margin: 0 0 6px;
-}
-
-.fake-call-status {
-  font-size: 15px;
-  color: #a9a4bf;
-  font-weight: 500;
-}
-
-.fake-call-middle {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 0;
-  position: relative;
-  z-index: 2;
-}
-
-.fake-call-speech-bubble {
-  background: rgba(30, 27, 46, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(14px);
-  border-radius: 20px;
-  padding: 16px 20px;
-  max-width: 90%;
-  text-align: center;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
-}
-
-.fake-call-wave-bars {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  height: 18px;
-  margin-bottom: 8px;
-}
-
-.wave-bar {
-  width: 3px;
-  border-radius: 3px;
-  background: var(--ember);
-  animation: wave-pulse 1.2s ease-in-out infinite;
-}
-.wave-bar.bar-1 { height: 8px; animation-delay: 0.1s; }
-.wave-bar.bar-2 { height: 16px; animation-delay: 0.25s; }
-.wave-bar.bar-3 { height: 12px; animation-delay: 0.4s; }
-.wave-bar.bar-4 { height: 18px; animation-delay: 0.15s; }
-.wave-bar.bar-5 { height: 10px; animation-delay: 0.35s; }
-
-@keyframes wave-pulse {
-  0%, 100% { transform: scaleY(0.5); }
-  50% { transform: scaleY(1.3); }
-}
-
-.fake-call-speech-text {
-  font-size: 14.5px;
-  color: #f3f1f8;
-  line-height: 1.45;
-  margin: 0;
-}
-
-.fake-call-bottom {
-  position: relative;
-  z-index: 2;
-  padding-bottom: 12px;
-}
-
-.fake-call-ringing-actions {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  max-width: 340px;
-  margin: 0 auto;
-}
-
-.call-action-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.call-action-col .action-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.fake-call-circle-btn {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #ffffff;
-  transition: transform 0.15s ease;
-}
-
-.fake-call-circle-btn:active {
-  transform: scale(0.92);
-}
-
-.btn-decline {
-  background: #eb4d4b;
-}
-
-.btn-accept {
-  background: #2ed573;
-}
-
-.pulse-ring {
-  box-shadow: 0 0 0 0 rgba(46, 213, 115, 0.6);
-  animation: ring-pulse 1.4s infinite;
-}
-
-@keyframes ring-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(46, 213, 115, 0.7); }
-  70% { box-shadow: 0 0 0 22px rgba(46, 213, 115, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(46, 213, 115, 0); }
-}
-
-.pulse-subtle {
-  animation: subtle-bob 2s ease-in-out infinite;
-}
-
-@keyframes subtle-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-
-.fake-call-connected-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  align-items: center;
-  max-width: 320px;
-  margin: 0 auto;
-}
-
-.incall-buttons-matrix {
+.telemetry-strip-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  width: 100%;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  border: 1px solid var(--line);
+  margin-bottom: 20px;
 }
 
-.incall-tool-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: none;
-  border-radius: 16px;
-  padding: 16px 8px;
+@media (min-width: 640px) {
+  .telemetry-strip-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.telemetry-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: #ffffff;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.incall-tool-btn.is-active {
-  background: #ffffff;
-  color: #12101c;
-}
-
-.fake-call-end-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.fake-call-end-wrap .action-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* ============================================================
-   Acoustic & Strobe Deterrent Alarm
-   ============================================================ */
-
-.strobe-alarm-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 24px;
-}
-
-.strobe-flash-layer {
-  position: absolute;
-  inset: 0;
-  animation: strobe-flash 0.14s infinite alternate;
-  z-index: 1;
-}
-
-@keyframes strobe-flash {
-  0% { background-color: #ffffff; }
-  50% { background-color: #e8546b; }
-  100% { background-color: #0d0814; }
-}
-
-.strobe-content {
-  position: relative;
-  z-index: 2;
-  background: rgba(18, 16, 28, 0.94);
-  border: 2px solid #e8546b;
-  border-radius: 24px;
-  padding: 32px 24px;
-  max-width: 440px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-}
-
-.strobe-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--alarm-dim);
-  color: var(--alarm-strong);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 6px 14px;
-  border-radius: 999px;
-  margin-bottom: 16px;
-}
-
-.strobe-title {
-  font-size: 26px;
-  color: #ffffff;
-  margin: 0 0 10px;
-  font-weight: 700;
-}
-
-.strobe-sub {
-  font-size: 14px;
-  color: var(--mist);
-  margin: 0 0 20px;
-  line-height: 1.5;
-}
-
-.strobe-timer {
-  font-size: 13px;
-  color: var(--mist-dim);
-  margin-bottom: 24px;
-}
-.strobe-timer span {
-  font-weight: 700;
-  color: var(--alarm-strong);
-}
-
-.strobe-disarm-btn {
-  background: var(--alarm);
-  border-color: var(--alarm);
-  color: #ffffff;
-  width: 100%;
-  padding: 16px;
-  font-size: 16px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(232, 84, 107, 0.4);
-}
-
-.strobe-disarm-btn:hover {
-  background: var(--alarm-strong);
-}
-
-.strobe-footnote {
-  font-size: 11px;
-  color: var(--mist-dim);
-  margin-top: 14px;
-}
-
-/* ============================================================
-   Cinematic Demo Studio Dock
-   ============================================================ */
-
-.demo-studio-dock {
-  position: fixed;
-  bottom: 84px;
-  right: 16px;
-  z-index: 999;
-}
-
-.demo-studio-pill-trigger {
-  background: rgba(30, 27, 46, 0.9);
-  border: 1px solid var(--ember);
-  color: var(--ember);
-  border-radius: 999px;
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.demo-studio-pill-trigger:hover {
-  background: var(--ember);
-  color: #12101c;
-  transform: translateY(-2px);
-}
-
-.demo-studio-expanded {
-  background: rgba(23, 21, 34, 0.96);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 16px;
-  width: 320px;
-  box-shadow: var(--shadow-pop);
-}
-
-.demo-studio-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
-}
-
-.demo-studio-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--paper);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.demo-studio-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.demo-chip-btn {
-  background: var(--ink);
-  border: 1px solid var(--line);
-  color: var(--paper);
-  font-size: 11.5px;
-  font-weight: 500;
-  border-radius: 8px;
-  padding: 7px 10px;
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.demo-chip-btn:hover {
-  border-color: var(--ember);
-  color: var(--ember-strong);
-}
-
-.demo-chip-btn.is-active {
-  background: var(--ember-dim);
-  border-color: var(--ember);
-  color: var(--ember);
-}
-
-/* ============================================================
-   Safety Hub & Helplines Grid
-   ============================================================ */
-
-.safety-hub-tabs {
-  display: flex;
-  background: var(--ink);
-  border: 1px solid var(--line);
+  padding: 14px;
   border-radius: var(--radius-sm);
-  padding: 4px;
-  gap: 4px;
+  background: var(--surface-lowest);
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.safety-tab-pill {
-  flex: 1;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 6px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--mist);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.safety-tab-pill.is-active {
-  background: var(--dusk-soft);
-  color: var(--paper);
-  font-weight: 600;
-}
-
-.helpline-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.helpline-card {
-  padding: 14px 16px;
-  transition: transform 0.15s ease, border-color 0.15s ease;
-  display: block;
-}
-
-.helpline-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--ember);
-}
-
-.helpline-header {
+.telemetry-card-top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 6px;
 }
 
-.helpline-number {
+.telemetry-card-label {
   font-family: var(--mono);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ember);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-size: 10.5px;
+  color: var(--mist-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.helpline-title {
-  font-size: 14px;
+.telemetry-card-value {
+  font-family: var(--mono);
+  font-size: 17px;
   font-weight: 600;
-  color: var(--paper);
-  margin-bottom: 4px;
+  color: var(--ember);
 }
 
-.helpline-desc {
-  font-size: 12px;
-  color: var(--mist);
+.telemetry-card-desc {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  color: var(--mist-dim);
+  margin-top: 4px;
 }
 
 /* ============================================================
-   Active Emergency Command Center (Signature Experience)
+   Active Emergency Command Center
    ============================================================ */
-
 .emergency-command-center {
-  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .emergency-status-banner {
-  background: linear-gradient(135deg, rgba(232, 84, 107, 0.25) 0%, rgba(30, 27, 46, 0.8) 100%);
-  border: 1px solid var(--alarm);
+  background: linear-gradient(135deg, rgba(147, 0, 10, 0.85) 0%, rgba(55, 10, 15, 0.95) 100%);
+  border: 1.5px solid var(--alarm);
   border-radius: var(--radius);
-  padding: 18px;
-  text-align: center;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 30px rgba(232, 84, 107, 0.25);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-glow-alarm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: pulse-border 2s infinite ease-in-out;
 }
 
 .emergency-banner-top {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  margin-bottom: 6px;
 }
 
 .emergency-live-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--alarm);
-  box-shadow: 0 0 10px var(--alarm);
-  animation: emergency-dot-pulse 1s ease-in-out infinite;
-}
-
-@keyframes emergency-dot-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
+  background: var(--alarm-strong);
+  box-shadow: 0 0 10px var(--alarm-strong);
+  animation: ping-scale 1.2s infinite;
 }
 
 .emergency-banner-title {
-  font-size: 17px;
+  font-family: var(--mono);
+  font-size: 14px;
   font-weight: 700;
-  color: #ffffff;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.12em;
+  color: var(--paper);
 }
 
 .emergency-banner-timer {
@@ -1694,40 +743,45 @@ input[type="checkbox"] {
   color: var(--alarm-strong);
 }
 
+/* Rapid Distress Action Matrix */
 .emergency-action-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .emergency-action-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .emergency-action-card {
-  background: var(--dusk);
+  background: var(--surface-low);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 16px 14px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  text-align: left;
+  gap: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--paper);
+  transition: all 0.18s ease;
 }
 
 .emergency-action-card:hover {
-  border-color: var(--ember);
+  background: var(--surface-high);
+  border-color: var(--line-gold);
   transform: translateY(-2px);
 }
 
 .action-card-icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
 }
 
 .action-card-icon.is-amber {
@@ -1746,113 +800,183 @@ input[type="checkbox"] {
 }
 
 .action-card-title {
-  font-size: 14px;
+  font-family: var(--sans);
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--paper);
-  margin-bottom: 2px;
 }
 
 .action-card-desc {
   font-size: 11.5px;
   color: var(--mist-dim);
+  line-height: 1.35;
 }
 
+/* Safe Resolution Button */
 .emergency-resolve-wrap {
-  text-align: center;
-  margin: 20px 0 28px;
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
 }
 
 .btn-resolve-emergency {
-  background: var(--dusk-soft);
-  border: 1px solid rgba(111, 191, 139, 0.4);
-  color: var(--safe);
-  padding: 13px 28px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 999px;
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  border: 1px solid rgba(46, 204, 113, 0.4);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px 28px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(46, 204, 113, 0.35);
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .btn-resolve-emergency:hover {
-  background: var(--safe);
-  color: #12101c;
-  border-color: var(--safe);
+  box-shadow: 0 6px 28px rgba(46, 204, 113, 0.5);
+  transform: translateY(-2px);
 }
 
 /* ============================================================
-   PIN Cancel Modal — Duress PIN System (P0.1)
-   The modal must be visually neutral and indistinguishable
-   in its success state regardless of which PIN was entered.
+   Tactical Console View & Event Stream
    ============================================================ */
-.pin-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+.event-stream-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 9999;
-  animation: rise-fade 0.25s ease-out;
-}
-
-.pin-modal-card {
-  background: var(--dusk);
+  flex-direction: column;
+  height: 420px;
+  background: var(--surface-low);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 28px 24px;
-  max-width: 340px;
-  width: 100%;
+  padding: 16px;
 }
 
-.pin-modal-success {
-  text-align: center;
-  border-color: rgba(111, 191, 139, 0.35);
+.event-stream-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
 }
 
-.pin-success-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--safe-dim);
-  color: var(--safe);
+.event-stream-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.event-stream-scroll::-webkit-scrollbar-thumb {
+  background: var(--surface-highest);
+  border-radius: 4px;
+}
+
+.event-stream-card {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-lowest);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.event-stream-top {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin: 0 auto 14px;
+  justify-content: space-between;
 }
 
-.pin-modal-title {
-  font-family: var(--sans);
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--paper);
-  margin: 0 0 4px;
+/* ============================================================
+   Micro-Animations
+   ============================================================ */
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
 }
 
-.pin-input {
-  width: 100%;
-  text-align: center;
-  letter-spacing: 0.4em;
-  font-size: 28px;
-  font-family: var(--mono);
-  padding: 14px;
-  background: var(--ink);
-  border: 1px solid var(--line);
+@keyframes ping-scale {
+  0% { transform: scale(1); opacity: 1; }
+  75%, 100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 16px var(--ember-glow); }
+  50% { box-shadow: 0 0 36px var(--ember-glow), 0 0 60px rgba(232, 196, 104, 0.1); }
+}
+
+@keyframes pulse-alarm {
+  0%, 100% { box-shadow: 0 0 20px var(--alarm-glow); }
+  50% { box-shadow: 0 0 46px var(--alarm-glow); }
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--alarm); }
+  50% { border-color: var(--alarm-strong); }
+}
+
+@keyframes ring-pulse {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  50% { opacity: 0.2; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+@keyframes rise-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rise-fade {
+  animation: rise-fade 0.35s ease both;
+}
+
+/* Utility Helpers */
+.flex-center-gap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stack-1 { display: flex; flex-direction: column; gap: 4px; }
+.stack-2 { display: flex; flex-direction: column; gap: 8px; }
+.stack-3 { display: flex; flex-direction: column; gap: 14px; }
+
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mt-5 { margin-top: 20px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-5 { margin-bottom: 20px; }
+
+.text-xs { font-size: 12px; }
+.text-sm { font-size: 13.5px; }
+.text-dim { color: var(--mist-dim); }
+.text-center { text-align: center; }
+
+/* Demo Chip Button */
+.demo-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
   border-radius: var(--radius-sm);
+  background: var(--surface-high);
+  border: 1px solid var(--line);
   color: var(--paper);
-  outline: none;
-  transition: border-color 0.2s ease;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
 }
 
-.pin-input:focus {
-  border-color: var(--ember);
-  box-shadow: 0 0 0 3px var(--ember-dim);
+.demo-chip-btn:hover {
+  background: var(--surface-bright);
+  border-color: var(--line-gold);
 }
 
-.pin-input::placeholder {
-  color: var(--mist-dim);
-  letter-spacing: 0.3em;
+.demo-chip-btn.is-active {
+  background: var(--ember-dim);
+  border-color: var(--ember-container);
+  color: var(--ember);
 }

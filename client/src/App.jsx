@@ -25,6 +25,7 @@ import LiveMap from "./components/LiveMap";
 import SafeZoneManager from "./components/SafeZoneManager";
 import RouteGuardSetup from "./components/RouteGuardSetup";
 import BlackoutStealth from "./components/BlackoutStealth";
+import TacticalOverview from "./components/TacticalOverview";
 import {
   ShieldIcon,
   ShieldAlertIcon,
@@ -93,6 +94,10 @@ export default function App() {
   const [sosError, setSosError] = useState(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const [hasPinConfigured, setHasPinConfigured] = useState(false);
+
+  // Trigger telemetry state (Track whether emergency was live sensor vs simulation)
+  const [detectionMode, setDetectionMode] = useState("live"); // 'live' | 'simulated'
+  const [detectionConfidence, setDetectionConfidence] = useState(null);
 
   // New Killer Features State
   const [isFakeCallOpen, setIsFakeCallOpen] = useState(false);
@@ -290,10 +295,43 @@ export default function App() {
   const isFiringRef = useRef(false);
 
   const fireSOS = useCallback(
-    async (triggerType) => {
+    async (triggerInput) => {
       if (isFiringRef.current || activeEventId) return;
       isFiringRef.current = true;
       setSosError(null);
+
+      // Parse trigger payload (supports both string and structured object)
+      const triggerType =
+        typeof triggerInput === "string"
+          ? triggerInput
+          : triggerInput?.triggerType || "manual";
+
+      const mode =
+        typeof triggerInput === "object" && triggerInput?.mode
+          ? triggerInput.mode
+          : triggerType.includes("simulation") || triggerType.includes("demo")
+          ? "simulated"
+          : "live";
+
+      const confidence =
+        typeof triggerInput === "object" && triggerInput?.confidence != null
+          ? triggerInput.confidence
+          : mode === "simulated"
+          ? 1.0
+          : 0.90;
+
+      const triggerDetails =
+        typeof triggerInput === "object" && triggerInput?.details
+          ? triggerInput.details
+          : mode === "simulated"
+          ? `[SIMULATED DEMO TRIGGER] Fired via Demo Studio (${triggerType})`
+          : `[LIVE SENSOR TRIGGER] Fired (${triggerType}) · Confidence: ${Math.round(confidence * 100)}%`;
+
+      setDetectionMode(mode);
+      setDetectionConfidence(confidence);
+
+      console.log(`[SURAKSHA SOS DISPATCH] Mode: ${mode.toUpperCase()} | Type: ${triggerType} | Confidence: ${Math.round(confidence * 100)}%`);
+
       // Subtle double-pulse haptic vibration confirmation for pocket/discreet activation
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try {
@@ -314,6 +352,9 @@ export default function App() {
           body: JSON.stringify({
             userId: USER_ID,
             triggerType,
+            mode,
+            confidence,
+            details: triggerDetails,
             lat: sendLat,
             lng: sendLng,
           }),
@@ -547,21 +588,107 @@ export default function App() {
 
   return (
     <div className="app-viewport">
-      {/* --- Top Header with Secret Trigger Zone --- */}
-      <header className="header rise-fade" style={{ position: "relative" }}>
-        <div
-          onClick={handleDecoyTrigger}
-          title="Secret stealth zone (tap 3x)"
-          style={{ position: "absolute", top: -8, right: -8, width: 64, height: 64, zIndex: 10, cursor: "default" }}
-        />
-        <div className="wordmark">
-          Suraksha <em>Shadow</em>
+      {/* --- Tactical Brand Header & Status Bar --- */}
+      <header className="tactical-header rise-fade">
+        <div className="header-top-bar">
+          <div className="brand-badge">
+            <div
+              className="brand-icon-shield"
+              onClick={handleDecoyTrigger}
+              title="Secret stealth zone (tap 3x to launch Decoy Calculator)"
+              style={{ cursor: "pointer" }}
+            >
+              <GuardianGlyph size={22} style={{ color: activeEventId ? "var(--alarm)" : "var(--ember)" }} />
+              <span className="pulse-dot" style={{ background: activeEventId ? "var(--alarm)" : "var(--ember-container)" }} />
+            </div>
+            <div className="brand-title-group">
+              <span className="brand-title">
+                Suraksha <em style={{ fontStyle: "normal", color: "var(--ember)" }}>Shadow</em>
+              </span>
+              <span className="brand-subtitle">Camouflage &amp; Vigil Mesh</span>
+            </div>
+          </div>
+
+          <div className="header-telemetry-pills">
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ember-container)" }} />
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--mist-dim)" }}>Enclave:</span>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--paper)", fontWeight: 600 }}>Secure</span>
+            </div>
+            <div style={{ height: 12, width: 1, background: "var(--line)" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--secondary)" }} />
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--mist-dim)" }}>Guardian:</span>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--paper)", fontWeight: 600 }}>Active Sync</span>
+            </div>
+          </div>
+
+          <div className="header-actions">
+            <div className="vigil-status-pill hidden sm:flex">
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: armed ? "var(--safe)" : "var(--ember)",
+                  boxShadow: "0 0 6px currentColor",
+                }}
+              />
+              <span>{armed ? "SHIELD ARMED" : "VIGIL READY"}</span>
+            </div>
+            {!armed && !activeEventId && (
+              <button
+                className="btn-primary"
+                onClick={arm}
+                style={{ padding: "7px 14px", fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <ShieldIcon size={14} />
+                <span>Arm Mode</span>
+              </button>
+            )}
+          </div>
         </div>
-        <p className="tagline">
-          {activeEventId
-            ? "Emergency active — guardian alert dispatched"
-            : "Silent guardian, always watching over you"}
-        </p>
+
+        {/* Top Tactical Navigation Bar (Peacetime) */}
+        {!activeEventId && (
+          <nav className="tactical-nav-tabs mt-2">
+            <button
+              className={`tactical-tab-btn ${activeTab === "shield" ? "is-active" : ""}`}
+              onClick={() => setActiveTab("shield")}
+            >
+              <ShieldIcon size={15} />
+              <span>Shield</span>
+            </button>
+            <button
+              className={`tactical-tab-btn ${activeTab === "overview" ? "is-active" : ""}`}
+              onClick={() => setActiveTab("overview")}
+            >
+              <RadioIcon size={15} />
+              <span>Overview &amp; Architecture</span>
+            </button>
+            <button
+              className={`tactical-tab-btn ${activeTab === "checkin" ? "is-active" : ""}`}
+              onClick={() => setActiveTab("checkin")}
+            >
+              <TimerIcon size={15} />
+              <span>Check-In</span>
+            </button>
+            <button
+              className={`tactical-tab-btn ${activeTab === "vault" ? "is-active" : ""}`}
+              onClick={() => setActiveTab("vault")}
+            >
+              <FolderIcon size={15} />
+              <span>Evidence Locker</span>
+            </button>
+            <button
+              className={`tactical-tab-btn ${activeTab === "safety" ? "is-active" : ""}`}
+              onClick={() => setActiveTab("safety")}
+            >
+              <UsersIcon size={15} />
+              <span>Safety Hub</span>
+            </button>
+          </nav>
+        )}
       </header>
 
       {/* --- SOS Error Banner --- */}
@@ -1220,7 +1347,21 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 2: SCHEDULED CHECK-IN */}
+          {/* TAB 2: TACTICAL OVERVIEW & ARCHITECTURE */}
+          {activeTab === "overview" && (
+            <div className="rise-fade">
+              <TacticalOverview
+                onArm={arm}
+                armed={armed}
+                onSelectTab={setActiveTab}
+                onOpenDecoy={() => setDecoyMode(true)}
+                onOpenFakeCall={() => setIsFakeCallOpen(true)}
+                onOpenBlackout={() => setIsBlackoutOpen(true)}
+              />
+            </div>
+          )}
+
+          {/* TAB 3: SCHEDULED CHECK-IN */}
           {activeTab === "checkin" && (
             <div className="rise-fade section">
               <p className="eyebrow">Scheduled Check-In (Dead-Man's Switch)</p>
@@ -1235,20 +1376,17 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 3: EVIDENCE VAULT */}
+          {/* TAB 4: EVIDENCE VAULT */}
           {activeTab === "vault" && (
             <div className="rise-fade section">
-              <p className="eyebrow">Evidence Vault (Cryptographic Storage)</p>
-              <div className="card">
-                <EvidenceVault
-                  refreshTrigger={evidenceRefreshTick}
-                  onCapture={evidenceVault?.startAutomatedCapture}
-                />
-              </div>
+              <EvidenceVault
+                refreshTrigger={evidenceRefreshTick}
+                onCapture={evidenceVault?.startAutomatedCapture}
+              />
             </div>
           )}
 
-          {/* TAB 4: SAFETY HUB */}
+          {/* TAB 5: SAFETY HUB */}
           {activeTab === "safety" && (
             <div className="rise-fade">
               <SafetyHub
@@ -1274,15 +1412,23 @@ export default function App() {
               className={`nav-tab-btn ${activeTab === "shield" ? "is-active" : ""}`}
               onClick={() => setActiveTab("shield")}
             >
-              <ShieldIcon size={20} />
+              <ShieldIcon size={18} />
               <span>Shield</span>
+            </button>
+
+            <button
+              className={`nav-tab-btn ${activeTab === "overview" ? "is-active" : ""}`}
+              onClick={() => setActiveTab("overview")}
+            >
+              <RadioIcon size={18} />
+              <span>Overview</span>
             </button>
 
             <button
               className={`nav-tab-btn ${activeTab === "checkin" ? "is-active" : ""}`}
               onClick={() => setActiveTab("checkin")}
             >
-              <TimerIcon size={20} />
+              <TimerIcon size={18} />
               <span>Check-In</span>
             </button>
 
@@ -1290,7 +1436,7 @@ export default function App() {
               className={`nav-tab-btn ${activeTab === "vault" ? "is-active" : ""}`}
               onClick={() => setActiveTab("vault")}
             >
-              <FolderIcon size={20} />
+              <FolderIcon size={18} />
               <span>Vault</span>
             </button>
 
@@ -1298,8 +1444,8 @@ export default function App() {
               className={`nav-tab-btn ${activeTab === "safety" ? "is-active" : ""}`}
               onClick={() => setActiveTab("safety")}
             >
-              <UsersIcon size={20} />
-              <span>Safety Hub</span>
+              <UsersIcon size={18} />
+              <span>Hub</span>
             </button>
           </div>
         </nav>

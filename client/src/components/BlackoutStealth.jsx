@@ -16,18 +16,62 @@ import { EyeOffIcon } from "./icons";
 export default function BlackoutStealth({ isOpen, onClose, isArmed, activeEventId }) {
   const tapCountRef = useRef(0);
   const [showHint, setShowHint] = useState(false);
+  const wakeLockRef = useRef(null);
 
+  // Screen WakeLock management:
+  // When Blackout Stealth is active, the screen is completely pitch black (#000000).
+  // Requesting a Screen WakeLock prevents mobile OS (Android/iOS) from putting
+  // the CPU/sensors to sleep or locking the device, keeping JS execution, GPS,
+  // and audio detection running at full power while looking 100% "screen off".
   useEffect(() => {
     if (!isOpen) {
       tapCountRef.current = 0;
       setShowHint(false);
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
       return;
     }
+
+    async function requestWakeLock() {
+      if ("wakeLock" in navigator) {
+        try {
+          wakeLockRef.current = await navigator.wakeLock.request("screen");
+          console.log("[SURAKSHA BLACKOUT] Screen WakeLock acquired — CPU/sensors active in stealth.");
+          wakeLockRef.current.addEventListener("release", () => {
+            console.log("[SURAKSHA BLACKOUT] Screen WakeLock released.");
+          });
+        } catch (err) {
+          console.warn("[SURAKSHA BLACKOUT] Screen WakeLock request failed (expected on some OEM battery savers):", err?.message);
+        }
+      } else {
+        console.warn("[SURAKSHA BLACKOUT] Screen WakeLock API not supported in this browser environment.");
+      }
+    }
+
+    requestWakeLock();
+
+    // Re-acquire wake lock if tab visibility changes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && isOpen && !wakeLockRef.current) {
+        requestWakeLock();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Briefly flash a reassuring 1.5-second HUD confirmation on enter
     setShowHint(true);
     const timer = setTimeout(() => setShowHint(false), 1800);
-    return () => clearTimeout(timer);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
   }, [isOpen]);
 
   const handleCornerTap = () => {
