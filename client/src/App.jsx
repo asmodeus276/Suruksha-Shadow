@@ -66,7 +66,7 @@ const API_BASE_URL =
 const USER_ID = getUserId();
 
 const DECOY_TAP_COUNT = 3;
-const DECOY_TAP_WINDOW_MS = 1500;
+const DECOY_TAP_WINDOW_MS = 2500;
 const DEFAULT_CODE_WORD = "banana";
 
 function loadCodeWord() {
@@ -551,12 +551,20 @@ export default function App() {
     setActiveEventId(null);
   };
 
-  // Decoy triple-tap trigger
-  const handleDecoyTrigger = useCallback(() => {
+  // Decoy triple-tap trigger (Mobile touch & click compatible)
+  const handleDecoyTrigger = useCallback((e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     const now = Date.now();
     decoyTapTimes.current = [...decoyTapTimes.current.filter((t) => now - t < DECOY_TAP_WINDOW_MS), now];
     if (decoyTapTimes.current.length >= DECOY_TAP_COUNT) {
       decoyTapTimes.current = [];
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try {
+          navigator.vibrate([60, 40, 60]);
+        } catch {
+          /* ignore vibrate policy */
+        }
+      }
       setDecoyMode(true);
     }
   }, []);
@@ -589,14 +597,50 @@ export default function App() {
   return (
     <div className="app-viewport">
       {/* --- Tactical Brand Header & Status Bar --- */}
-      <header className="tactical-header rise-fade">
-        <div className="header-top-bar">
-          <div className="brand-badge">
+      <header className="tactical-header rise-fade" style={{ position: "relative" }}>
+        {/* Invisible Secret Stealth Tap Zone (Top-Right Corner — Tap 3x) */}
+        <div
+          onClick={handleDecoyTrigger}
+          onTouchEnd={handleDecoyTrigger}
+          title="Secret stealth zone (tap 3x)"
+          style={{
+            position: "absolute",
+            top: -12,
+            right: -12,
+            width: 80,
+            height: 70,
+            zIndex: 60,
+            cursor: "default",
+          }}
+        />
+
+        {/* Invisible Secret Stealth Tap Zone (Top-Left Corner — Tap 3x) */}
+        <div
+          onClick={handleDecoyTrigger}
+          onTouchEnd={handleDecoyTrigger}
+          title="Secret stealth zone (tap 3x)"
+          style={{
+            position: "absolute",
+            top: -12,
+            left: -12,
+            width: 140,
+            height: 70,
+            zIndex: 50,
+            cursor: "default",
+          }}
+        />
+
+        <div className="header-top-bar" style={{ position: "relative", zIndex: 40 }}>
+          <div
+            className="brand-badge"
+            onClick={handleDecoyTrigger}
+            onTouchEnd={handleDecoyTrigger}
+            style={{ cursor: "pointer" }}
+            title="Secret stealth zone (tap 3x)"
+          >
             <div
               className="brand-icon-shield"
-              onClick={handleDecoyTrigger}
               title="Secret stealth zone (tap 3x to launch Decoy Calculator)"
-              style={{ cursor: "pointer" }}
             >
               <GuardianGlyph size={22} style={{ color: activeEventId ? "var(--alarm)" : "var(--ember)" }} />
               <span className="pulse-dot" style={{ background: activeEventId ? "var(--alarm)" : "var(--ember-container)" }} />
@@ -1155,11 +1199,21 @@ export default function App() {
 
                   <button
                     className="demo-chip-btn"
+                    onClick={() => setDecoyMode(true)}
+                    style={{ padding: "10px 14px", borderColor: "rgba(232, 196, 104, 0.45)" }}
+                    title="Launch Decoy Calculator Disguise"
+                  >
+                    <span style={{ marginRight: 6 }}>🧮</span>
+                    Decoy Calculator
+                  </button>
+
+                  <button
+                    className="demo-chip-btn"
                     onClick={() => setShowSettings(!showSettings)}
                     style={{ padding: "10px 14px" }}
                   >
                     <SettingsIcon size={14} style={{ marginRight: 6 }} />
-                    Triggers & Safe Zones
+                    Triggers &amp; Safe Zones
                   </button>
                 </div>
               </div>
