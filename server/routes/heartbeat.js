@@ -33,12 +33,20 @@ const SCAN_INTERVAL_MS = 60 * 1000;          // check every 60 seconds
 
 /**
  * POST /api/heartbeat
+<<<<<<< HEAD
  * body: { userId, lat, lng }
+=======
+ * body: { userId, lat, lng, source, battery, clientTimestamp }
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
  *
  * Lightweight heartbeat ping from the client while Shield is armed.
  */
 router.post(["/", "/pulse"], (req, res) => {
+<<<<<<< HEAD
   const { userId, lat, lng } = req.body;
+=======
+  const { userId, lat, lng, source, battery, clientTimestamp } = req.body;
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
   if (!userId) {
     return res.status(400).json({ error: "userId is required" });
@@ -48,10 +56,45 @@ router.post(["/", "/pulse"], (req, res) => {
     lat: lat ?? null,
     lng: lng ?? null,
     lastPingAt: Date.now(),
+<<<<<<< HEAD
     armed: true,
   });
 
   return res.json({ ok: true });
+=======
+    clientTimestamp: clientTimestamp ?? Date.now(),
+    source: source ?? "unknown",
+    battery: battery ?? null,
+    armed: true,
+  });
+
+  return res.json({ ok: true, serverTime: Date.now() });
+});
+
+/**
+ * GET /api/heartbeat/status/:userId
+ *
+ * Diagnostic inspection endpoint for testing background survival on real devices.
+ */
+router.get("/status/:userId", (req, res) => {
+  const { userId } = req.params;
+  const entry = inMemoryHeartbeats.get(userId);
+  if (!entry) {
+    return res.json({ armed: false, exists: false });
+  }
+
+  const elapsedMs = Date.now() - entry.lastPingAt;
+  return res.json({
+    armed: entry.armed,
+    lastPingAt: entry.lastPingAt,
+    elapsedSeconds: Math.round(elapsedMs / 1000),
+    isStale: elapsedMs > SILENCE_THRESHOLD_MS,
+    lat: entry.lat,
+    lng: entry.lng,
+    source: entry.source,
+    battery: entry.battery,
+  });
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 });
 
 /**

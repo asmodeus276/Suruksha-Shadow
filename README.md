@@ -194,8 +194,13 @@ flowchart TD
 | **Realtime Sync** | Supabase Realtime | Powers Guardian Mode's live dashboard without a custom WebSocket server |
 | **AI Reasoning** | Gemini / Claude API | Handles both fake-call dialogue and Sahara's grounded responses |
 | **Silent Detection** | Web Speech API + Device Motion API | Free, browser-native, no extra SDKs needed |
+<<<<<<< HEAD
 | **Alerts** | Fast2SMS | Simple SMS API, already proven in a prior project |
 | **Deployment** | Netlify (frontend) / Render (backend) | Fast, free-tier friendly, already familiar |
+=======
+| **Alerts** | Textbee.dev / Twilio / Fast2SMS | Open-source Android SMS gateway (Textbee) & cloud providers |
+| **Deployment** | Vercel (frontend & serverless) / Render (backend) | Fast, free-tier friendly, zero infrastructure friction |
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
 ---
 
@@ -414,11 +419,24 @@ cd ../backend && npm install
 
 | Variable | Purpose |
 |---|---|
+<<<<<<< HEAD
 | `YOUR_SUPABASE_URL` | Supabase project URL |
 | `YOUR_SUPABASE_ANON_KEY` | Supabase anon/public key (client) |
 | `YOUR_SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (backend only) |
 | `YOUR_AI_API_KEY` | Gemini / Claude API key |
 | `YOUR_FAST2SMS_KEY` | Fast2SMS API key |
+=======
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (backend only) |
+| `VITE_SUPABASE_URL` | Supabase project URL (client) |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key (client) |
+| `TEXTBEE_API_KEY` | *(Recommended)* Textbee API key from [textbee.dev](https://textbee.dev) |
+| `TEXTBEE_DEVICE_ID` | *(Optional)* Textbee device ID |
+| `SMS_PROVIDER` | Preferred SMS provider (`textbee`, `twilio`, `fast2sms`, `demo`) |
+| `GEMINI_API_KEY` | Google Gemini API key for Sahara & fake-call dialogue |
+| `FAST2SMS_API_KEY` | Fast2SMS API key (alternative domestic Indian gateway) |
+| `SMS_DEMO_MODE` | `false` to send real SMS; `true` for simulated console logs |
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
 *(Placeholders — replace with actual secrets in your local `.env`. Never commit real keys.)*
 

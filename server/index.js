@@ -14,7 +14,10 @@ import checkinRouter from "./routes/checkin.js";
 import duressRouter from "./routes/duress.js";
 import evidenceRouter from "./routes/evidence.js";
 import heartbeatRouter from "./routes/heartbeat.js";
+<<<<<<< HEAD
 import policeRouter from "./routes/police.js";
+=======
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
 const app = express();
 app.use(cors());
@@ -38,7 +41,10 @@ mount("/checkin", checkinRouter);
 mount("/security", duressRouter);
 mount("/evidence", evidenceRouter);
 mount("/heartbeat", heartbeatRouter);
+<<<<<<< HEAD
 mount("/police", policeRouter);
+=======
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 app.get("/api/health", (req, res) => res.json({ ok: true }));

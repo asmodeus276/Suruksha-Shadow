@@ -37,6 +37,24 @@ export default defineConfig({
   ],
   server: {
     host: true, // listen on 0.0.0.0, not just localhost — needed for phone/tunnel access
+<<<<<<< HEAD
     allowedHosts: [".devtunnels.ms"], // Vite blocks unrecognized Host headers by default
+=======
+    allowedHosts: true, // allow any host header
+    proxy: {
+      "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/audio-stream": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/ws": {
+        target: "ws://localhost:4000",
+        ws: true,
+      },
+    },
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   },
 });

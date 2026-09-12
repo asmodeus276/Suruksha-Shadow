@@ -104,6 +104,22 @@ export default function DemoStudioBar({
             <div className="flex-center-gap">
               <SparkleIcon size={15} style={{ color: "var(--ember)" }} />
               <span className="demo-studio-title">Demo Studio · Video Controls</span>
+<<<<<<< HEAD
+=======
+              <span
+                style={{
+                  fontSize: 10,
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                  backgroundColor: "rgba(255, 170, 0, 0.15)",
+                  color: "#FFAA00",
+                  fontWeight: 600,
+                  marginLeft: 4,
+                }}
+              >
+                SIMULATION MODE
+              </span>
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
             </div>
             <button className="btn-quiet" onClick={() => setIsOpen(false)} style={{ fontSize: 16 }}>
               ✕
@@ -116,9 +132,20 @@ export default function DemoStudioBar({
               className="demo-chip-btn"
               onClick={() => {
                 if (!armed) onArm?.();
+<<<<<<< HEAD
                 onTriggerSOS("voice-simulation");
               }}
               title="Simulate speaking the secret code word"
+=======
+                onTriggerSOS({
+                  triggerType: "voice-simulation",
+                  mode: "simulated",
+                  confidence: 1.0,
+                  details: "Demo Studio: Voice code word simulated",
+                });
+              }}
+              title="Simulate speaking the secret code word (Tagged as Simulated)"
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
             >
               🎤 Code Word SOS
             </button>
@@ -128,9 +155,20 @@ export default function DemoStudioBar({
               className="demo-chip-btn"
               onClick={() => {
                 if (!armed) onArm?.();
+<<<<<<< HEAD
                 onTriggerSOS("motion-simulation");
               }}
               title="Simulate sudden violence/struggle acceleration"
+=======
+                onTriggerSOS({
+                  triggerType: "motion-simulation",
+                  mode: "simulated",
+                  confidence: 1.0,
+                  details: "Demo Studio: Motion struggle anomaly simulated",
+                });
+              }}
+              title="Simulate sudden violence/struggle acceleration (Tagged as Simulated)"
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
             >
               📳 Shake Spike SOS
             </button>
@@ -140,9 +178,20 @@ export default function DemoStudioBar({
               className="demo-chip-btn"
               onClick={() => {
                 if (!armed) onArm?.();
+<<<<<<< HEAD
                 onTriggerSOS("gesture-simulation");
               }}
               title="Simulate Canadian Women's Foundation Signal for Help hand gesture"
+=======
+                onTriggerSOS({
+                  triggerType: "gesture-simulation",
+                  mode: "simulated",
+                  confidence: 1.0,
+                  details: "Demo Studio: Signal for Help gesture simulated",
+                });
+              }}
+              title="Simulate Canadian Women's Foundation Signal for Help hand gesture (Tagged as Simulated)"
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
             >
               ✋ Signal for Help SOS
             </button>

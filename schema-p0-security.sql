@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS dpdp_consent_artifacts (
 -- Append-only: consent records must never be altered or deleted.
 REVOKE UPDATE, DELETE ON dpdp_consent_artifacts FROM PUBLIC, anon, authenticated;
 
+<<<<<<< HEAD
 -- P0.3: BSA 2023 Section 63 Evidence Chain of Custody Ledger
 -- Immutable record linking client-side SHA-256 hashes to server-verified
 -- HMAC countersignatures with authoritative timestamps.
@@ -46,11 +47,26 @@ CREATE TABLE IF NOT EXISTS bsa_evidence_ledger (
   id BIGSERIAL PRIMARY KEY,
   sos_id UUID NOT NULL,
   storage_path TEXT NOT NULL,
+=======
+-- P0.3: BSA 2023 Section 63 & Polygon Blockchain Evidence Ledger
+-- Immutable record linking client-side SHA-256 hashes to server-verified
+-- HMAC countersignatures and on-chain Polygon transactions.
+CREATE TABLE IF NOT EXISTS bsa_evidence_ledger (
+  id BIGSERIAL PRIMARY KEY,
+  sos_id UUID NOT NULL,
+  storage_path TEXT,
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   client_composite_hash CHAR(64) NOT NULL,
   gps_coordinates JSONB NOT NULL,
   client_timestamp TIMESTAMPTZ NOT NULL,
   server_timestamp TIMESTAMPTZ NOT NULL,
   server_countersignature CHAR(64) NOT NULL,
+<<<<<<< HEAD
+=======
+  polygon_tx_hash TEXT,
+  polygon_block_number BIGINT,
+  polygon_network TEXT DEFAULT 'Polygon Amoy Testnet (ChainID 80002)',
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

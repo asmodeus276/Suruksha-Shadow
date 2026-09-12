@@ -4,6 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+<<<<<<< HEAD
+=======
+    "dev": "npm --prefix client run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "start": "npm --prefix server start",
+>>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     "build": "npm --prefix client run build"
   },
   "dependencies": {
