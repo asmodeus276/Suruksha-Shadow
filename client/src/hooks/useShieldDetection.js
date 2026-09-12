@@ -345,6 +345,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
   const screamCounterRef = useRef({ count: 0, lastTime: 0 });
   const speechRecognitionRef = useRef(null);
   const isTranscribingRef = useRef(false);
+  const pendingWavRef = useRef(null);
   const lastTranscribeTimeRef = useRef(0);
   const pcmRollingRingRef = useRef([]); // rolling pre-roll buffer (last 1.5s)
   const activeUtterancePcmRef = useRef([]); // current active utterance samples
@@ -377,9 +378,12 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
   // Helper: Dispatch standalone 16kHz WAV slice to Cloud Whisper / Gemini API
   const sendWavToWhisper = useCallback(
     async (wavBlob) => {
-      if (isTranscribingRef.current || triggeredRef.current || !wavBlob || wavBlob.size < 1500) return;
+      if (triggeredRef.current || !wavBlob || wavBlob.size < 1200) return;
+      if (isTranscribingRef.current) {
+        pendingWavRef.current = wavBlob;
+        return;
+      }
       const now = Date.now();
-      if (now - lastTranscribeTimeRef.current < 400) return;
       lastTranscribeTimeRef.current = now;
       isTranscribingRef.current = true;
       setIsWhisperTranscribing(true);
@@ -428,6 +432,11 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
       } finally {
         isTranscribingRef.current = false;
         setIsWhisperTranscribing(false);
+        if (pendingWavRef.current && !triggeredRef.current) {
+          const nextWav = pendingWavRef.current;
+          pendingWavRef.current = null;
+          sendWavToWhisper(nextWav);
+        }
       }
     },
     [apiBaseUrl, codeWord, fire]
@@ -606,34 +615,35 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
             setSyllableCount(liveSyllables);
             setTranscript(`🗣️ Voice: ${liveSyllables}/3 syllables (${estimatedDb} dB)`);
 
-            // If voice duration reaches typical codeword length (~400ms - 1800ms):
-            if (durationMs >= 400 && durationMs <= 1800) {
-              if (activeUtterancePcmRef.current.length >= minUtteranceSamples && !isTranscribingRef.current) {
-                const sampleSlice = activeUtterancePcmRef.current.slice();
-                const downsampled = downsampleTo16k(sampleSlice, actualSampleRate);
-                const wavBlob = encodeWav(downsampled, 16000);
-                sendWavToWhisper(wavBlob);
-              }
+            // If voice is sustained for a long continuous period (>2200ms), dispatch slice so far:
+            if (durationMs >= 2200 && activeUtterancePcmRef.current.length >= minUtteranceSamples) {
+              const sampleSlice = activeUtterancePcmRef.current.slice();
+              const downsampled = downsampleTo16k(sampleSlice, actualSampleRate);
+              const wavBlob = encodeWav(downsampled, 16000);
+              sendWavToWhisper(wavBlob);
             }
           } else {
             // Voice silence frame
             voiceSilenceFrames += 1;
 
-            // Wait for 10 silence frames (~160ms) before finalizing utterance
-            if (utteranceStartTime && voiceSilenceFrames >= 10) {
+            // Wait for 14 silence frames (~230ms) before finalizing utterance
+            if (utteranceStartTime && voiceSilenceFrames >= 14) {
               isVoiceActiveRef.current = false;
               const utteranceDuration = now - utteranceStartTime;
 
-              // Append post-roll padding to catch trailing consonants
-              const ring = pcmRollingRingRef.current;
-              const postRoll = ring.slice(Math.max(0, ring.length - postRollCount));
-              const fullUtterance = [...activeUtterancePcmRef.current, ...postRoll];
+              // Only process if utterance was at least 200ms (human speech duration)
+              if (utteranceDuration >= 200) {
+                // Append post-roll padding to catch trailing consonants/vowels
+                const ring = pcmRollingRingRef.current;
+                const postRoll = ring.slice(Math.max(0, ring.length - postRollCount));
+                const fullUtterance = [...activeUtterancePcmRef.current, ...postRoll];
 
-              // Dispatch complete utterance downsampled to 16kHz to Cloud Speech AI
-              if (fullUtterance.length >= minUtteranceSamples && !isTranscribingRef.current) {
-                const downsampled = downsampleTo16k(fullUtterance, actualSampleRate);
-                const wavBlob = encodeWav(downsampled, 16000);
-                sendWavToWhisper(wavBlob);
+                // Dispatch complete utterance downsampled to 16kHz to Cloud Speech AI
+                if (fullUtterance.length >= minUtteranceSamples) {
+                  const downsampled = downsampleTo16k(fullUtterance, actualSampleRate);
+                  const wavBlob = encodeWav(downsampled, 16000);
+                  sendWavToWhisper(wavBlob);
+                }
               }
 
               utteranceStartTime = 0;

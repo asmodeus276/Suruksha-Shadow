@@ -1,9 +1,17 @@
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load env from both server directory and root directory
+dotenv.config({ path: path.resolve(__dirname, ".env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
+import express from "express";
+import cors from "cors";
 import sosRouter from "./routes/sos.js";
 import pingRouter from "./routes/ping.js";
 import fakeCallRouter from "./routes/fakeCall.js";
@@ -19,9 +27,6 @@ import evidenceRouter from "./routes/evidence.js";
 import heartbeatRouter from "./routes/heartbeat.js";
 import policeRouter from "./routes/police.js";
 import transcribeRouter from "./routes/transcribe.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
