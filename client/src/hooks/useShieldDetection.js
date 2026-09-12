@@ -199,8 +199,16 @@ function levenshteinDistance(s1, s2) {
  */
 function isFuzzyCodeWordMatch(spokenText, targetWord) {
   if (!spokenText) return false;
-  const cleanSpoken = spokenText.toLowerCase().replace(/[^a-z0-9\u0900-\u097F\s]/g, " ").trim();
-  const cleanTarget = (targetWord || "banana").toLowerCase().replace(/[^a-z0-9\u0900-\u097F\s]/g, " ").trim();
+  const cleanSpoken = spokenText
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const cleanTarget = (targetWord || "banana")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   if (!cleanTarget || !cleanSpoken) return false;
 
@@ -257,7 +265,8 @@ function isFuzzyCodeWordMatch(spokenText, targetWord) {
       for (const word of words) {
         if (word.length >= 3) {
           const dist = levenshteinDistance(word, target);
-          if (dist <= maxAllowedDist) return true;
+          const similarity = 1 - dist / Math.max(word.length, target.length);
+          if (dist <= maxAllowedDist || similarity >= 0.70) return true;
         }
       }
     } else {
@@ -265,7 +274,8 @@ function isFuzzyCodeWordMatch(spokenText, targetWord) {
       for (let i = 0; i <= words.length - windowLen; i++) {
         const slice = words.slice(i, i + windowLen).join(" ");
         const dist = levenshteinDistance(slice, cleanTarget);
-        if (dist <= Math.min(3, Math.floor(cleanTarget.length * 0.3))) {
+        const similarity = 1 - dist / Math.max(slice.length, cleanTarget.length);
+        if (dist <= Math.min(3, Math.floor(cleanTarget.length * 0.35)) || similarity >= 0.68) {
           return true;
         }
       }
@@ -278,7 +288,7 @@ function isFuzzyCodeWordMatch(spokenText, targetWord) {
 /**
  * Universal Dual-Engine Shield Hearing & Acoustic Trigger:
  * 1. Local Web Audio Vocal Utterance & Acoustic Classifier (Runs 100% on-device with zero server latency)
- * 2. Standalone 16kHz PCM WAV Audio Slicer & Cloud Whisper AI (Groq / Gemini)
+ * 2. Standalone 16kHz PCM WAV Audio Slicer with 500ms Pre-roll & Cloud Whisper AI
  * 3. Web Speech API Multi-Dialect Continuous STT
  * 4. Calibrated Device Motion & Violent Shake Sensor
  */
@@ -311,7 +321,8 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
   const speechRecognitionRef = useRef(null);
   const isTranscribingRef = useRef(false);
   const lastTranscribeTimeRef = useRef(0);
-  const pcmBufferRef = useRef([]);
+  const pcmRollingRingRef = useRef([]); // rolling pre-roll buffer (last 1.5s)
+  const activeUtterancePcmRef = useRef([]); // current active utterance samples
 
   const fire = useCallback(
     (type, confidence = 0.90, details = "") => {
@@ -342,7 +353,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
     async (wavBlob) => {
       if (isTranscribingRef.current || triggeredRef.current || !wavBlob || wavBlob.size < 2000) return;
       const now = Date.now();
-      if (now - lastTranscribeTimeRef.current < 500) return;
+      if (now - lastTranscribeTimeRef.current < 450) return;
       lastTranscribeTimeRef.current = now;
       isTranscribingRef.current = true;
       setIsWhisperTranscribing(true);
@@ -367,16 +378,20 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
 
         if (res.ok) {
           const data = await res.json();
-          if (data.text && !triggeredRef.current) {
-            setTranscript(`🗣️ Whisper: "${data.text}"`);
+          // STEP 1 LOGGING: Log exact raw Whisper output received by client
+          console.log(`[WHISPER-CLIENT-RAW] Raw: "${data.rawTranscript || data.text}" | Normalized: "${data.normalizedText}" | Provider: ${data.provider} | Latency: ${data.latencyMs}ms | Match: ${data.isMatch} (${data.matchType})`);
+
+          if (data.rawTranscript || data.text) {
+            const heardText = data.rawTranscript || data.text;
+            setTranscript(`🗣️ Whisper (${data.provider}): "${heardText}"`);
             setMicStatus("whisper-active");
 
-            if (data.isMatch || isFuzzyCodeWordMatch(data.text, codeWord)) {
-              console.log("[SURAKSHA SHIELD] Whisper AI codeword match confirmed:", data.text);
+            if (data.isMatch || isFuzzyCodeWordMatch(heardText, codeWord)) {
+              console.log("[SURAKSHA SHIELD] Whisper AI codeword match confirmed:", heardText);
               fire(
                 "voice",
                 data.confidence || 0.98,
-                `Cloud Whisper AI matched codeword: "${data.text}"`
+                `Cloud Whisper AI matched codeword: "${heardText}" (engine: ${data.provider})`
               );
             }
           }
@@ -447,19 +462,34 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         analyser.smoothingTimeConstant = 0.2;
         source.connect(analyser);
 
-        // PCM Sample Collector via ScriptProcessor for standalone WAV generation
+        const isVoiceActiveRef = { current: false };
+
+        // Continuous 16kHz PCM Rolling Ring Buffer with 500ms Pre-roll & VAD Collector
         if (ctx.createScriptProcessor) {
           processorNode = ctx.createScriptProcessor(4096, 1, 1);
           processorNode.onaudioprocess = (e) => {
             if (!isMounted || !enabled) return;
             const channel = e.inputBuffer.getChannelData(0);
-            const pcm = pcmBufferRef.current;
+
+            // 1. Maintain rolling 1.5s ring buffer (24000 samples @ 16kHz)
+            const ring = pcmRollingRingRef.current;
             for (let i = 0; i < channel.length; i++) {
-              pcm.push(channel[i]);
+              ring.push(channel[i]);
             }
-            // Keep last 2.0 seconds of audio samples (16000 * 2 = 32000 samples)
-            if (pcm.length > 32000) {
-              pcm.splice(0, pcm.length - 32000);
+            if (ring.length > 24000) {
+              ring.splice(0, ring.length - 24000);
+            }
+
+            // 2. If voice is active, accumulate into active utterance buffer
+            if (isVoiceActiveRef.current) {
+              const active = activeUtterancePcmRef.current;
+              for (let i = 0; i < channel.length; i++) {
+                active.push(channel[i]);
+              }
+              // Limit single utterance chunk to 3.0 seconds max
+              if (active.length > 48000) {
+                active.splice(0, active.length - 48000);
+              }
             }
           };
           source.connect(processorNode);
@@ -473,6 +503,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         let utterancePeakDb = 0;
         let syllableEnergyPeaks = 0;
         let lastEnergyDip = true;
+        let voiceSilenceFrames = 0;
 
         const processAudio = () => {
           if (!isMounted || !enabled) return;
@@ -506,15 +537,24 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
             lastUiUpdate = now;
           }
 
-          // Vocal Activity: Generous threshold (any voice or sound > ambientFloor + 3 dB or avgVoice > 10)
+          // Lightweight VAD Pre-filter: Triggers only when vocal energy exceeds baseline
           const isVoiceActive = avgVoice > 10 || estimatedDb >= ambientFloor + 3 || avgTotal > 8;
 
           if (isVoiceActive) {
+            voiceSilenceFrames = 0;
+            isVoiceActiveRef.current = true;
+
             if (!utteranceStartTime) {
               utteranceStartTime = now;
               utterancePeakDb = estimatedDb;
               syllableEnergyPeaks = 1;
               lastEnergyDip = false;
+
+              // STEP 4: Grab 500ms (8,000 samples @ 16kHz) pre-roll overlap from ring buffer
+              const ring = pcmRollingRingRef.current;
+              const preRollCount = Math.min(8000, ring.length);
+              const preRoll = ring.slice(ring.length - preRollCount);
+              activeUtterancePcmRef.current = [...preRoll];
             } else {
               utterancePeakDb = Math.max(utterancePeakDb, estimatedDb);
 
@@ -533,18 +573,28 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
             setSyllableCount(liveSyllables);
             setTranscript(`🗣️ Voice: ${liveSyllables}/3 syllables (${estimatedDb} dB)`);
 
-            // If voice duration reaches typical codeword length (~300ms - 1500ms):
-            if (durationMs >= 300 && durationMs <= 1800) {
-              if (pcmBufferRef.current.length >= 6000 && !isTranscribingRef.current) {
-                const sampleSlice = pcmBufferRef.current.slice();
+            // If voice duration reaches typical codeword length (~350ms - 1500ms):
+            if (durationMs >= 350 && durationMs <= 1800) {
+              if (activeUtterancePcmRef.current.length >= 8000 && !isTranscribingRef.current) {
+                const sampleSlice = activeUtterancePcmRef.current.slice();
                 const wavBlob = encodeWav(sampleSlice, ctx.sampleRate || 16000);
                 sendWavToWhisper(wavBlob);
               }
             }
           } else {
-            // Voice ended / pause
-            if (utteranceStartTime) {
+            // Voice silence frame
+            voiceSilenceFrames += 1;
+
+            // Wait for 12 silence frames (~200ms) before finalizing utterance
+            if (utteranceStartTime && voiceSilenceFrames >= 12) {
+              isVoiceActiveRef.current = false;
               const utteranceDuration = now - utteranceStartTime;
+
+              // Append 300ms post-roll padding (4800 samples) to catch trailing consonants
+              const ring = pcmRollingRingRef.current;
+              const postRollCount = Math.min(4800, ring.length);
+              const postRoll = ring.slice(ring.length - postRollCount);
+              const fullUtterance = [...activeUtterancePcmRef.current, ...postRoll];
 
               // Local Acoustic Codeword Classifier:
               // Any vocal utterance (duration 220ms–2200ms, peak >= 33 dB) triggers emergency!
@@ -558,16 +608,17 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
                 );
               }
 
-              // Also dispatch final WAV slice to Whisper backend
-              if (pcmBufferRef.current.length >= 4000 && !isTranscribingRef.current) {
-                const sampleSlice = pcmBufferRef.current.slice();
-                const wavBlob = encodeWav(sampleSlice, ctx.sampleRate || 16000);
+              // Dispatch final complete utterance with 500ms pre-roll + 300ms post-roll to Whisper
+              if (fullUtterance.length >= 4000 && !isTranscribingRef.current) {
+                const wavBlob = encodeWav(fullUtterance, ctx.sampleRate || 16000);
                 sendWavToWhisper(wavBlob);
               }
 
               utteranceStartTime = 0;
               utterancePeakDb = 0;
               syllableEnergyPeaks = 0;
+              voiceSilenceFrames = 0;
+              activeUtterancePcmRef.current = [];
             }
           }
 
