@@ -363,10 +363,11 @@ async function transcribeWithOpenAI(audioBuffer, mimeType, apiKey, codeWord = "b
 }
 
 /**
- * Transcribe via Gemini 1.5 Flash Audio Multimodal API
+ * Transcribe via Gemini 2.5 Flash Audio Multimodal API
  */
 async function transcribeWithGemini(audioBase64, mimeType, apiKey, codeWord = "banana") {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const modelsToTry = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"];
+  let lastError = null;
 
   const payload = {
     contents: [
@@ -390,20 +391,30 @@ async function transcribeWithGemini(audioBase64, mimeType, apiKey, codeWord = "b
     },
   };
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  for (const model of modelsToTry) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini Audio error ${res.status}: ${errText}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        lastError = new Error(`Gemini Audio (${model}) error ${res.status}: ${errText}`);
+        continue;
+      }
+
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return text.trim();
+    } catch (err) {
+      lastError = err;
+    }
   }
 
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  return text.trim();
+  throw lastError || new Error("All Gemini audio models failed");
 }
 
 /**

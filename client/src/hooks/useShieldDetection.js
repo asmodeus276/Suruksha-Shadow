@@ -292,7 +292,7 @@ function isFuzzyCodeWordMatch(spokenText, targetWord) {
  * 3. Web Speech API Multi-Dialect Continuous STT
  * 4. Calibrated Device Motion & Violent Shake Sensor
  */
-export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = true }) {
+export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = true, apiBaseUrl = "" }) {
   const [transcript, setTranscript] = useState("");
   const [micStatus, setMicStatus] = useState("idle"); // idle | listening | hearing | whisper-active | error
   const [audioLevel, setAudioLevel] = useState(0); // 0-100 real-time audio meter
@@ -342,18 +342,19 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
   // Manual Trigger Simulation for testing
   const simulateVoiceTrigger = useCallback(
     (customWord = "banana") => {
-      setTranscript(`🚨 "${customWord}" (VOICE CODEWORD DETECTED)`);
-      fire("voice", 1.0, `Voice codeword triggered: "${customWord}"`);
+      const word = customWord || codeWord || "banana";
+      setTranscript(`🚨 "${word.toUpperCase()}" (VOICE CODEWORD DETECTED)`);
+      fire("voice", 1.0, `Voice codeword triggered: "${word}"`);
     },
-    [fire]
+    [codeWord, fire]
   );
 
-  // Helper: Dispatch standalone 16kHz WAV slice to Cloud Whisper API
+  // Helper: Dispatch standalone 16kHz WAV slice to Cloud Whisper / Gemini API
   const sendWavToWhisper = useCallback(
     async (wavBlob) => {
-      if (isTranscribingRef.current || triggeredRef.current || !wavBlob || wavBlob.size < 2000) return;
+      if (isTranscribingRef.current || triggeredRef.current || !wavBlob || wavBlob.size < 1500) return;
       const now = Date.now();
-      if (now - lastTranscribeTimeRef.current < 450) return;
+      if (now - lastTranscribeTimeRef.current < 400) return;
       lastTranscribeTimeRef.current = now;
       isTranscribingRef.current = true;
       setIsWhisperTranscribing(true);
@@ -366,7 +367,8 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         });
         const dataUrl = await base64Promise;
 
-        const res = await fetch("/api/audio/transcribe", {
+        const endpoint = `${apiBaseUrl || ""}/api/audio/transcribe`;
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -378,32 +380,32 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
 
         if (res.ok) {
           const data = await res.json();
-          // STEP 1 LOGGING: Log exact raw Whisper output received by client
-          console.log(`[WHISPER-CLIENT-RAW] Raw: "${data.rawTranscript || data.text}" | Normalized: "${data.normalizedText}" | Provider: ${data.provider} | Latency: ${data.latencyMs}ms | Match: ${data.isMatch} (${data.matchType})`);
+          console.log(`[WHISPER-CLIENT-RAW] Raw: "${data.rawTranscript || data.text}" | Normalized: "${data.normalizedText}" | Provider: ${data.provider} | Latency: ${data.latencyMs}ms | Match: ${data.isMatch}`);
 
-          if (data.rawTranscript || data.text) {
-            const heardText = data.rawTranscript || data.text;
-            setTranscript(`🗣️ Whisper (${data.provider}): "${heardText}"`);
+          const heardText = data.rawTranscript || data.text;
+          if (heardText) {
+            setTranscript(`🗣️ AI Heard: "${heardText}"`);
             setMicStatus("whisper-active");
 
             if (data.isMatch || isFuzzyCodeWordMatch(heardText, codeWord)) {
-              console.log("[SURAKSHA SHIELD] Whisper AI codeword match confirmed:", heardText);
+              console.log("[SURAKSHA SHIELD] AI codeword match confirmed:", heardText);
+              setTranscript(`🚨 "${heardText.toUpperCase()}" (MATCHED)`);
               fire(
                 "voice",
                 data.confidence || 0.98,
-                `Cloud Whisper AI matched codeword: "${heardText}" (engine: ${data.provider})`
+                `Cloud AI matched codeword: "${heardText}" (engine: ${data.provider})`
               );
             }
           }
         }
       } catch (err) {
-        console.warn("[SURAKSHA SHIELD] Whisper transcribe notice:", err.message);
+        console.warn("[SURAKSHA SHIELD] Cloud transcribe notice:", err.message);
       } finally {
         isTranscribingRef.current = false;
         setIsWhisperTranscribing(false);
       }
     },
-    [codeWord, fire]
+    [apiBaseUrl, codeWord, fire]
   );
 
   // --- Engine 1: Web Audio Live Vocal Classifier & 16kHz Standalone WAV Generator ---
@@ -781,6 +783,27 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
             if (matched) break;
           }
 
+          if (!matched) {
+            const allTokens = (cleanedLatest + " " + cleanedAll).split(/\s+/).filter(Boolean);
+            for (const token of allTokens) {
+              if (isFuzzyCodeWordMatch(token, target)) {
+                matched = true;
+                matchedWord = target;
+                matchConfidence = 0.98;
+                break;
+              }
+              for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
+                if (isFuzzyCodeWordMatch(token, universal)) {
+                  matched = true;
+                  matchedWord = universal;
+                  matchConfidence = 0.95;
+                  break;
+                }
+              }
+              if (matched) break;
+            }
+          }
+
           if (!matched && (isFuzzyCodeWordMatch(cleanedAll, target) || isFuzzyCodeWordMatch(cleanedLatest, target))) {
             matched = true;
             matchedWord = target;
@@ -788,7 +811,8 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
           }
 
           if (matched) {
-            setTranscript(`🚨 "${matchedWord}" (KEYWORD DETECTED)`);
+            console.log(`[SURAKSHA SHIELD] Speech recognition matched: "${matchedWord}"`);
+            setTranscript(`🚨 "${matchedWord.toUpperCase()}" (KEYWORD DETECTED)`);
             fire(
               "voice",
               matchConfidence,
@@ -799,7 +823,10 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
 
         recognition.onerror = (e) => {
           if (stopped) return;
-          if (e.error === "audio-capture" || e.error === "network") {
+          if (e.error === "not-allowed") {
+            setMicStatus("error");
+            setLastError("Microphone permission denied. Please allow microphone access.");
+          } else if (e.error === "audio-capture" || e.error === "network") {
             langIndex += 1;
           }
         };
@@ -809,7 +836,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
           restartTimeout = setTimeout(() => {
             setRestartCount((n) => n + 1);
             startListening();
-          }, 250);
+          }, 150);
         };
 
         recognitionInstance = recognition;

@@ -475,6 +475,7 @@ export default function App() {
     codeWord,
     enabled: armed,
     onTrigger: fireSOS,
+    apiBaseUrl: API_BASE_URL,
   });
 
   useEffect(() => {
@@ -1140,49 +1141,83 @@ export default function App() {
                   </span>
                 </button>
 
-                {/* Live Diagnostics Pill */}
+                {/* Live Diagnostics & Sentinel Status Bar */}
                 {armed ? (
-                  <div className="diagnostics stack-1 mt-3">
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+                  <div
+                    className="mt-3"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 8,
+                      width: "100%",
+                      maxWidth: 520,
+                      margin: "12px auto 0",
+                    }}
+                  >
+                    {/* Unified Multi-Sensor Sentinel HUD */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        flexWrap: "wrap",
+                        padding: "6px 12px",
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid var(--line)",
+                        borderRadius: 20,
+                        fontSize: 11.5,
+                      }}
+                    >
+                      {/* Microphone Status */}
                       <div
                         onClick={micStatus === "error" ? toggleArm : undefined}
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: 6,
+                          gap: 5,
                           color: micStatus === "error" ? "var(--alarm)" : audioLevel > 15 ? "var(--ember)" : "#2ecc71",
                           fontWeight: audioLevel > 15 || micStatus === "hearing" ? 600 : 400,
                           cursor: micStatus === "error" ? "pointer" : "default",
                         }}
-                        title={micStatus === "error" ? "Tap to grant microphone permission" : "Live acoustic microphone surveillance"}
+                        title={micStatus === "error" ? "Tap to grant microphone permission" : "Microphone active & listening for voice codewords"}
                       >
-                        <MicIcon size={13} className="icon" style={{ verticalAlign: -2 }} />
+                        <MicIcon size={12} className="icon" />
                         <span>
                           {micStatus === "listening"
-                            ? `mic active (${audioDb} dB)`
+                            ? `Mic Active (${audioDb} dB)`
                             : micStatus === "hearing"
-                            ? `hearing speech (${audioDb} dB)`
-                            : micStatus === "acoustic-only"
-                            ? `acoustic mic (${audioDb} dB)`
+                            ? `Hearing (${audioDb} dB)`
                             : micStatus === "error"
-                            ? "⚠️ mic permission needed (tap to fix)"
-                            : micStatus}
+                            ? "Mic Permission Needed"
+                            : `Mic (${audioDb} dB)`}
                         </span>
-                        {/* Live Animated Audio Waveform */}
-                        {(micStatus === "listening" || micStatus === "hearing" || micStatus === "acoustic-only") && (
-                          <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 2, height: 11, marginLeft: 2 }}>
-                            <span style={{ width: 2.5, height: `${Math.max(3, (audioLevel / 100) * 11)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1, transition: "height 0.08s" }} />
-                            <span style={{ width: 2.5, height: `${Math.max(4, ((audioLevel * 1.4) / 100) * 11)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1, transition: "height 0.08s" }} />
-                            <span style={{ width: 2.5, height: `${Math.max(3, ((audioLevel * 0.8) / 100) * 11)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1, transition: "height 0.08s" }} />
+                        {(micStatus === "listening" || micStatus === "hearing") && (
+                          <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 1.5, height: 10, marginLeft: 2 }}>
+                            <span style={{ width: 2, height: `${Math.max(3, (audioLevel / 100) * 10)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1 }} />
+                            <span style={{ width: 2, height: `${Math.max(4, ((audioLevel * 1.4) / 100) * 10)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1 }} />
+                            <span style={{ width: 2, height: `${Math.max(3, ((audioLevel * 0.8) / 100) * 10)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1 }} />
                           </span>
                         )}
                       </div>
-                      <div>
-                        <ActivityIcon size={13} className="icon" style={{ marginRight: 4, verticalAlign: -2 }} />
-                        motion: {motionMagnitude} m/s²
+
+                      <span style={{ opacity: 0.3 }}>•</span>
+
+                      {/* Motion Status */}
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--paper)", opacity: 0.9 }}>
+                        <ActivityIcon size={12} className="icon" />
+                        <span>Motion: {motionMagnitude} m/s²</span>
                       </div>
+
+                      <span style={{ opacity: 0.3 }}>•</span>
+
+                      {/* Gesture Watch */}
                       <div
                         style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
                           cursor: "pointer",
                           color: isCameraActive
                             ? gestureProgress > 0
@@ -1191,81 +1226,29 @@ export default function App() {
                               ? "#2ecc71"
                               : "var(--ember)"
                             : "var(--dim)",
-                          fontWeight: isCameraActive ? 600 : 400,
                         }}
                         onClick={handleToggleCamera}
-                        title="Tap to toggle Camera Watch (Signal for Help)"
+                        title="Tap to toggle Camera Gesture Watch (Signal for Help)"
                       >
-                        <CameraIcon size={13} className="icon" style={{ marginRight: 4, verticalAlign: -2 }} />
-                        gesture: {isCameraActive
-                          ? gestureProgress > 0
-                            ? `holding (${Math.round(gestureProgress * 100)}%)`
-                            : handDetected
-                            ? "hand in view"
-                            : "watching"
-                          : "off"}
+                        <CameraIcon size={12} className="icon" />
+                        <span>
+                          Gesture: {isCameraActive
+                            ? gestureProgress > 0
+                              ? `Holding (${Math.round(gestureProgress * 100)}%)`
+                              : handDetected
+                              ? "Hand Detected"
+                              : "Watching"
+                            : "Off"}
+                        </span>
                       </div>
-                      <div title="Silence detection active: server alerts guardians if contact is lost for >3min">
-                        <HeartbeatIcon size={13} className="icon" style={{ marginRight: 4, verticalAlign: -2, color: "#2ecc71" }} />
-                        <span style={{ color: "#2ecc71" }}>heartbeat active</span>
+
+                      <span style={{ opacity: 0.3 }}>•</span>
+
+                      {/* Heartbeat Status */}
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#2ecc71" }} title="Silence Detection: Guardians alerted if device goes silent >3 min">
+                        <HeartbeatIcon size={12} className="icon" />
+                        <span>Heartbeat Active</span>
                       </div>
-                      {safeZones.zones.length > 0 && (
-                        <div title="Safe Zone Geofencing">
-                          <HomeIcon size={13} className="icon" style={{ marginRight: 4, verticalAlign: -2, color: safeZones.isInsideSafeZone ? "#2ecc71" : "var(--alarm)" }} />
-                          <span style={{ color: safeZones.isInsideSafeZone ? "#2ecc71" : "var(--alarm)" }}>
-                            {safeZones.isInsideSafeZone ? safeZones.currentZoneName || "in safe zone" : "outside safe zone"}
-                          </span>
-                        </div>
-                      )}
-                      {routeGuard.isActive && (
-                        <div title="Route Guard Active">
-                          <NavigationIcon size={13} className="icon" style={{ marginRight: 4, verticalAlign: -2, color: routeGuard.alertType ? "var(--alarm)" : "#2ecc71" }} />
-                          <span style={{ color: routeGuard.alertType ? "var(--alarm)" : "#2ecc71" }}>
-                            route guard: {routeGuard.currentSpeedKmh > 0 ? `${routeGuard.currentSpeedKmh}km/h` : `${routeGuard.deviationM}m dev`}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 6,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: transcript.includes("KEYWORD")
-                            ? "var(--alarm)"
-                            : transcript
-                            ? "var(--ember)"
-                            : "var(--mist-dim)",
-                          fontFamily: "var(--mono)",
-                          fontSize: 11.5,
-                        }}
-                      >
-                        {transcript ? `🗣️ Heard: "${transcript}"` : `🎙️ Listening for "${codeWord}" / "bachao" / "help" / "save me"...`}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => simulateVoiceTrigger(codeWord)}
-                        title="Simulate speaking the secret codeword"
-                        style={{
-                          fontSize: 10.5,
-                          padding: "2px 8px",
-                          borderRadius: 12,
-                          background: "rgba(255, 170, 0, 0.12)",
-                          border: "1px solid rgba(255, 170, 0, 0.35)",
-                          color: "var(--ember)",
-                          cursor: "pointer",
-                          fontWeight: 600,
-                        }}
-                      >
-                        🗣️ Test "{codeWord}"
-                      </button>
                     </div>
                   </div>
                 ) : (
@@ -1277,25 +1260,25 @@ export default function App() {
                 )}
 
                 {/* Live Real-Time Device GPS Location Badge */}
-                <div className="mt-3" style={{ display: "flex", justifyContent: "center" }}>
+                <div className="mt-2" style={{ display: "flex", justifyContent: "center" }}>
                   <div
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 8,
-                      padding: "6px 14px",
+                      padding: "5px 14px",
                       borderRadius: 20,
-                      background: "rgba(255, 255, 255, 0.04)",
+                      background: "rgba(255, 255, 255, 0.03)",
                       border: "1px solid var(--line)",
-                      fontSize: 12,
+                      fontSize: 11.5,
                       color: "var(--paper)",
-                      maxWidth: "92%",
+                      maxWidth: "94%",
                     }}
                   >
                     <span
                       style={{
-                        width: 8,
-                        height: 8,
+                        width: 7,
+                        height: 7,
                         borderRadius: "50%",
                         background:
                           gpsStatus === "locked"
@@ -1303,7 +1286,7 @@ export default function App() {
                             : gpsStatus === "acquiring"
                             ? "var(--ember)"
                             : "var(--alarm)",
-                        boxShadow: gpsStatus === "locked" ? "0 0 8px #2ecc71" : "none",
+                        boxShadow: gpsStatus === "locked" ? "0 0 6px #2ecc71" : "none",
                         flexShrink: 0,
                       }}
                     />
@@ -1318,7 +1301,7 @@ export default function App() {
                         ? "⚠️ GPS Permission Disabled"
                         : "📍 GPS Offline"}
                       {gpsStatus === "locked" && currentCoords?.accuracy && (
-                        <span className="text-dim" style={{ marginLeft: 6 }}>
+                        <span className="text-dim" style={{ marginLeft: 4 }}>
                           (±{currentCoords.accuracy}m)
                         </span>
                       )}
@@ -1326,14 +1309,14 @@ export default function App() {
                     <button
                       type="button"
                       onClick={refreshGpsFix}
-                      title="Refresh High-Accuracy GPS Fix"
+                      title="Refresh GPS Fix"
                       style={{
                         background: "none",
                         border: "none",
                         color: "var(--ember)",
                         cursor: "pointer",
                         padding: "0 2px",
-                        fontSize: 13,
+                        fontSize: 12,
                         display: "flex",
                         alignItems: "center",
                       }}
@@ -1344,15 +1327,15 @@ export default function App() {
                       id="gps-badge-live-safety-map-btn"
                       type="button"
                       onClick={() => setIsLiveMapModalOpen(true)}
-                      title="Open dedicated interactive Live Safety Map"
+                      title="Open interactive Live Safety Map"
                       style={{
                         background: "rgba(232, 196, 104, 0.15)",
                         border: "1px solid rgba(232, 196, 104, 0.3)",
                         color: "var(--ember)",
                         borderRadius: 6,
                         cursor: "pointer",
-                        padding: "2px 8px",
-                        fontSize: 11,
+                        padding: "2px 7px",
+                        fontSize: 10.5,
                         fontWeight: 600,
                         display: "inline-flex",
                         alignItems: "center",
@@ -1370,39 +1353,39 @@ export default function App() {
                 <div
                   className="card mt-3"
                   style={{
-                    background: armed ? "rgba(232, 196, 104, 0.06)" : "rgba(255, 255, 255, 0.03)",
-                    border: armed ? "1px solid rgba(232, 196, 104, 0.25)" : "1px solid var(--line)",
+                    background: armed ? "rgba(232, 196, 104, 0.05)" : "rgba(255, 255, 255, 0.025)",
+                    border: armed ? "1px solid rgba(232, 196, 104, 0.22)" : "1px solid var(--line)",
                     borderRadius: 14,
                     padding: "14px 16px",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 20 }}>🎙️</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 22 }}>🎙️</span>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)", display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--paper)", display: "flex", alignItems: "center", gap: 6 }}>
                           <span>Voice Codeword:</span>
-                          <span style={{ color: "var(--ember)" }}>"{codeWord}"</span>
+                          <span style={{ color: "var(--ember)", fontSize: 14 }}>"{codeWord}"</span>
                           <span
                             style={{
                               fontSize: 9.5,
                               padding: "2px 6px",
                               borderRadius: 4,
-                              background: "rgba(46, 204, 113, 0.15)",
-                              color: "#2ecc71",
+                              background: armed ? "rgba(46, 204, 113, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                              color: armed ? "#2ecc71" : "var(--dim)",
                               fontWeight: 700,
-                              border: "1px solid rgba(46, 204, 113, 0.3)",
+                              border: armed ? "1px solid rgba(46, 204, 113, 0.3)" : "1px solid var(--line)",
                             }}
                           >
-                            ⚡ WHISPER AI ACTIVE
+                            {armed ? "⚡ SPEECH AI ACTIVE" : "STANDBY"}
                           </span>
                         </div>
-                        <div style={{ fontSize: 11, color: "var(--dim)" }}>
-                          Cloud Whisper AI VAD · 3-Syllable Cadence · High-dB Scream Detection
+                        <div style={{ fontSize: 11, color: "var(--dim)", marginTop: 2 }}>
+                          Universal phrases: "banana" · "bachao" · "help" · "save me" · "police"
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <button
                         type="button"
                         onClick={() => {
@@ -1410,45 +1393,30 @@ export default function App() {
                           simulateVoiceTrigger(codeWord);
                         }}
                         style={{
-                          padding: "6px 14px",
-                          fontSize: 11.5,
+                          padding: "7px 16px",
+                          fontSize: 12,
                           background: "linear-gradient(135deg, var(--ember), var(--alarm))",
                           border: "none",
                           borderRadius: 20,
                           color: "#fff",
                           fontWeight: 700,
                           cursor: "pointer",
-                          boxShadow: "0 2px 8px rgba(224, 90, 71, 0.3)",
+                          boxShadow: "0 2px 10px rgba(224, 90, 71, 0.35)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
                         }}
                         title="Instantly test speaking the secret codeword"
                       >
                         🗣️ Test "{codeWord}"
                       </button>
-                      {!armed && (
-                        <button
-                          type="button"
-                          onClick={arm}
-                          style={{
-                            padding: "6px 14px",
-                            fontSize: 11.5,
-                            background: "linear-gradient(135deg, #2ecc71, #27ae60)",
-                            border: "none",
-                            borderRadius: 20,
-                            color: "#fff",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
-                        >
-                          🛡️ Arm Shield
-                        </button>
-                      )}
                     </div>
                   </div>
 
-                  {/* Live Mic Audio Level & Syllable Feedback Bar */}
+                  {/* Live Microphone Audio Level & Heard Speech Banner */}
                   <div
                     style={{
-                      background: "rgba(0, 0, 0, 0.4)",
+                      background: "rgba(0, 0, 0, 0.45)",
                       borderRadius: 10,
                       padding: "10px 14px",
                       display: "flex",
@@ -1456,6 +1424,7 @@ export default function App() {
                       justifyContent: "space-between",
                       flexWrap: "wrap",
                       gap: 10,
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200 }}>
@@ -1466,31 +1435,27 @@ export default function App() {
                           borderRadius: "50%",
                           background: armed ? (isWhisperTranscribing ? "var(--alarm)" : audioLevel > 15 ? "var(--ember)" : "#2ecc71") : "var(--dim)",
                           boxShadow: armed && (isWhisperTranscribing || audioLevel > 15) ? "0 0 8px currentColor" : "none",
+                          flexShrink: 0,
                         }}
                       />
-                      <span style={{ fontSize: 12, fontFamily: "var(--mono)", color: transcript ? "var(--ember)" : "var(--paper)" }}>
+                      <span style={{ fontSize: 12, fontFamily: "var(--mono)", color: transcript.includes("DETECTED") || transcript.includes("MATCHED") ? "var(--alarm)" : transcript ? "var(--ember)" : "var(--paper)" }}>
                         {transcript
                           ? transcript
                           : isWhisperTranscribing
-                          ? "⚡ Whisper AI analyzing speech slice…"
+                          ? "⚡ Cloud AI analyzing voice stream…"
                           : armed
                           ? `🎙️ Listening · say "${codeWord}" / "bachao" / "help"`
                           : "Microphone paused. Tap Arm Shield to activate."}
                       </span>
                     </div>
                     {armed && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                         <span style={{ fontSize: 11, color: "var(--dim)", fontFamily: "var(--mono)" }}>
                           {audioDb} dB
                         </span>
-                        <div style={{ width: 60, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${audioLevel}%`, background: audioLevel > 50 ? "var(--alarm)" : "var(--ember)", transition: "width 0.08s ease" }} />
+                        <div style={{ width: 64, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${audioLevel}%`, background: audioLevel > 45 ? "var(--alarm)" : "var(--ember)", transition: "width 0.08s ease" }} />
                         </div>
-                        {syllableCount > 0 && (
-                          <span style={{ fontSize: 10, color: "var(--ember)", fontWeight: 700 }}>
-                            {syllableCount}/3 syllables
-                          </span>
-                        )}
                       </div>
                     )}
                   </div>
