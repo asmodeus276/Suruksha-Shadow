@@ -24,26 +24,56 @@ Return ONLY the JSON array, no other text, no markdown fences.`;
  */
 router.post("/lines", async (req, res) => {
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: PROMPT }] }],
-        }),
-      }
-    );
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not configured");
+    }
+    const primaryModel = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    const modelsToTry = [primaryModel, "gemini-3.1-flash-lite"].filter((m, i, arr) => arr.indexOf(m) === i);
+    let lines = null;
+    let lastError = null;
 
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "(couldn't read response body)");
-      throw new Error(`Gemini API returned ${response.status}: ${errorBody}`);
+    for (const modelName of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: PROMPT }] }],
+              generationConfig: {
+                responseMimeType: "application/json",
+                thinkingConfig: { thinkingLevel: "LOW" },
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorBody = await response.text().catch(() => "(couldn't read response body)");
+          lastError = new Error(`Gemini API (${modelName}) returned ${response.status}: ${errorBody}`);
+          continue;
+        }
+
+        const data = await response.json();
+        const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (raw) {
+          const cleaned = raw.replace(/```json|```/g, "").trim();
+          const parsed = JSON.parse(cleaned);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            lines = parsed;
+            break;
+          }
+        }
+      } catch (err) {
+        lastError = err;
+      }
     }
 
-    const data = await response.json();
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-    const cleaned = raw.replace(/```json|```/g, "").trim();
-    const lines = JSON.parse(cleaned);
+    if (!lines) {
+      throw lastError || new Error("Failed to generate dialogue lines from Gemini");
+    }
 
     res.json({ lines });
   } catch (err) {

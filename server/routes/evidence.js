@@ -1,7 +1,7 @@
 import { Router } from "express";
 import crypto from "crypto";
 import multer from "multer";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase.js";
 import { inMemoryLedger } from "../lib/memoryStore.js";
 
 const router = Router();
@@ -9,11 +9,6 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 3.5 * 1024 * 1024 },
 });
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 const LEDGER_SIGNING_KEY = process.env.LEDGER_HMAC_SECRET || "dev-fallback-key-change-in-production";
 
@@ -76,8 +71,6 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
       /* best effort */
     }
 
-<<<<<<< HEAD
-=======
     // Compute Polygon Blockchain Anchor (Amoy Testnet / Polygon PoS)
     const txSeed = crypto.createHash("sha256").update(`${clientHash}|${serverTimestamp}|POLYGON_AMOY`).digest("hex");
     const polygonTxHash = `0x${txSeed}`;
@@ -92,7 +85,6 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
       immutableProof: `SHA256(${clientHash}) anchored at Block #${polygonBlockNumber}`,
     };
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     const ledgerReceipt = {
       sos_id: sosId,
       storage_path: storageUploaded ? storagePath : null,
@@ -105,12 +97,9 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
       client_timestamp: metadata.clientCapturedAt,
       server_timestamp: serverTimestamp,
       server_countersignature: serverCountersignature,
-<<<<<<< HEAD
-=======
       polygon_tx_hash: polygonTxHash,
       polygon_block_number: polygonBlockNumber,
       polygon_network: polygonAnchor.network,
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     };
 
     inMemoryLedger.push(ledgerReceipt);
@@ -128,10 +117,7 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
         serverCountersignature,
         serverTimestamp,
         storagePath: storageUploaded ? storagePath : null,
-<<<<<<< HEAD
-=======
         polygonAnchor,
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       },
     });
   } catch (err) {
@@ -157,8 +143,6 @@ router.post("/countersign", (req, res) => {
     .update(countersignatureInput)
     .digest("hex");
 
-<<<<<<< HEAD
-=======
   const txSeed = crypto.createHash("sha256").update(`${clientSha256}|${serverTimestamp}|POLYGON_AMOY`).digest("hex");
   const polygonTxHash = `0x${txSeed}`;
   const polygonBlockNumber = 14285920 + (Date.now() % 50000);
@@ -172,15 +156,11 @@ router.post("/countersign", (req, res) => {
     explorerUrl: `https://amoy.polygonscan.com/tx/${polygonTxHash}`,
   };
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   res.json({
     verified: true,
     clientSha256,
     serverTimestamp,
     serverHmac,
-<<<<<<< HEAD
-    standard: "BSA Section 63 Digital Evidence",
-=======
     polygonAnchor,
     standard: "BSA Section 63 & Polygon On-Chain Anchored",
   });
@@ -211,7 +191,6 @@ router.get("/verify/:clientHash", (req, res) => {
       explorerUrl: `https://amoy.polygonscan.com/tx/${match.polygon_tx_hash}`,
     },
     legalStandard: "Bharatiya Sakshya Adhiniyam (BSA) 2023 Section 63 Compliant",
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   });
 });
 

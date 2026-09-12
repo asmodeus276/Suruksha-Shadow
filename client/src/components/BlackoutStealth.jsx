@@ -16,9 +16,6 @@ import { EyeOffIcon } from "./icons";
 export default function BlackoutStealth({ isOpen, onClose, isArmed, activeEventId }) {
   const tapCountRef = useRef(0);
   const [showHint, setShowHint] = useState(false);
-<<<<<<< HEAD
-
-=======
   const wakeLockRef = useRef(null);
 
   // Screen WakeLock management:
@@ -26,20 +23,10 @@ export default function BlackoutStealth({ isOpen, onClose, isArmed, activeEventI
   // Requesting a Screen WakeLock prevents mobile OS (Android/iOS) from putting
   // the CPU/sensors to sleep or locking the device, keeping JS execution, GPS,
   // and audio detection running at full power while looking 100% "screen off".
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   useEffect(() => {
     if (!isOpen) {
       tapCountRef.current = 0;
       setShowHint(false);
-<<<<<<< HEAD
-      return;
-    }
-
-    // Briefly flash a reassuring 1.5-second HUD confirmation on enter
-    setShowHint(true);
-    const timer = setTimeout(() => setShowHint(false), 1800);
-    return () => clearTimeout(timer);
-=======
       if (wakeLockRef.current) {
         wakeLockRef.current.release().catch(() => {});
         wakeLockRef.current = null;
@@ -85,7 +72,6 @@ export default function BlackoutStealth({ isOpen, onClose, isArmed, activeEventI
         wakeLockRef.current = null;
       }
     };
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   }, [isOpen]);
 
   const handleCornerTap = () => {

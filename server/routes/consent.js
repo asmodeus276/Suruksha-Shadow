@@ -1,13 +1,8 @@
 import { Router } from "express";
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase.js";
 
 const router = Router();
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 // In-memory resilience fallback for local dev / demo mode when Supabase is offline
 const inMemoryConsent = new Map();

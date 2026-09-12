@@ -1,16 +1,9 @@
 /**
-<<<<<<< HEAD
- * BSA 2023 Section 63 — Evidence Integrity Block Builder
- * -----------------------------------------------------------
- * Creates composite evidence blocks that cryptographically bind
- * audio capture data to GPS metadata and timestamps.
-=======
  * BSA 2023 Section 63 & On-Chain Evidence Integrity Block Builder
  * -----------------------------------------------------------
  * Creates composite evidence blocks that cryptographically bind
  * audio capture data to GPS metadata and timestamps, and anchors
  * the resulting digest onto the Polygon blockchain.
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
  *
  * The composite hash format is:
  *   SHA-256( [metadata_length: 4 bytes BE] + [metadata JSON] + [audio bytes] )
@@ -18,14 +11,6 @@
  * This exact binary format is replicated server-side during
  * verification, so both sides must agree on the byte layout.
  *
-<<<<<<< HEAD
- * The resulting `clientHash` is the evidence capture-time integrity
- * marker. The server then wraps it in an HMAC-SHA256 countersignature
- * binding it to a server-authoritative timestamp, completing the
- * Section 63 BSA chain of custody.
- */
-
-=======
  * The resulting `clientHash` is the capture-time integrity marker.
  * To eliminate reliance on central server trust, this hash is anchored
  * onto Polygon (Amoy Testnet / Polygon PoS), making evidence timestamps
@@ -47,7 +32,6 @@ export const POLYGON_NETWORKS = {
   },
 };
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 /**
  * Creates a composite evidence block from an audio recording and GPS metadata.
  *
@@ -92,8 +76,6 @@ export async function createEvidenceBlock(audioBlob, coords) {
     clientHash,
   };
 }
-<<<<<<< HEAD
-=======
 
 /**
  * Derives a deterministic pseudo-txHash for testnet anchoring or simulation
@@ -110,4 +92,3 @@ export function derivePolygonTxHash(clientHash, timestampISO) {
   return `0x${clientHash.slice(0, 48)}${hexPart}`;
 }
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799

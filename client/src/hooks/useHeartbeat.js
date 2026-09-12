@@ -1,27 +1,3 @@
-<<<<<<< HEAD
-import { useEffect, useRef } from "react";
-
-const HEARTBEAT_INTERVAL_MS = 30_000; // 30 seconds
-
-/**
- * Passive Heartbeat — Kidnapping-grade silence detection.
- *
- * While Shield is armed, sends a lightweight GPS ping to the server
- * every 30 seconds. If the server stops receiving pings (phone off,
- * confiscated, airplane mode, battery dead), it auto-fires SOS and
- * alerts guardians with the last known location.
- *
- * This is the single most important passive safety feature because
- * it requires ZERO user action — the absence of signal IS the alert.
- */
-export function useHeartbeat({ userId, apiBaseUrl, enabled }) {
-  const intervalRef = useRef(null);
-
-  useEffect(() => {
-    if (!enabled || !userId) return;
-
-    async function sendPing() {
-=======
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -140,7 +116,6 @@ export function useHeartbeat({ userId, apiBaseUrl, enabled }) {
 
     // Send single ping function
     async function sendPing(source = "worker") {
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       let lat = null;
       let lng = null;
 
@@ -154,24 +129,6 @@ export function useHeartbeat({ userId, apiBaseUrl, enabled }) {
         lat = pos.coords.latitude;
         lng = pos.coords.longitude;
       } catch {
-<<<<<<< HEAD
-        // GPS unavailable — still send the heartbeat so server knows we're alive
-      }
-
-      fetch(`${apiBaseUrl}/api/heartbeat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, lat, lng }),
-      }).catch((err) => console.warn("Heartbeat ping failed:", err));
-    }
-
-    // Send immediately on arm, then every 30s
-    sendPing();
-    intervalRef.current = setInterval(sendPing, HEARTBEAT_INTERVAL_MS);
-
-    return () => {
-      clearInterval(intervalRef.current);
-=======
         // Geolocation unavailable or timed out — still send heartbeat so server knows device is alive
       }
 
@@ -329,7 +286,6 @@ export function useHeartbeat({ userId, apiBaseUrl, enabled }) {
         clearInterval(watchdogIntervalRef.current);
         watchdogIntervalRef.current = null;
       }
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
       // Tell server to stop watching this user
       fetch(`${apiBaseUrl}/api/heartbeat/disarm`, {
@@ -337,11 +293,6 @@ export function useHeartbeat({ userId, apiBaseUrl, enabled }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
       }).catch(() => {});
-<<<<<<< HEAD
-    };
-  }, [enabled, userId, apiBaseUrl]);
-}
-=======
 
       if (window.__SURAKSHA_HEARTBEAT_STATUS__) {
         window.__SURAKSHA_HEARTBEAT_STATUS__.active = false;
@@ -352,4 +303,3 @@ export function useHeartbeat({ userId, apiBaseUrl, enabled }) {
   return diagnostics;
 }
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799

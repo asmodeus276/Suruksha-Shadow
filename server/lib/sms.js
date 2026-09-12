@@ -2,17 +2,6 @@
  * Multi-Provider SMS Dispatcher for Suraksha Shadow
  * --------------------------------------------------
  * Supports:
-<<<<<<< HEAD
- *  1. Twilio (Free Trial / Global / E.164 format)
- *  2. Fast2SMS (India domestic)
- *  3. Demo Mode (Zero cost / simulated log fallback)
- *
- * Uses native fetch with standard basic auth (no extra dependencies needed).
- */
-
-/**
- * Format number to international E.164 (+919876543210) for Twilio.
-=======
  *  1. Textbee.dev (Free Open-Source Android SMS Gateway / E.164)
  *  2. Twilio (Free Trial / Global / E.164 format)
  *  3. Fast2SMS (India domestic)
@@ -23,7 +12,6 @@
 
 /**
  * Format number to international E.164 (+919876543210) for Textbee / Twilio.
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
  */
 export function formatToE164(raw) {
   const digitsOnly = String(raw).replace(/\D/g, "");
@@ -50,8 +38,6 @@ export function normalizeToTenDigitIndian(raw) {
 }
 
 /**
-<<<<<<< HEAD
-=======
  * Send an SMS via Textbee.dev API (https://textbee.dev).
  * Turns your Android phone into an automated SMS gateway.
  */
@@ -102,7 +88,6 @@ async function sendViaTextbee(numbers, message) {
 }
 
 /**
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
  * Send an SMS via Twilio API.
  */
 async function sendViaTwilio(toNumber, message) {
@@ -180,13 +165,8 @@ async function sendViaFast2Sms(numbers, message) {
 }
 
 /**
-<<<<<<< HEAD
- * Main sendSms function. Automatically routes through Twilio, Fast2SMS,
- * or Demo Mode depending on what credentials are configured in .env.
-=======
  * Main sendSms function. Automatically routes through Textbee, Twilio,
  * Fast2SMS, or Demo Mode depending on what credentials are configured in .env.
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
  *
  * @param {string | string[]} numbers Phone number or array of numbers
  * @param {string} message The alert message text
@@ -205,14 +185,11 @@ export async function sendSms(numbers, message) {
     return { ok: false, error: "Recipient list is empty" };
   }
 
-<<<<<<< HEAD
-=======
   const isTextbeeConfigured =
     Boolean(process.env.TEXTBEE_API_KEY) &&
     process.env.TEXTBEE_API_KEY !== "placeholder" &&
     process.env.TEXTBEE_API_KEY !== "your_textbee_api_key_here";
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   const isTwilioConfigured =
     Boolean(process.env.TWILIO_ACCOUNT_SID) &&
     Boolean(process.env.TWILIO_AUTH_TOKEN) &&
@@ -222,18 +199,12 @@ export async function sendSms(numbers, message) {
     Boolean(process.env.FAST2SMS_API_KEY) &&
     process.env.FAST2SMS_API_KEY !== "placeholder";
 
-<<<<<<< HEAD
-  const isDemoMode =
-    process.env.SMS_DEMO_MODE === "true" ||
-    (!isTwilioConfigured && !isFast2SmsConfigured);
-=======
   const providerPreference = (process.env.SMS_PROVIDER || "").toLowerCase().trim();
 
   const isDemoMode =
     process.env.SMS_DEMO_MODE === "true" ||
     providerPreference === "demo" ||
     (!isTextbeeConfigured && !isTwilioConfigured && !isFast2SmsConfigured);
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
   if (isDemoMode) {
     console.log(
@@ -244,10 +215,6 @@ export async function sendSms(numbers, message) {
     return { ok: true, demo: true, recipients: numberList.length };
   }
 
-<<<<<<< HEAD
-  // --- Twilio Dispatch ---
-  if (isTwilioConfigured) {
-=======
   // --- 1. Textbee Dispatch (Default / Preferred if configured or SMS_PROVIDER=textbee) ---
   if ((providerPreference === "textbee" || !providerPreference) && isTextbeeConfigured) {
     try {
@@ -269,7 +236,6 @@ export async function sendSms(numbers, message) {
 
   // --- 2. Twilio Dispatch ---
   if ((providerPreference === "twilio" || !providerPreference) && isTwilioConfigured) {
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     try {
       console.log(
         `[Twilio] Dispatching alert to ${numberList.length} contact(s)...`
@@ -296,14 +262,6 @@ export async function sendSms(numbers, message) {
       };
     } catch (err) {
       console.error("[Twilio] Unexpected error during dispatch:", err.message);
-<<<<<<< HEAD
-      return { ok: false, error: err.message };
-    }
-  }
-
-  // --- Fast2SMS Dispatch ---
-  if (isFast2SmsConfigured) {
-=======
       if (providerPreference === "twilio") {
         return { ok: false, error: err.message };
       }
@@ -312,7 +270,6 @@ export async function sendSms(numbers, message) {
 
   // --- 3. Fast2SMS Dispatch ---
   if ((providerPreference === "fast2sms" || !providerPreference) && isFast2SmsConfigured) {
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     try {
       const tenDigitNumbers = numberList
         .map(normalizeToTenDigitIndian)
@@ -332,9 +289,5 @@ export async function sendSms(numbers, message) {
     }
   }
 
-<<<<<<< HEAD
-  return { ok: false, error: "No SMS gateway configured" };
-=======
   return { ok: false, error: "No configured SMS gateway available" };
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 }

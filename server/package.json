@@ -14,18 +14,10 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-<<<<<<< HEAD
-    "@google/genai": "^2.22.0",
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     "@supabase/supabase-js": "^2.110.9",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
-<<<<<<< HEAD
-    "ethers": "^6.17.0",
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     "express": "^5.2.1",
     "multer": "^2.3.0"
   }

@@ -4,7 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 // (schema.sql) keeps everything owner-locked; the Guardian view only
 // ever reaches data through the two SECURITY DEFINER functions, which
 // are the sole thing granted to the anon role.
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || "https://upqtqwvmlyyrgmibycau.supabase.co",
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL || "https://upqtqwvmlyyrgmibycau.supabase.co";
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy";
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

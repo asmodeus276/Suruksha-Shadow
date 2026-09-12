@@ -75,9 +75,6 @@ function useCalculator(onUnlock) {
   };
 
   const pressEquals = () => {
-<<<<<<< HEAD
-    if (sequence === "112") {
-=======
     const isCode =
       display === "112" ||
       display === "8042" ||
@@ -87,7 +84,6 @@ function useCalculator(onUnlock) {
       sequence.endsWith("8042");
 
     if (isCode) {
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       reset();
       onUnlock();
       return;
@@ -109,10 +105,7 @@ function useCalculator(onUnlock) {
   };
 
   const pressBackspace = () => {
-<<<<<<< HEAD
-=======
     setSequence((s) => (s.length > 0 ? s.slice(0, -1) : ""));
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     setDisplay((cur) => {
       if (overwrite || cur.length <= 1 || (cur.length === 2 && cur.startsWith("-"))) return "0";
       return cur.slice(0, -1);
@@ -123,15 +116,9 @@ function useCalculator(onUnlock) {
 }
 
 const BUTTON_TONES = {
-<<<<<<< HEAD
-  num: { bg: "#3A3A3C", color: "#F5F5F5" },
-  op: { bg: "#E8935B", color: "#1A1206" },
-  fn: { bg: "#A5A5A5", color: "#1A1A1A" },
-=======
   num: { bg: "#282a32", color: "#e1e1ed" },
   op: { bg: "#e8c468", color: "#241a00" },
   fn: { bg: "#434653", color: "#e1e1ed" },
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 };
 
 function Btn({ children, onClick, wide, tone = "num" }) {
@@ -145,13 +132,6 @@ function Btn({ children, onClick, wide, tone = "num" }) {
         color: t.color,
         border: "none",
         borderRadius: 999,
-<<<<<<< HEAD
-        fontSize: 26,
-        fontWeight: 500,
-        padding: "18px 0",
-        textAlign: wide ? "left" : "center",
-        paddingLeft: wide ? 28 : 0,
-=======
         fontSize: 24,
         fontWeight: 500,
         padding: "16px 0",
@@ -159,7 +139,6 @@ function Btn({ children, onClick, wide, tone = "num" }) {
         paddingLeft: wide ? 28 : 0,
         cursor: "pointer",
         transition: "opacity 0.1s ease",
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       }}
     >
       {children}

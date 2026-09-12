@@ -1,0 +1,12 @@
+{
+  "name": "Suraksha Shadow",
+  "description": "An AI-powered personal safety companion that silently detects distress, dispatches help without tipping off a threat, and keeps trusted contacts informed in real time.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
