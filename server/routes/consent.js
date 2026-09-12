@@ -1,11 +1,11 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { supabase } from "../lib/supabase.js";
+import { inMemoryConsent } from "../lib/memoryStore.js";
 
 const router = Router();
 
 // In-memory resilience fallback for local dev / demo mode when Supabase is offline
-const inMemoryConsent = new Map();
 const inMemoryArtifacts = [];
 
 /**

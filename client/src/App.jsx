@@ -10,6 +10,16 @@ import { useEmergencySms } from "./hooks/useEmergencySms";
 import { useHeartbeat } from "./hooks/useHeartbeat";
 import { useSafeZones } from "./hooks/useSafeZones";
 import { useRouteGuard } from "./hooks/useRouteGuard";
+import { useOfflineSync } from "./hooks/useOfflineSync";
+import {
+  saveEmergencyEvent,
+  saveGpsPoint,
+  logOfflineEvent,
+  enqueueSync,
+  updateSyncItemStatus,
+  updateEmergencyServerId,
+  STORES,
+} from "./lib/offlineDb";
 import EvidenceVault from "./components/EvidenceVault";
 import SaharaChat from "./components/SaharaChat";
 import GuidedNextSteps from "./components/GuidedNextSteps";
@@ -107,6 +117,9 @@ export default function App() {
   const [liveLocations, setLiveLocations] = useState([]);
   const [currentCoords, setCurrentCoords] = useState(null); // { lat, lng, accuracy, address, speed, timestamp }
   const [gpsStatus, setGpsStatus] = useState("acquiring"); // 'acquiring' | 'locked' | 'denied' | 'unavailable'
+
+  // Offline IndexedDB Resilience Engine Hook
+  const { isOnline, pendingCount, isSyncing, triggerManualSync } = useOfflineSync({ apiBaseUrl: API_BASE_URL });
 
   // Continuous Real-Time High-Accuracy Device Geolocation Watcher
   useEffect(() => {
@@ -344,8 +357,56 @@ export default function App() {
       // Generate instantaneous emergency session ID & token
       const localEventId = "sos-" + Date.now();
       const localShareToken = "token-" + Math.random().toString(36).substring(2, 10);
+      const sendLat = currentCoords?.lat || (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lat : 28.6328);
+      const sendLng = currentCoords?.lng || (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lng : 77.2197);
 
-      // 1. INSTANT ACTIVATION: Immediately engage emergency state & open Suraksha Shadow Command Center
+      // 1. INSTANT LOCAL PERSISTENCE (IndexedDB Zero-Data-Loss Invariant)
+      let syncQueueItem = null;
+      try {
+        await saveEmergencyEvent({
+          localId: localEventId,
+          emergencyId: localEventId,
+          userId: USER_ID,
+          triggerType,
+          mode,
+          confidence,
+          details: triggerDetails,
+          lat: sendLat,
+          lng: sendLng,
+          status: "active",
+          shareToken: localShareToken,
+          syncStatus: "pending",
+        });
+
+        await logOfflineEvent("emergency_triggered", triggerDetails, localEventId, {
+          mode,
+          confidence,
+          triggerType,
+          lat: sendLat,
+          lng: sendLng,
+        });
+
+        syncQueueItem = await enqueueSync({
+          targetStore: STORES.EMERGENCY_EVENTS,
+          recordLocalId: localEventId,
+          emergencyId: localEventId,
+          endpoint: "/api/sos",
+          method: "POST",
+          payload: {
+            userId: USER_ID,
+            triggerType,
+            mode,
+            confidence,
+            details: triggerDetails,
+            lat: sendLat,
+            lng: sendLng,
+          },
+        });
+      } catch (idbErr) {
+        console.warn("[SURAKSHA RESILIENCE] IndexedDB local persistence warning:", idbErr);
+      }
+
+      // 2. INSTANT ACTIVATION: Immediately engage emergency state & open Suraksha Shadow Command Center
       setActiveEventId(localEventId);
       setActiveShareToken(localShareToken);
       setSosError(null);
@@ -357,11 +418,8 @@ export default function App() {
         "CORAL"
       );
 
-      // 2. SERVER SYNCHRONIZATION: Register canonical event on backend in background
+      // 3. SERVER SYNCHRONIZATION: Register canonical event on backend in background
       try {
-        const sendLat = currentCoords?.lat || (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lat : 28.6328);
-        const sendLng = currentCoords?.lng || (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lng : 77.2197);
-
         const res = await fetch(`${API_BASE_URL}/api/sos`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -386,12 +444,20 @@ export default function App() {
           setActiveEventId(data.eventId);
           if (data.shareToken) setActiveShareToken(data.shareToken);
           evidenceVault?.startAutomatedCapture?.(10000, data.eventId);
+
+          // Update local DB and mark sync item as completed
+          updateEmergencyServerId(localEventId, data.eventId, data.shareToken).catch(() => {});
+          if (syncQueueItem) {
+            updateSyncItemStatus(syncQueueItem.localId, "synced").catch(() => {});
+          }
+          logOfflineEvent("emergency_server_synced", `Canonical event ${data.eventId} registered with server`, data.eventId).catch(() => {});
         }
       } catch (err) {
-        console.warn("[SURAKSHA] Server registration non-fatal error, maintaining active emergency:", err.message);
+        console.warn("[SURAKSHA] Server registration deferred (safely preserved in IndexedDB queue):", err.message);
+        logOfflineEvent("emergency_network_deferred", `Server unreachable (${err.message}). Preserved in offline sync queue.`, localEventId).catch(() => {});
       }
     },
-    [fakeCall, evidenceVault, activeEventId, currentCoords, liveLocations]
+    [fakeCall, evidenceVault, emergencySms, contacts, activeEventId, currentCoords, liveLocations]
   );
 
   const {
@@ -552,6 +618,7 @@ export default function App() {
     routeGuard.endRoute();
     const eventId = activeEventId;
     setActiveEventId(null);
+    logOfflineEvent("emergency_resolved_direct", "Emergency resolved directly by user", eventId).catch(() => {});
     try {
       await fetch(`${API_BASE_URL}/api/emergency/${eventId}/resolve`, { method: "POST" });
     } catch (err) {
@@ -570,6 +637,7 @@ export default function App() {
    * the emergency active and notifies contacts.
    */
   const handlePinResolved = () => {
+    const eventId = activeEventId;
     setShowPinModal(false);
     isFiringRef.current = false;
     // IDENTICAL teardown regardless of which PIN was used.
@@ -581,6 +649,7 @@ export default function App() {
     safeZones.reset();
     routeGuard.endRoute();
     setActiveEventId(null);
+    logOfflineEvent("emergency_pin_resolved", "Emergency cancellation processed via security PIN", eventId).catch(() => {});
   };
 
   // Decoy triple-tap trigger (Mobile touch & click compatible with debounce)
