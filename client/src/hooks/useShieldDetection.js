@@ -547,6 +547,8 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         let syllableEnergyPeaks = 0;
         let lastEnergyDip = true;
         let voiceSilenceFrames = 0;
+        let idleResetTimeout = null;
+        const warmupUntil = Date.now() + 700; // 700ms startup debounce to ignore mouse click & mic power-on pop
 
         const processAudio = () => {
           if (!isMounted || !enabled) return;
@@ -580,12 +582,22 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
             lastUiUpdate = now;
           }
 
+          // Ignore audio during the initial startup calibration window (suppresses mouse clicks)
+          if (now < warmupUntil) {
+            animFrame = requestAnimationFrame(processAudio);
+            return;
+          }
+
           // Lightweight VAD Pre-filter: Triggers only when vocal energy exceeds baseline
-          const isVoiceActive = avgVoice > 10 || estimatedDb >= ambientFloor + 3 || avgTotal > 8;
+          const isVoiceActive = avgVoice > 12 || estimatedDb >= ambientFloor + 4 || avgTotal > 10;
 
           if (isVoiceActive) {
             voiceSilenceFrames = 0;
             isVoiceActiveRef.current = true;
+            if (idleResetTimeout) {
+              clearTimeout(idleResetTimeout);
+              idleResetTimeout = null;
+            }
 
             if (!utteranceStartTime) {
               utteranceStartTime = now;
@@ -651,15 +663,25 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
               syllableEnergyPeaks = 0;
               voiceSilenceFrames = 0;
               activeUtterancePcmRef.current = [];
+
+              // Automatically clear live syllables badge back to clean idle after utterance finishes
+              if (idleResetTimeout) clearTimeout(idleResetTimeout);
+              idleResetTimeout = setTimeout(() => {
+                if (!isVoiceActiveRef.current && !triggeredRef.current) {
+                  setSyllableCount(0);
+                  setMicStatus("idle");
+                  setTranscript(null);
+                }
+              }, 1200);
             }
           }
 
-          // Acoustic Scream / Panic Vocal Distress (>68dB sustained)
-          if (estimatedDb >= 68) {
+          // Acoustic Scream / Panic Vocal Distress (>72dB sustained, debounced)
+          if (estimatedDb >= 72) {
             const sc = screamCounterRef.current;
             if (now - sc.lastTime < 450) {
               sc.count += 1;
-              if (sc.count >= 2 && !triggeredRef.current) {
+              if (sc.count >= 3 && !triggeredRef.current) {
                 sc.count = 0;
                 setTranscript(`🚨 [HIGH VOCAL DISTRESS SPIKE: ${estimatedDb} dB]`);
                 fire(
