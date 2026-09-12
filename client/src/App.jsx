@@ -36,6 +36,7 @@ import LiveSafetyMapView from "./components/LiveSafetyMapView";
 import SafeZoneManager from "./components/SafeZoneManager";
 import RouteGuardSetup from "./components/RouteGuardSetup";
 import BlackoutStealth from "./components/BlackoutStealth";
+import DemoStudioBar from "./components/DemoStudioBar";
 import {
   ShieldIcon,
   ShieldAlertIcon,

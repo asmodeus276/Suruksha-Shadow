@@ -949,7 +949,6 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
     motionBufferRef.current = [];
     shakeCounterRef.current = { count: 0, lastSign: 0, lastTime: 0 };
     screamCounterRef.current = { count: 0, lastTime: 0 };
-    pcmBufferRef.current = [];
     setSyllableCount(0);
     isTranscribingRef.current = false;
     setIsWhisperTranscribing(false);

@@ -107,18 +107,6 @@ export default function LiveSafetyMapModal({ isOpen, onClose }) {
   }, []);
 
   // Recenter map on user's current location
-  const handleRecenter = useCallback(() => {
-    if (coords) {
-      updateMapPosition(coords.lat, coords.lng, coords.accuracy, true);
-      if (markerRef.current) {
-        markerRef.current.openPopup();
-      }
-    } else {
-      // Re-trigger location acquisition if coordinates aren't ready yet
-      requestLiveLocation();
-    }
-  }, [coords, updateMapPosition]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Request location permission & continuous tracking via Geolocation API
   const requestLiveLocation = useCallback(() => {
     if (!("geolocation" in navigator)) {
@@ -193,6 +181,19 @@ export default function LiveSafetyMapModal({ isOpen, onClose }) {
       console.warn("Could not start watchPosition:", e);
     }
   }, [updateMapPosition]);
+
+  // Recenter map on user's current location
+  const handleRecenter = useCallback(() => {
+    if (coords) {
+      updateMapPosition(coords.lat, coords.lng, coords.accuracy, true);
+      if (markerRef.current) {
+        markerRef.current.openPopup();
+      }
+    } else {
+      // Re-trigger location acquisition if coordinates aren't ready yet
+      requestLiveLocation();
+    }
+  }, [coords, updateMapPosition, requestLiveLocation]);
 
   // Initialize Leaflet map instance once the modal is open
   useEffect(() => {
