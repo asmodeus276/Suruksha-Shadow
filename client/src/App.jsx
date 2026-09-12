@@ -361,6 +361,9 @@ export default function App() {
 
       // 2. SERVER SYNCHRONIZATION: Register canonical event on backend in background
       try {
+        const sendLat = currentCoords?.lat || (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lat : 28.6328);
+        const sendLng = currentCoords?.lng || (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lng : 77.2197);
+
         const res = await fetch(`${API_BASE_URL}/api/sos`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
