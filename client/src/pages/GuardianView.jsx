@@ -8,13 +8,11 @@ import {
   CheckIcon,
   PhoneIcon,
   RadioIcon,
-  ShieldCheckIcon,
   CopyIcon,
   NavigationIcon,
   ShareIcon,
   WhatsAppIcon,
   ShieldAlertIcon,
-  ShieldIcon,
 } from "../components/icons";
 import LiveMap from "../components/LiveMap";
 import {
@@ -315,7 +313,7 @@ export default function GuardianView() {
   const isActive = emergency.status === "active";
   const startTime = emergency.start_time ? new Date(emergency.start_time).getTime() : null;
   const elapsedSecs = startTime ? Math.max(0, Math.floor((nowTick - startTime) / 1000)) : 0;
-  const elapsedMins = Math.floor(elapsedSecs / 60);
+  const _elapsedMins = Math.floor(elapsedSecs / 60);
   const batteryPct = emergency.battery_pct != null ? emergency.battery_pct : 78;
 
   return (

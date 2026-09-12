@@ -1,26 +1,12 @@
-import { useState } from "react";
 import {
   ShieldIcon,
   ShieldAlertIcon,
   PhoneIcon,
   RadioIcon,
-  MicIcon,
-  ActivityIcon,
-  NavigationIcon,
   FolderIcon,
-  SparkleIcon,
-  CheckIcon,
 } from "./icons";
 
 export default function TacticalOverview({ onArm, armed, onSelectTab, onOpenDecoy, onOpenFakeCall, onOpenBlackout }) {
-  const [activeSubsystem, setActiveSubsystem] = useState("all"); // 'all' | 'camouflage' | 'vigil'
-  const [copiedProof, setCopiedProof] = useState(false);
-
-  const handleCopyProof = () => {
-    navigator.clipboard?.writeText?.("0xd9e7a834c20b44fe19a3b8c29184df201948ba92019c48b8120349bca1940");
-    setCopiedProof(true);
-    setTimeout(() => setCopiedProof(false), 2000);
-  };
 
   return (
     <div className="tactical-overview-container rise-fade" style={{ display: "flex", flexDirection: "column", gap: 24 }}>

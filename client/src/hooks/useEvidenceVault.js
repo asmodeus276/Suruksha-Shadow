@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import { createEvidenceBlock } from "../lib/evidenceIntegrity";
+import { anchorEvidenceToMST } from "../lib/mstAnchor";
 
 /**
  * useEvidenceVault
@@ -209,6 +210,20 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
           console.warn("Evidence Vault: evidence block creation/upload failed:", err);
         }
 
+        // MST Blockchain notarization anchor
+        let mstAnchor = null;
+        if (hash) {
+          try {
+            mstAnchor = await anchorEvidenceToMST(
+              targetSosId || `EVID-${capturedAt}`,
+              hash,
+              evidenceMetadata || {}
+            );
+          } catch (mstErr) {
+            console.warn("MST Blockchain anchoring error (non-fatal):", mstErr);
+          }
+        }
+
         const record = {
           id: `EVID-${capturedAt}`,
           capturedAt,
@@ -222,6 +237,7 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
             : null,
           serverReceipt: serverReceipt || null,
           polygonAnchor: serverReceipt?.polygonAnchor || null,
+          mstAnchor: mstAnchor || null,
         };
 
         try {

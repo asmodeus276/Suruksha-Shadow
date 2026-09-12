@@ -15,10 +15,13 @@
     "build": "npm --prefix client run build"
   },
   "dependencies": {
+    "@mstblockchain/mst-sdk": "^1.0.0",
+    "@mstblockchain/mst-vibe-kit": "^0.1.1",
     "@supabase/supabase-js": "^2.110.9",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
+    "ethers": "^6.17.0",
     "express": "^5.2.1",
     "multer": "^2.3.0",
     "vite": "^8.1.1"

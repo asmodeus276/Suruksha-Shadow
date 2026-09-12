@@ -18,7 +18,6 @@ import SafetyHub from "./components/SafetyHub";
 import FakeCallOverlay from "./components/FakeCallOverlay";
 import AcousticStrobeAlarm from "./components/AcousticStrobeAlarm";
 import AudioVisualizer from "./components/AudioVisualizer";
-import DemoStudioBar from "./components/DemoStudioBar";
 import DecoyCalculator from "./components/DecoyCalculator";
 import PinCancelModal from "./components/PinCancelModal";
 import LiveMap from "./components/LiveMap";
@@ -27,7 +26,6 @@ import LiveSafetyMapView from "./components/LiveSafetyMapView";
 import SafeZoneManager from "./components/SafeZoneManager";
 import RouteGuardSetup from "./components/RouteGuardSetup";
 import BlackoutStealth from "./components/BlackoutStealth";
-import TacticalOverview from "./components/TacticalOverview";
 import {
   ShieldIcon,
   ShieldAlertIcon,
@@ -83,7 +81,7 @@ export default function App() {
   const [armed, setArmed] = useState(false);
   const [activeEventId, setActiveEventId] = useState(null);
   const [activeShareToken, setActiveShareToken] = useState(null);
-  const [contactCount, setContactCount] = useState(null);
+  const [_contactCount, setContactCount] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [consent, setConsent] = useState(false);
   const [saharaMessages, setSaharaMessages] = useState([]);
@@ -97,8 +95,8 @@ export default function App() {
   const [hasPinConfigured, setHasPinConfigured] = useState(false);
 
   // Trigger telemetry state (Track whether emergency was live sensor vs simulation)
-  const [detectionMode, setDetectionMode] = useState("live"); // 'live' | 'simulated'
-  const [detectionConfidence, setDetectionConfidence] = useState(null);
+  const [_detectionMode, setDetectionMode] = useState("live"); // 'live' | 'simulated'
+  const [_detectionConfidence, setDetectionConfidence] = useState(null);
 
   // New Killer Features State
   const [isFakeCallOpen, setIsFakeCallOpen] = useState(false);
@@ -393,7 +391,7 @@ export default function App() {
         console.warn("[SURAKSHA] Server registration non-fatal error, maintaining active emergency:", err.message);
       }
     },
-    [fakeCall, evidenceVault, emergencySms, contacts, activeEventId, currentCoords, liveLocations]
+    [fakeCall, evidenceVault, activeEventId, currentCoords, liveLocations]
   );
 
   const {
@@ -484,7 +482,7 @@ export default function App() {
     enabled: Boolean(activeEventId),
   });
 
-  const canArm = true;
+  const _canArm = true;
   useBackgroundKeepAlive({ enabled: armed });
 
   // Manual demo trigger: Alt+Shift+B

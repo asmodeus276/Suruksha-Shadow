@@ -86,7 +86,7 @@ export function useHeartbeat({ userId, apiBaseUrl, enabled }) {
   const workerRef = useRef(null);
   const fallbackIntervalRef = useRef(null);
   const watchdogIntervalRef = useRef(null);
-  const lastPingTimeRef = useRef(Date.now());
+  const lastPingTimeRef = useRef(0);
   const pingCountRef = useRef(0);
   const failedPingsRef = useRef(0);
 

@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
+    "@mstblockchain/mst-sdk": "^1.0.0",
+    "@mstblockchain/mst-vibe-kit": "^0.1.1",
     "@supabase/supabase-js": "^2.110.9",
+    "ethers": "^6.17.0",
     "fingerpose": "^0.1.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.30.0",
