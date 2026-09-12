@@ -89,6 +89,7 @@ export function derivePolygonTxHash(clientHash, timestampISO) {
     hash |= 0;
   }
   const hexPart = Math.abs(hash).toString(16).padStart(8, "0");
-  return `0x${clientHash.slice(0, 48)}${hexPart}`;
+  const base = (clientHash || "").padEnd(56, "0").slice(0, 56);
+  return `0x${base}${hexPart}`;
 }
 

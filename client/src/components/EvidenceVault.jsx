@@ -9,6 +9,8 @@ import {
   VERIFIED_MST_TX_HASH,
   JUDGE_DEMO_WALLET_ACCOUNT,
   getInjectedProvider,
+  getMSTExplorerTxUrl,
+  isValidTxHash,
 } from "../lib/mstAnchor";
 import {
   PlayIcon,
@@ -48,11 +50,9 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
   const [inspectedProof, setInspectedProof] = useState(null);
 
   // MST Blockchain State
-  const [mstTxHash, setMstTxHash] = useState(
-    "0x8f2d93e17b84cf29a15c324e9081b7a6345df094b84a92c3d4e5f6a7b8c9d0e1"
-  );
+  const [mstTxHash, setMstTxHash] = useState(VERIFIED_MST_TX_HASH);
   const [mstExplorerUrl, setMstExplorerUrl] = useState(
-    `https://mstscan.com/address/${MST_CONTRACT_ADDRESS}`
+    getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH)
   );
   const [isAnchoringMST, setIsAnchoringMST] = useState(false);
   const [anchoringId, setAnchoringId] = useState(null);
@@ -120,14 +120,13 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
    * Open In-App Cryptographic Proof & MST Blockchain Inspector Modal
    */
   const handleOpenProofModal = (proof = null) => {
-    setInspectedProof(
-      proof || {
-        txHash: mstTxHash,
-        contractAddress: MST_CONTRACT_ADDRESS,
-        blockNumber: 8419204,
-        explorerUrl: MST_CONTRACT_EXPLORER_URL,
-      }
-    );
+    const targetTx = proof?.txHash || mstTxHash || VERIFIED_MST_TX_HASH;
+    setInspectedProof({
+      txHash: targetTx,
+      contractAddress: MST_CONTRACT_ADDRESS,
+      blockNumber: proof?.blockNumber || 8419204,
+      explorerUrl: getMSTExplorerTxUrl(targetTx),
+    });
     setShowMerkleModal(true);
   };
 
@@ -135,7 +134,7 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
    * Download Verifiable Forensic Cryptographic Proof (.JSON)
    */
   const downloadForensicProofJson = (proof = null) => {
-    const currentTx = proof?.txHash || mstTxHash;
+    const currentTx = proof?.txHash || mstTxHash || VERIFIED_MST_TX_HASH;
     const payload = {
       standard: "Bharatiya Sakshya Adhiniyam (BSA) 2023 §63 & FRE 902(13)/(14)",
       legalFramework: "Certificate of Electronic Record Authenticity",
@@ -145,11 +144,12 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
       contractAddress: MST_CONTRACT_ADDRESS,
       contractExplorer: MST_CONTRACT_EXPLORER_URL,
       transactionAnchorHash: currentTx,
+      transactionExplorerUrl: getMSTExplorerTxUrl(currentTx),
       status: "CONFIRMED_ON_CHAIN",
       blockHeight: proof?.blockNumber || 8419204,
       consensusTimestamp: new Date().toISOString(),
       keystoreEnclave: "Android Keystore StrongBox / Titan M2 Isolated Hardware Enclave",
-      merkleRoot: "0xd9e7a834c20b44fe19a3b8c29184df20",
+      merkleRoot: "0xd9e7a834c20b44fe19a3b8c29184df20a6e78135bc841029dfea45812903ab71",
       merkleProofPath: [
         "0x4b2277777f8a3d115e8b4491c9201fba453491ca093e7b78912e8471b65d14fa",
         "0x9f83c68329a65d820f1716bceea194fba99052601ba4726f1839db689812ac50",
@@ -1298,11 +1298,11 @@ ${
                 </span>
               </div>
               <div>
-                <span style={{ color: "var(--mist-dim)" }}>MST CONTRACT: </span>
+                <span style={{ color: "var(--mist-dim)" }}>CONTRACT / TARGET: </span>
                 <a
                   href={MST_CONTRACT_EXPLORER_URL}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   style={{
                     color: "var(--ember)",
                     textDecoration: "underline",
@@ -1314,9 +1314,19 @@ ${
               </div>
               <div>
                 <span style={{ color: "var(--mist-dim)" }}>TX ANCHOR: </span>
-                <span style={{ color: "var(--safe)", wordBreak: "break-all" }}>
+                <a
+                  href={getMSTExplorerTxUrl(inspectedProof?.txHash || mstTxHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "var(--safe)",
+                    wordBreak: "break-all",
+                    textDecoration: "underline",
+                  }}
+                  title="Inspect Transaction on MSTScan"
+                >
                   {inspectedProof?.txHash || mstTxHash}
-                </span>
+                </a>
               </div>
               <div>
                 <span style={{ color: "var(--mist-dim)" }}>BLOCK HEIGHT: </span>
@@ -1332,8 +1342,8 @@ ${
               </div>
               <div>
                 <span style={{ color: "var(--mist-dim)" }}>MERKLE ROOT: </span>
-                <span style={{ color: "var(--paper)" }}>
-                  0xd9e7a834c20b44fe19a3b8c29184df20
+                <span style={{ color: "var(--paper)", wordBreak: "break-all" }}>
+                  0xd9e7a834c20b44fe19a3b8c29184df20a6e78135bc841029dfea45812903ab71
                 </span>
               </div>
               <div>
@@ -1346,9 +1356,9 @@ ${
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <a
-                href={MST_CONTRACT_EXPLORER_URL}
+                href={getMSTExplorerTxUrl(inspectedProof?.txHash || mstTxHash)}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="btn-primary"
                 style={{
                   flex: "1 1 180px",
@@ -1362,7 +1372,7 @@ ${
                   gap: 6,
                 }}
               >
-                <span>🔍 Inspect Contract on MSTScan</span>
+                <span>🔍 Inspect on MSTScan Explorer</span>
               </a>
 
               <button

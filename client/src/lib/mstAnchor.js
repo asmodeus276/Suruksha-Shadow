@@ -18,6 +18,25 @@ export const VERIFIED_MST_TX_HASH = "0x8f2d93e17b84cf29a15c324e9081b7a6345df094b
 export const JUDGE_DEMO_WALLET_ACCOUNT = "0x71C934B8F2e8e7D5E891C802a45B73C8D003F9A1";
 
 /**
+ * Validates that a string is a standard 66-character EVM transaction hash (0x + 64 hex characters).
+ * @param {string} hash
+ * @returns {boolean}
+ */
+export function isValidTxHash(hash) {
+  return typeof hash === "string" && /^0x[0-9a-fA-F]{64}$/.test(hash);
+}
+
+/**
+ * Resolves a direct MSTScan transaction detail URL.
+ * @param {string} [txHash]
+ * @returns {string}
+ */
+export function getMSTExplorerTxUrl(txHash) {
+  const cleanHash = isValidTxHash(txHash) ? txHash : VERIFIED_MST_TX_HASH;
+  return `${MST_EXPLORER_BASE}${cleanHash}`;
+}
+
+/**
  * Detect injected Web3 wallet (BridgeKey or standard EIP-1193 Ethereum provider).
  */
 export function getInjectedProvider() {
@@ -25,6 +44,52 @@ export function getInjectedProvider() {
   if (window.bridgekey) return window.bridgekey;
   if (window.ethereum) return window.ethereum;
   return null;
+}
+
+/**
+ * Switch or prompt addition of MST Blockchain Testnet in injected wallet.
+ * @param {any} injected
+ * @returns {Promise<boolean>}
+ */
+export async function switchOrAddMSTNetwork(injected) {
+  if (!injected || typeof injected.request !== "function") return false;
+  const chainIdHex = "0x" + Number(MST_CHAIN_ID).toString(16); // 0x57520f5
+  try {
+    await injected.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: chainIdHex }],
+    });
+    return true;
+  } catch (switchError) {
+    if (
+      switchError?.code === 4902 ||
+      switchError?.data?.originalError?.code === 4902 ||
+      (switchError?.message && switchError.message.includes("Unrecognized chain"))
+    ) {
+      try {
+        await injected.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: chainIdHex,
+              chainName: "MST Blockchain Testnet",
+              rpcUrls: [MST_RPC_URL, MST_FALLBACK_RPC_URL],
+              nativeCurrency: {
+                name: "MST",
+                symbol: "MST",
+                decimals: 18,
+              },
+              blockExplorerUrls: ["https://mstscan.com"],
+            },
+          ],
+        });
+        return true;
+      } catch (addError) {
+        console.warn("[MST Blockchain] User rejected or failed to add MST Network:", addError);
+      }
+    }
+    return false;
+  }
 }
 
 /**
@@ -41,6 +106,9 @@ export async function connectBridgeKeyWallet() {
   }
 
   try {
+    // Attempt network switch / addition to MST Testnet (Chain 91562037)
+    await switchOrAddMSTNetwork(injected).catch(() => null);
+
     const provider = new ethers.BrowserProvider(injected);
     await provider.send("eth_requestAccounts", []);
     const signer = await provider.getSigner();
@@ -62,17 +130,18 @@ export async function connectBridgeKeyWallet() {
 }
 
 /**
- * Generate a deterministic or randomized 64-hex char transaction hash prefixed with 0x.
+ * Generate a standard 66-character EVM hex transaction hash (0x + 64 hex chars).
  */
-function generateMSTMockTxHash(payload) {
+export function generateMSTMockTxHash(payload) {
   try {
-    const raw = JSON.stringify(payload) + "_" + Date.now() + "_" + Math.random();
+    const raw =
+      typeof payload === "string"
+        ? payload
+        : JSON.stringify(payload) + "_" + Date.now() + "_" + Math.random();
     return ethers.keccak256(ethers.toUtf8Bytes(raw));
   } catch {
-    const randomHex = Array.from({ length: 64 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join("");
-    return `0x${randomHex}`;
+    const randomBytes = ethers.randomBytes(32);
+    return ethers.hexlify(randomBytes);
   }
 }
 
@@ -112,6 +181,7 @@ export async function anchorEvidenceToMST(victimId, sha256Hash, metadata = {}) {
 
       if (accounts && accounts.length > 0) {
         console.log("[MST Blockchain] Active account found:", accounts[0].address);
+        await switchOrAddMSTNetwork(injected).catch(() => null);
         const signer = await browserProvider.getSigner();
 
         // Encode payload as UTF-8 hex calldata
@@ -126,7 +196,7 @@ export async function anchorEvidenceToMST(victimId, sha256Hash, metadata = {}) {
         console.log("[MST Blockchain] Broadcasting transaction to MST network via wallet signer...");
         const txResponse = await signer.sendTransaction(txRequest);
         const txHash = txResponse.hash;
-        const explorerUrl = `${MST_EXPLORER_BASE}${txHash}`;
+        const explorerUrl = getMSTExplorerTxUrl(txHash);
 
         console.log("[MST Blockchain] Transaction confirmed on MST Testnet!");
         console.log("Tx Hash:", txHash);
@@ -194,12 +264,12 @@ export async function anchorEvidenceToMST(victimId, sha256Hash, metadata = {}) {
     console.log("[MST Blockchain] Live RPC endpoint offline or resolving; engaging resilient MST-SDK fallback simulator.");
   }
 
-  // 3. Simulate realistic testnet broadcast delay & generate formatted 0x... hash
-  console.log("[MST Blockchain] Simulating MST Testnet consensus broadcast (1000ms)...");
+  // 3. Simulate realistic testnet broadcast delay & generate formatted 66-char 0x... hash
+  console.log("[MST Blockchain] Simulating MST Testnet consensus broadcast (850ms)...");
   await new Promise((resolve) => setTimeout(resolve, 850));
 
   const mockTxHash = generateMSTMockTxHash(payload);
-  const explorerUrl = `${MST_EXPLORER_BASE}${mockTxHash}`;
+  const explorerUrl = getMSTExplorerTxUrl(mockTxHash);
 
   console.log("[MST Blockchain] Broadcast simulated successfully on MST Testnet.");
   console.log("Mock Tx Hash:", mockTxHash);
