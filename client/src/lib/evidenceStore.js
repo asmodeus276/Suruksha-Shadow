@@ -175,33 +175,51 @@ export async function captureOpticalBurst({
       throw new Error("WebRTC getUserMedia not supported in this browser context.");
     }
 
-    // 2. Request camera stream
+    // 2. Request camera stream with resilient fallback
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          facingMode: facingMode ? { ideal: facingMode } : undefined,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         },
         audio: false,
       });
     } catch {
-      // Fallback to generic video if environment camera is unavailable
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
-      });
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      } catch (camErr) {
+        throw new Error(`Webcam hardware access failed: ${camErr.message}`);
+      }
     }
 
-    // 3. Attach stream to offscreen video element
+    // 3. Attach stream to offscreen video element and wait for active frames
     const video = document.createElement("video");
-    video.srcObject = stream;
+    video.setAttribute("autoplay", "true");
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("muted", "true");
     video.muted = true;
-    video.playsInline = true;
-    await video.play();
+    video.srcObject = stream;
 
-    // Wait 100ms for camera auto-focus & exposure stabilization
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((resolve) => {
+      let resolved = false;
+      const onReady = () => {
+        if (!resolved) {
+          resolved = true;
+          video.play().then(resolve).catch(resolve);
+        }
+      };
+      video.onloadedmetadata = onReady;
+      video.oncanplay = onReady;
+      video.onplaying = onReady;
+      setTimeout(onReady, 600);
+    });
+
+    // Wait 250ms for camera auto-focus, exposure & decoded frame pipeline
+    await new Promise((r) => setTimeout(r, 250));
 
     const width = video.videoWidth || 640;
     const height = video.videoHeight || 480;
