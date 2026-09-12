@@ -343,10 +343,23 @@ export default function App() {
         }
       }
 
-      // Extract latest high-accuracy coordinates
-      const sendLat = currentCoords?.lat ?? (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lat : null);
-      const sendLng = currentCoords?.lng ?? (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lng : null);
+      // Generate instantaneous emergency session ID & token
+      const localEventId = "sos-" + Date.now();
+      const localShareToken = "token-" + Math.random().toString(36).substring(2, 10);
 
+      // 1. INSTANT ACTIVATION: Immediately engage emergency state & open Suraksha Shadow Command Center
+      setActiveEventId(localEventId);
+      setActiveShareToken(localShareToken);
+      setSosError(null);
+      setSaharaMessages([]);
+      fakeCall.start();
+      evidenceVault?.startAutomatedCapture?.(10000, localEventId);
+      emergencySms.dispatchAlert(
+        contacts.map((c) => c.phone),
+        "CORAL"
+      );
+
+      // 2. SERVER SYNCHRONIZATION: Register canonical event on backend in background
       try {
         const res = await fetch(`${API_BASE_URL}/api/sos`, {
           method: "POST",
@@ -368,23 +381,13 @@ export default function App() {
         } catch {
           data = {};
         }
-        if (!res.ok) throw new Error(data.error || `Server responded with status ${res.status}`);
-        setActiveEventId(data.eventId);
-        setActiveShareToken(data.shareToken);
-        setSosError(null);
-        setSaharaMessages([]);
-        fakeCall.start();
-        evidenceVault?.startAutomatedCapture?.(10000, data.eventId);
-        emergencySms.dispatchAlert(
-          contacts.map((c) => c.phone),
-          "CORAL"
-        );
+        if (res.ok && data.eventId) {
+          setActiveEventId(data.eventId);
+          if (data.shareToken) setActiveShareToken(data.shareToken);
+          evidenceVault?.startAutomatedCapture?.(10000, data.eventId);
+        }
       } catch (err) {
-        console.error("Failed to fire SOS:", err);
-        isFiringRef.current = false;
-        resetGestureRef.current?.();
-        resetShieldRef.current?.();
-        setSosError(err.message || "Failed to dispatch SOS — tap to retry");
+        console.warn("[SURAKSHA] Server registration non-fatal error, maintaining active emergency:", err.message);
       }
     },
     [fakeCall, evidenceVault, emergencySms, contacts, activeEventId, currentCoords, liveLocations]
