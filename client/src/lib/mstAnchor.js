@@ -12,9 +12,9 @@ export const MST_CONTRACT_ADDRESS = "0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5"
 export const MST_RPC_URL = "https://rpc.mstblockchain.com";
 export const MST_FALLBACK_RPC_URL = "https://testnetrpc.mstblockchain.com";
 export const MST_CHAIN_ID = 91562037;
-export const MST_EXPLORER_BASE = "https://mstscan.com/tx/";
-export const MST_CONTRACT_EXPLORER_URL = `https://mstscan.com/address/${MST_CONTRACT_ADDRESS}`;
-export const VERIFIED_MST_TX_HASH = "0x8f2d93e17b84cf29a15c324e9081b7a6345df094b84a92c3d4e5f6a7b8c9d0e1";
+export const MST_EXPLORER_BASE = "https://testnet.mstscan.com/tx/";
+export const MST_CONTRACT_EXPLORER_URL = `https://testnet.mstscan.com/address/${MST_CONTRACT_ADDRESS}`;
+export const VERIFIED_MST_TX_HASH = "0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec";
 export const JUDGE_DEMO_WALLET_ACCOUNT = "0x71C934B8F2e8e7D5E891C802a45B73C8D003F9A1";
 
 /**
@@ -79,7 +79,7 @@ export async function switchOrAddMSTNetwork(injected) {
                 symbol: "MST",
                 decimals: 18,
               },
-              blockExplorerUrls: ["https://mstscan.com"],
+              blockExplorerUrls: ["https://testnet.mstscan.com"],
             },
           ],
         });

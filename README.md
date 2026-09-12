@@ -12,7 +12,7 @@
 </p>
 
 [![Hackathon Track](https://img.shields.io/badge/Hackathon_Track-Agentic_Blockchain_%2F_Real_World_%26_DePIN-FFB300?style=for-the-badge&logo=blockchaindotcom&logoColor=black)](https://mstblockchain.com)
-[![MST Blockchain](https://img.shields.io/badge/MST_Blockchain-Testnet_Deployed-FF8F00?style=for-the-badge&logo=ethereum&logoColor=white)](https://mstscan.com)
+[![MST Blockchain](https://img.shields.io/badge/MST_Blockchain-Testnet_Deployed-FF8F00?style=for-the-badge&logo=ethereum&logoColor=white)](https://testnet.mstscan.com)
 [![BSA 2023](https://img.shields.io/badge/Compliance-BSA_2023_%C2%A763_%26_FRE_902-00E676?style=for-the-badge&logo=shield&logoColor=black)](https://indiacode.nic.in)
 [![Wallet Support](https://img.shields.io/badge/Wallet-BridgeKey_Integrated-2979FF?style=for-the-badge&logo=web3dotjs&logoColor=white)](https://mstblockchain.com)
 
@@ -35,9 +35,10 @@
 |---|---|
 | **Project Title** | **Suraksha Shadow - MST Blockchain & BSA 2023 Forensics** |
 | **Hackathon Track** | **Agentic Blockchain / Real World & DePIN** |
-| **Deployed Testnet Contract Address** | [`0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5`](https://mstscan.com/address/0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5) |
-| **Verified Transaction Hash** | [`0x8f2d93e17b84cf29a15c324e9081b7a6345df094b84a92c3d4e5f6a7b8c9d0e1`](https://mstscan.com/tx/0x8f2d93e17b84cf29a15c324e9081b7a6345df094b84a92c3d4e5f6a7b8c9d0e1) |
-| **Blockchain Explorer** | [https://mstscan.com](https://mstscan.com) |
+| **Deployed Testnet Contract Address** | [`0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5`](https://testnet.mstscan.com/address/0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5) |
+| **Verified Transaction Hash** | [`0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec`](https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec) |
+| **Blockchain Explorer Proof** | [https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec](https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec) |
+| **Blockchain Explorer** | [https://testnet.mstscan.com](https://testnet.mstscan.com) |
 | **RPC Endpoint** | `https://rpc.mstblockchain.com` (Chain ID: `91562037`) |
 | **Wallet Support** | **BridgeKey Wallet Integration** (Chrome Extension / Mobile Web3) + EIP-1193 |
 | **Legal Admissibility Protocol** | Bharatiya Sakshya Adhiniyam (BSA) 2023 §63 & Federal Rules of Evidence (FRE) 902(13)/(14) |
@@ -127,7 +128,7 @@ flowchart TD
   ```
 - Executes transaction to target contract `0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5`.
 - Provides simulated testnet broadcast telemetry if offline or in testing mode so UI never crashes.
-- Returns `{ success: true, txHash, explorerUrl: "https://mstscan.com/tx/" + txHash }`.
+- Returns `{ success: true, txHash, explorerUrl: "https://testnet.mstscan.com/tx/" + txHash }`.
 
 ---
 
@@ -137,8 +138,8 @@ flowchart TD
 Whenever new evidence is recorded or hashed (e.g. clicking **+ Record Forensic Test Clip** or during an active SOS transition), the app automatically triggers `anchorEvidenceToMST` and renders an interactive tactical badge:
 <div align="center">
   <br/>
-  <b><code>🛡️ Verified on MSTScan: [0x8f2d93e1...]</code></b><br/>
-  <i>Direct clickable hyperlink to <a href="https://mstscan.com/tx/0x8f2d93e17b84cf29a15c324e9081b7a6345df094b84a92c3d4e5f6a7b8c9d0e1">MSTScan Explorer</a></i>
+  <b><code>🛡️ Verified on MSTScan: [0x633a3747...]</code></b><br/>
+  <i>Direct clickable hyperlink to <a href="https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec">MSTScan Verified Transaction Proof</a></i>
   <br/><br/>
 </div>
 
@@ -204,7 +205,9 @@ This project is built and optimized for the **MST Blockchain Hackathon** under t
 
 - **Contract**: `0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5`
 - **Network**: MST Testnet (Chain ID 91562037)
-- **Explorer**: https://mstscan.com
+- **Verified Tx Hash**: `0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec`
+- **Explorer Proof**: https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec
+- **Explorer**: https://testnet.mstscan.com
 
 <div align="center">
 <img src="https://capsule-render.vercel.app/api?type=waving&color=FFB300&height=120&section=footer&animation=fadeIn" width="100%" alt="footer banner"/>

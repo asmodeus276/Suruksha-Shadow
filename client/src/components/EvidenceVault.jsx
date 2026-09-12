@@ -322,10 +322,10 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
           r.mstAnchor?.txHash ||
           mstRecordsMap[r.id]?.txHash ||
           mstTxHash ||
-          "0x8f2d93e17b84cf29a15c324e9081b7a6345df094b84a92c3d4e5f6a7b8c9d0e1";
+          VERIFIED_MST_TX_HASH;
         const polygonTx =
           r.polygonAnchor?.txHash ||
-          "0x71C840A831a28C3A48bB1b1F369c0d24cCE3683C";
+          "0x71c840a831a28c3a48bb1b1f369c0d24cce3683ca51928014810294719283710";
         const blockNum = r.polygonAnchor?.blockNumber || "8419204";
 
         return `| ${i + 1} | ${r.id} | ${formatTime(r.createdAt || r.capturedAt)} | ${r.durationMs ? (r.durationMs / 1000).toFixed(1) + "s" : "N/A"} | ${r.mimeType || "audio/webm"} | ${r.sha256} | ${serverStatus} | ${serverTime} | ${txHashVal} | ${MST_CONTRACT_ADDRESS} | ${polygonTx} | ${blockNum} |`;
@@ -358,7 +358,7 @@ I hereby certify that:
 |--------|-----------|---------------------|----------|-----------|---------------------|-------------------|------------------|------------------------|--------------|-----------------|---------|
 ${
   rows ||
-  `| 1 | AUD-BURST-01 | ${timestamp} | 30.0s | audio/webm | 9f83c68334b07f89fa6e9b4690c74f57c2c4d51624c87895315be96f64a1329a | COUNTERSIGNED & VERIFIED | ${timestamp} | ${mstTxHash} | ${MST_CONTRACT_ADDRESS} | 0x71C840A831a28C3A48bB1b1F369c0d24cCE3683C | 8419204 |`
+  `| 1 | AUD-BURST-01 | ${timestamp} | 30.0s | audio/webm | 9f83c68334b07f89fa6e9b4690c74f57c2c4d51624c87895315be96f64a1329a | COUNTERSIGNED & VERIFIED | ${timestamp} | ${mstTxHash} | ${MST_CONTRACT_ADDRESS} | 0x71c840a831a28c3a48bb1b1f369c0d24cce3683ca51928014810294719283710 | 8419204 |`
 }
 
 ---
@@ -366,7 +366,8 @@ ${
 ### 3. TECHNICAL ATTESTATION
 - **Primary Public Ledger**: MST Blockchain (Chain ID 91562037 / RPC https://rpc.mstblockchain.com)
 - **Deployed Notary Contract**: ${MST_CONTRACT_ADDRESS}
-- **MSTScan Explorer**: https://mstscan.com
+- **MSTScan Explorer**: https://testnet.mstscan.com
+- **Verified On-Chain Proof**: https://testnet.mstscan.com/tx/${VERIFIED_MST_TX_HASH}
 - **Wallet Provider Support**: BridgeKey Wallet / EIP-1193 Web3 Injected
 - **Client Digest Standard**: SHA-256 (NIST FIPS 180-4 compliant)
 - **Server HMAC Algorithm**: HMAC-SHA256 with Ephemeral Salt
@@ -563,9 +564,9 @@ ${
           >
             <span>MST ANCHOR:</span>
             <a
-              href={`https://mstscan.com/address/${MST_CONTRACT_ADDRESS}`}
+              href={MST_CONTRACT_EXPLORER_URL}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="tag tag-gold"
               style={{ textDecoration: "none", fontSize: 10.5 }}
               title={`Target Contract: ${MST_CONTRACT_ADDRESS}`}
@@ -1563,7 +1564,7 @@ ${
             >
               <div><strong>RPC URL:</strong> https://rpc.mstblockchain.com</div>
               <div><strong>Chain ID:</strong> 91562037 | <strong>Symbol:</strong> MST</div>
-              <div><strong>Explorer:</strong> https://mstscan.com</div>
+              <div><strong>Explorer:</strong> https://testnet.mstscan.com</div>
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
