@@ -216,19 +216,12 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
           sha256: hash,
           sizeBytes: audioBlob.size,
           blob: audioBlob,
-<<<<<<< HEAD
-          // P0.3: GPS metadata and server countersignature
-=======
           // P0.3: GPS metadata, server countersignature, and Polygon blockchain anchor
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           gps: evidenceMetadata
             ? { lat: evidenceMetadata.lat, lng: evidenceMetadata.lng, accuracy: evidenceMetadata.accuracy }
             : null,
           serverReceipt: serverReceipt || null,
-<<<<<<< HEAD
-=======
           polygonAnchor: serverReceipt?.polygonAnchor || null,
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
         };
 
         try {

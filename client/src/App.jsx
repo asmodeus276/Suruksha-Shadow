@@ -10,11 +10,6 @@ import { useEmergencySms } from "./hooks/useEmergencySms";
 import { useHeartbeat } from "./hooks/useHeartbeat";
 import { useSafeZones } from "./hooks/useSafeZones";
 import { useRouteGuard } from "./hooks/useRouteGuard";
-<<<<<<< HEAD
-import { usePoliceAlert } from "./hooks/usePoliceAlert";
-import PoliceAlertStatus from "./components/PoliceAlertStatus";
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 import EvidenceVault from "./components/EvidenceVault";
 import SaharaChat from "./components/SaharaChat";
 import GuidedNextSteps from "./components/GuidedNextSteps";
@@ -27,13 +22,12 @@ import DemoStudioBar from "./components/DemoStudioBar";
 import DecoyCalculator from "./components/DecoyCalculator";
 import PinCancelModal from "./components/PinCancelModal";
 import LiveMap from "./components/LiveMap";
+import LiveSafetyMapModal from "./components/LiveSafetyMapModal";
+import LiveSafetyMapView from "./components/LiveSafetyMapView";
 import SafeZoneManager from "./components/SafeZoneManager";
 import RouteGuardSetup from "./components/RouteGuardSetup";
 import BlackoutStealth from "./components/BlackoutStealth";
-<<<<<<< HEAD
-=======
 import TacticalOverview from "./components/TacticalOverview";
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 import {
   ShieldIcon,
   ShieldAlertIcon,
@@ -56,6 +50,7 @@ import {
   HomeIcon,
   HeartbeatIcon,
   NavigationIcon,
+  MapPinIcon,
 } from "./components/icons";
 import { getUserId } from "./lib/user";
 import {
@@ -68,20 +63,11 @@ import {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL !== undefined
     ? import.meta.env.VITE_API_BASE_URL
-<<<<<<< HEAD
-    : import.meta.env.DEV
-    ? "http://localhost:4000"
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     : "";
 const USER_ID = getUserId();
 
 const DECOY_TAP_COUNT = 3;
-<<<<<<< HEAD
-const DECOY_TAP_WINDOW_MS = 1500;
-=======
 const DECOY_TAP_WINDOW_MS = 2500;
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 const DEFAULT_CODE_WORD = "banana";
 
 function loadCodeWord() {
@@ -93,7 +79,7 @@ function loadCodeWord() {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("shield"); // 'shield' | 'checkin' | 'vault' | 'safety'
+  const [activeTab, setActiveTab] = useState("shield"); // 'shield' | 'checkin' | 'vault' | 'safety' | 'map'
   const [armed, setArmed] = useState(false);
   const [activeEventId, setActiveEventId] = useState(null);
   const [activeShareToken, setActiveShareToken] = useState(null);
@@ -110,17 +96,15 @@ export default function App() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [hasPinConfigured, setHasPinConfigured] = useState(false);
 
-<<<<<<< HEAD
-=======
   // Trigger telemetry state (Track whether emergency was live sensor vs simulation)
   const [detectionMode, setDetectionMode] = useState("live"); // 'live' | 'simulated'
   const [detectionConfidence, setDetectionConfidence] = useState(null);
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   // New Killer Features State
   const [isFakeCallOpen, setIsFakeCallOpen] = useState(false);
   const [isAlarmOpen, setIsAlarmOpen] = useState(false);
   const [isBlackoutOpen, setIsBlackoutOpen] = useState(false);
+  const [isLiveMapModalOpen, setIsLiveMapModalOpen] = useState(false);
   const [emergencyElapsedSecs, setEmergencyElapsedSecs] = useState(0);
   const [liveLocations, setLiveLocations] = useState([]);
   const [currentCoords, setCurrentCoords] = useState(null); // { lat, lng, accuracy, address, speed, timestamp }
@@ -253,16 +237,6 @@ export default function App() {
   const resetGestureRef = useRef(null);
   const resetShieldRef = useRef(null);
 
-<<<<<<< HEAD
-  // Police Information Workflow hook
-  const policeAlert = usePoliceAlert({
-    eventId: activeEventId,
-    apiBaseUrl: API_BASE_URL,
-    enabled: Boolean(activeEventId),
-  });
-
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   // Fetch initial contacts and consent state
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/contacts/${USER_ID}`)
@@ -322,80 +296,12 @@ export default function App() {
 
   const isFiringRef = useRef(false);
 
-<<<<<<< HEAD
-  // Sync queued offline emergency events when network is restored
-  const syncOfflineQueue = useCallback(async () => {
-    try {
-      const rawQueue = localStorage.getItem("suraksha_offline_sos_queue");
-      if (!rawQueue) return;
-      const queue = JSON.parse(rawQueue);
-      if (!Array.isArray(queue) || queue.length === 0) return;
-
-      console.log(`[OfflineSync] Attempting to sync ${queue.length} offline emergency event(s)...`);
-
-      const remaining = [];
-      for (const item of queue) {
-        try {
-          const res = await fetch(`${API_BASE_URL}/api/sos`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: item.userId || USER_ID,
-              triggerType: item.triggerType || "manual",
-              lat: item.lat,
-              lng: item.lng,
-              accuracy: item.accuracy,
-              batteryLevel: item.batteryLevel,
-              clientEventId: item.eventId,
-            }),
-          });
-          const data = await res.json();
-          if (res.ok && data.eventId) {
-            console.log(`[OfflineSync] Successfully synced offline event ${item.eventId} -> Server event ${data.eventId}`);
-            if (activeEventId === item.eventId) {
-              setActiveEventId(data.eventId);
-              if (data.shareToken) setActiveShareToken(data.shareToken);
-            }
-          } else {
-            remaining.push(item);
-          }
-        } catch {
-          remaining.push(item);
-        }
-      }
-
-      if (remaining.length > 0) {
-        localStorage.setItem("suraksha_offline_sos_queue", JSON.stringify(remaining));
-      } else {
-        localStorage.removeItem("suraksha_offline_sos_queue");
-      }
-    } catch (err) {
-      console.warn("[OfflineSync] Error syncing offline queue:", err);
-    }
-  }, [activeEventId]);
-
-  // Listen for online events to automatically flush offline SOS queue
-  useEffect(() => {
-    window.addEventListener("online", syncOfflineQueue);
-    // Also try on startup
-    if (navigator.onLine) {
-      syncOfflineQueue();
-    }
-    return () => window.removeEventListener("online", syncOfflineQueue);
-  }, [syncOfflineQueue]);
-
-  const fireSOS = useCallback(
-    async (triggerType) => {
-=======
   const fireSOS = useCallback(
     async (triggerInput) => {
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       if (isFiringRef.current || activeEventId) return;
       isFiringRef.current = true;
       setSosError(null);
 
-<<<<<<< HEAD
-=======
       // Parse trigger payload (supports both string and structured object)
       const triggerType =
         typeof triggerInput === "string"
@@ -428,7 +334,6 @@ export default function App() {
 
       console.log(`[SURAKSHA SOS DISPATCH] Mode: ${mode.toUpperCase()} | Type: ${triggerType} | Confidence: ${Math.round(confidence * 100)}%`);
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       // Subtle double-pulse haptic vibration confirmation for pocket/discreet activation
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try {
@@ -441,38 +346,11 @@ export default function App() {
       // Extract latest high-accuracy coordinates
       const sendLat = currentCoords?.lat ?? (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lat : null);
       const sendLng = currentCoords?.lng ?? (liveLocations.length > 0 ? liveLocations[liveLocations.length - 1].lng : null);
-<<<<<<< HEAD
-      const sendAccuracy = currentCoords?.accuracy ?? null;
-
-      // Read device battery if API available
-      let batteryLevel = null;
-      try {
-        if (typeof navigator !== "undefined" && "getBattery" in navigator) {
-          const battery = await navigator.getBattery();
-          batteryLevel = Math.round(battery.level * 100);
-        }
-      } catch {
-        /* battery API optional */
-      }
-
-      const sosPayload = {
-        userId: USER_ID,
-        triggerType,
-        lat: sendLat,
-        lng: sendLng,
-        accuracy: sendAccuracy,
-        batteryLevel,
-      };
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
       try {
         const res = await fetch(`${API_BASE_URL}/api/sos`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-<<<<<<< HEAD
-          body: JSON.stringify(sosPayload),
-=======
           body: JSON.stringify({
             userId: USER_ID,
             triggerType,
@@ -482,7 +360,6 @@ export default function App() {
             lat: sendLat,
             lng: sendLng,
           }),
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `Server responded ${res.status}`);
@@ -492,52 +369,16 @@ export default function App() {
         setSaharaMessages([]);
         fakeCall.start();
         evidenceVault?.startAutomatedCapture?.(10000, data.eventId);
-<<<<<<< HEAD
         emergencySms.dispatchAlert(
           contacts.map((c) => c.phone),
           "CORAL"
         );
-      } catch (err) {
-        console.warn("Server SOS dispatch failed / device offline. Activating Offline Resilience Protocol:", err.message);
-
-        // OFFLINE RESILIENCE: Never lose an emergency event.
-        // Generate local offline event ID and queue for sync
-        const offlineEventId = `offline-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-        const offlineShareToken = offlineEventId.substring(offlineEventId.length - 8);
-
-        const offlineItem = {
-          eventId: offlineEventId,
-          ...sosPayload,
-          queuedAt: new Date().toISOString(),
-        };
-
-        try {
-          const existing = JSON.parse(localStorage.getItem("suraksha_offline_sos_queue") || "[]");
-          existing.push(offlineItem);
-          localStorage.setItem("suraksha_offline_sos_queue", JSON.stringify(existing));
-        } catch {
-          /* localStorage best effort */
-        }
-
-        setActiveEventId(offlineEventId);
-        setActiveShareToken(offlineShareToken);
-        setSosError("⚠️ Running in Offline Mode — Event stored locally & will auto-sync upon connection.");
-        setSaharaMessages([]);
-        fakeCall.start();
-        evidenceVault?.startAutomatedCapture?.(10000, offlineEventId);
-        emergencySms.dispatchAlert(
-          contacts.map((c) => c.phone),
-          "CORAL"
-        );
-=======
-        // Note: Emergency SMS with live Guardian tracking is dispatched server-side by /api/sos
       } catch (err) {
         console.error("Failed to fire SOS:", err);
         isFiringRef.current = false;
         resetGestureRef.current?.();
         resetShieldRef.current?.();
         setSosError(err.message || "Failed to dispatch SOS — tap to retry");
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       }
     },
     [fakeCall, evidenceVault, emergencySms, contacts, activeEventId, currentCoords, liveLocations]
@@ -626,11 +467,7 @@ export default function App() {
     enabled: Boolean(activeEventId),
   });
 
-<<<<<<< HEAD
-  const canArm = contactCount !== null && contactCount > 0;
-=======
   const canArm = true;
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   useBackgroundKeepAlive({ enabled: armed });
 
   // Manual demo trigger: Alt+Shift+B
@@ -645,16 +482,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeEventId, fireSOS]);
 
-<<<<<<< HEAD
-  const arm = async () => {
-    if (!canArm) return;
-    await requestMotionPermission();
-    setArmed(true);
-  };
-
-  const handleToggleCamera = async () => {
-    if (!isCameraActive && !armed && canArm) {
-=======
   const toggleArm = async () => {
     if (activeEventId) return;
     if (armed) {
@@ -663,15 +490,6 @@ export default function App() {
       resetGesture();
     } else {
       await requestMotionPermission();
-      // Explicitly prompt and unlock microphone permission so Web Speech API works immediately
-      if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-        try {
-          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          micStream.getTracks().forEach((track) => track.stop());
-        } catch (micErr) {
-          console.warn("Microphone access prompt failed or denied:", micErr);
-        }
-      }
       setArmed(true);
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try {
@@ -687,7 +505,6 @@ export default function App() {
 
   const handleToggleCamera = async () => {
     if (!isCameraActive && !armed) {
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       await arm();
     }
     toggleCameraWatch();
@@ -751,14 +568,6 @@ export default function App() {
     setActiveEventId(null);
   };
 
-<<<<<<< HEAD
-  // Decoy triple-tap trigger
-  const handleDecoyTrigger = useCallback(() => {
-    const now = Date.now();
-    decoyTapTimes.current = [...decoyTapTimes.current.filter((t) => now - t < DECOY_TAP_WINDOW_MS), now];
-    if (decoyTapTimes.current.length >= DECOY_TAP_COUNT) {
-      decoyTapTimes.current = [];
-=======
   // Decoy triple-tap trigger (Mobile touch & click compatible with debounce)
   const lastTapTimeRef = useRef(0);
   const handleDecoyTrigger = useCallback((e) => {
@@ -778,7 +587,6 @@ export default function App() {
           /* ignore vibrate policy */
         }
       }
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       setDecoyMode(true);
     }
   }, []);
@@ -810,23 +618,6 @@ export default function App() {
 
   return (
     <div className="app-viewport">
-<<<<<<< HEAD
-      {/* --- Top Header with Secret Trigger Zone --- */}
-      <header className="header rise-fade" style={{ position: "relative" }}>
-        <div
-          onClick={handleDecoyTrigger}
-          title="Secret stealth zone (tap 3x)"
-          style={{ position: "absolute", top: -8, right: -8, width: 64, height: 64, zIndex: 10, cursor: "default" }}
-        />
-        <div className="wordmark">
-          Suraksha <em>Shadow</em>
-        </div>
-        <p className="tagline">
-          {activeEventId
-            ? "Emergency active — guardian alert dispatched"
-            : "Silent guardian, always watching over you"}
-        </p>
-=======
       {/* --- Global Secret Stealth Hitboxes (Tap 3x in any corner to launch Calculator disguise) --- */}
       <div
         onClick={handleDecoyTrigger}
@@ -950,6 +741,15 @@ export default function App() {
               <span>Shield</span>
             </button>
             <button
+              id="top-nav-live-safety-map-btn"
+              className={`tactical-tab-btn ${activeTab === "map" ? "is-active" : ""}`}
+              onClick={() => setActiveTab("map")}
+              title="Open Live Safety Map (Leaflet + OpenStreetMap)"
+            >
+              <MapPinIcon size={15} />
+              <span>📍 Live Safety Map</span>
+            </button>
+            <button
               className={`tactical-tab-btn ${activeTab === "checkin" ? "is-active" : ""}`}
               onClick={() => setActiveTab("checkin")}
             >
@@ -972,7 +772,6 @@ export default function App() {
             </button>
           </nav>
         )}
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       </header>
 
       {/* --- SOS Error Banner --- */}
@@ -1067,26 +866,23 @@ export default function App() {
               <div className="action-card-title">Guardian Map</div>
               <div className="action-card-desc">Open live tracking link</div>
             </div>
+
+            {/* Action 5: Dedicated Live Safety Map */}
+            <div
+              id="emergency-live-safety-map-card"
+              className="emergency-action-card"
+              onClick={() => setIsLiveMapModalOpen(true)}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="action-card-icon is-amber">
+                <MapPinIcon size={20} />
+              </div>
+              <div className="action-card-title">Live Safety Map</div>
+              <div className="action-card-desc">Leaflet + OpenStreetMap</div>
+            </div>
           </div>
 
-<<<<<<< HEAD
-          {/* Police Information Workflow Status */}
-          <div className="section mb-4">
-            <p className="eyebrow" style={{ marginBottom: 8 }}>Police Information</p>
-            <PoliceAlertStatus
-              status={policeAlert.status}
-              timeline={policeAlert.timeline}
-              isDemo={policeAlert.isDemo}
-              reportHash={policeAlert.reportHash}
-              blockchainProof={policeAlert.blockchainProof}
-              isRetryable={policeAlert.isRetryable}
-              isLoading={policeAlert.isLoading}
-              onRetry={policeAlert.retry}
-            />
-          </div>
-
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           {/* Quick WhatsApp / Native Emergency Broadcast Banner */}
           {activeShareToken && (
             <div className="card mb-4" style={{ background: "var(--dusk-soft)", border: "1px solid var(--line)" }}>
@@ -1233,42 +1029,18 @@ export default function App() {
                   isActive={Boolean(activeEventId)}
                 />
 
-<<<<<<< HEAD
-                {!canArm && (
-                  <p className="callout mb-4" style={{ maxWidth: 340 }}>
-                    Add at least one Trusted Contact in the Safety Hub tab before arming Shield.
-                  </p>
-                )}
-
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
                 <button
                   className={`guardian-circle ${guardianState === "listening" ? "is-listening" : ""} ${
                     guardianState === "active" ? "is-active" : ""
                   }`}
-<<<<<<< HEAD
-                  onClick={arm}
-                  disabled={!canArm || armed}
-                  aria-label={guardianState === "idle" ? "Arm Shield" : "Shield is armed"}
-=======
                   onClick={toggleArm}
                   disabled={Boolean(activeEventId)}
                   aria-label={guardianState === "active" ? "Active Emergency" : armed ? "Shield is armed. Tap to pause." : "Arm Shield Protection"}
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
                 >
                   <GuardianGlyph className="icon" />
                   <span className="label">
                     {guardianState === "active"
                       ? "Active"
-<<<<<<< HEAD
-                      : guardianState === "listening"
-                      ? "Listening"
-                      : "Arm Shield"}
-                  </span>
-                  {guardianState !== "idle" && (
-                    <span className="sub">say &ldquo;{codeWord}&rdquo;</span>
-                  )}
-=======
                       : armed
                       ? "Armed"
                       : "Arm Shield"}
@@ -1280,7 +1052,6 @@ export default function App() {
                       ? `tap to pause · say "${codeWord}"`
                       : "tap to protect"}
                   </span>
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
                 </button>
 
                 {/* Live Diagnostics Pill */}
@@ -1408,6 +1179,29 @@ export default function App() {
                     >
                       ↻
                     </button>
+                    <button
+                      id="gps-badge-live-safety-map-btn"
+                      type="button"
+                      onClick={() => setIsLiveMapModalOpen(true)}
+                      title="Open dedicated interactive Live Safety Map"
+                      style={{
+                        background: "rgba(232, 196, 104, 0.15)",
+                        border: "1px solid rgba(232, 196, 104, 0.3)",
+                        color: "var(--ember)",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                        padding: "2px 8px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 3,
+                        marginLeft: 4,
+                        flexShrink: 0,
+                      }}
+                    >
+                      Map ↗
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1416,6 +1210,24 @@ export default function App() {
               <div className="mt-5">
                 <p className="eyebrow text-center mb-3">Quick Safety Utilities</p>
                 <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                  {/* Dedicated Live Safety Map Option Button */}
+                  <button
+                    id="live-safety-map-quick-btn"
+                    className={`demo-chip-btn ${activeTab === "map" ? "is-active" : ""}`}
+                    onClick={() => setActiveTab("map")}
+                    style={{
+                      padding: "10px 14px",
+                      borderColor: "var(--line-gold)",
+                      background: activeTab === "map" ? "rgba(232, 196, 104, 0.25)" : "rgba(232, 196, 104, 0.12)",
+                      color: "var(--ember)",
+                      fontWeight: 600,
+                    }}
+                    title="Open dedicated interactive Live Safety Map (Leaflet + OpenStreetMap)"
+                  >
+                    <span style={{ marginRight: 6 }}>📍</span>
+                    Live Safety Map
+                  </button>
+
                   <button
                     className={`demo-chip-btn ${isCameraActive ? "is-active" : ""}`}
                     onClick={handleToggleCamera}
@@ -1480,8 +1292,6 @@ export default function App() {
 
                   <button
                     className="demo-chip-btn"
-<<<<<<< HEAD
-=======
                     onClick={() => setDecoyMode(true)}
                     style={{ padding: "10px 14px", borderColor: "rgba(232, 196, 104, 0.45)" }}
                     title="Launch Decoy Calculator Disguise"
@@ -1492,16 +1302,11 @@ export default function App() {
 
                   <button
                     className="demo-chip-btn"
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
                     onClick={() => setShowSettings(!showSettings)}
                     style={{ padding: "10px 14px" }}
                   >
                     <SettingsIcon size={14} style={{ marginRight: 6 }} />
-<<<<<<< HEAD
-                    Triggers & Safe Zones
-=======
                     Triggers &amp; Safe Zones
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
                   </button>
                 </div>
               </div>
@@ -1677,8 +1482,6 @@ export default function App() {
                       Server expects a GPS ping every 30s while Shield is armed. If contact is lost for &gt;3 minutes (phone powered off, confiscated, destroyed, or airplane mode), the server autonomously creates an SOS event and alerts your guardians with your last known location.
                     </p>
                   </div>
-<<<<<<< HEAD
-=======
 
                   {/* Safety Drills & Simulation Lab */}
                   <div className="pt-3" style={{ borderTop: "1px solid var(--line)" }}>
@@ -1743,36 +1546,18 @@ export default function App() {
                       </div>
                     </details>
                   </div>
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
                 </div>
               )}
 
               {/* Stealth Tip Card */}
               <div className="card mt-5" style={{ background: "rgba(30, 27, 46, 0.45)" }}>
                 <p className="text-xs text-dim">
-<<<<<<< HEAD
-                  💡 <strong style={{ color: "var(--paper)" }}>Discreet Stealth Mode:</strong> Tap the top-right corner of the screen 3 times or press <code style={{ color: "var(--ember)" }}>Alt+Shift+D</code> to instantly hide this app behind a fully functioning calculator. Type <code style={{ color: "var(--ember)" }}>112=</code> to return.
-=======
                   💡 <strong style={{ color: "var(--paper)" }}>Discreet Stealth Mode:</strong> Tap any top corner of your screen 3 times or press <code style={{ color: "var(--ember)" }}>Alt+Shift+D</code> to instantly disguise this app behind a fully functioning calculator. Type <code style={{ color: "var(--ember)" }}>112=</code> to return.
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
                 </p>
               </div>
             </div>
           )}
 
-<<<<<<< HEAD
-          {/* TAB 2: SCHEDULED CHECK-IN */}
-          {activeTab === "checkin" && (
-            <div className="rise-fade section">
-              <p className="eyebrow">Scheduled Check-In (Dead-Man's Switch)</p>
-              <div className="card">
-                <ScheduledCheckIn
-                  onExpire={() => fireSOS("checkin")}
-                  apiBaseUrl={API_BASE_URL}
-                  userId={USER_ID}
-                  disabled={Boolean(activeEventId)}
-                />
-=======
           {/* TAB 2: SCHEDULED CHECK-IN & ROUTE GUARD */}
           {activeTab === "checkin" && (
             <div className="rise-fade section">
@@ -1793,7 +1578,6 @@ export default function App() {
                 <div className="card">
                   <RouteGuardSetup {...routeGuard} />
                 </div>
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
               </div>
             </div>
           )}
@@ -1801,20 +1585,10 @@ export default function App() {
           {/* TAB 3: EVIDENCE VAULT */}
           {activeTab === "vault" && (
             <div className="rise-fade section">
-<<<<<<< HEAD
-              <p className="eyebrow">Evidence Vault (Cryptographic Storage)</p>
-              <div className="card">
-                <EvidenceVault
-                  refreshTrigger={evidenceRefreshTick}
-                  onCapture={evidenceVault?.startAutomatedCapture}
-                />
-              </div>
-=======
               <EvidenceVault
                 refreshTrigger={evidenceRefreshTick}
                 onCapture={evidenceVault?.startAutomatedCapture}
               />
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
             </div>
           )}
 
@@ -1831,15 +1605,18 @@ export default function App() {
               />
             </div>
           )}
+
+          {/* TAB 5: DEDICATED LIVE SAFETY MAP (Leaflet.js + OpenStreetMap) */}
+          {activeTab === "map" && (
+            <div className="rise-fade section">
+              <LiveSafetyMapView onBack={() => setActiveTab("shield")} />
+            </div>
+          )}
         </div>
       )}
 
       {/* ============================================================
-<<<<<<< HEAD
-          PERSISTENT BOTTOM NAVIGATION BAR (Peacetime)
-=======
           PERSISTENT BOTTOM NAVIGATION BAR (Mobile & Desktop)
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           ============================================================ */}
       {!activeEventId && (
         <nav className="bottom-nav-bar">
@@ -1848,11 +1625,7 @@ export default function App() {
               className={`nav-tab-btn ${activeTab === "shield" ? "is-active" : ""}`}
               onClick={() => setActiveTab("shield")}
             >
-<<<<<<< HEAD
-              <ShieldIcon size={20} />
-=======
               <ShieldIcon size={18} />
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
               <span>Shield</span>
             </button>
 
@@ -1860,11 +1633,7 @@ export default function App() {
               className={`nav-tab-btn ${activeTab === "checkin" ? "is-active" : ""}`}
               onClick={() => setActiveTab("checkin")}
             >
-<<<<<<< HEAD
-              <TimerIcon size={20} />
-=======
               <TimerIcon size={18} />
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
               <span>Check-In</span>
             </button>
 
@@ -1872,11 +1641,7 @@ export default function App() {
               className={`nav-tab-btn ${activeTab === "vault" ? "is-active" : ""}`}
               onClick={() => setActiveTab("vault")}
             >
-<<<<<<< HEAD
-              <FolderIcon size={20} />
-=======
               <FolderIcon size={18} />
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
               <span>Vault</span>
             </button>
 
@@ -1884,13 +1649,18 @@ export default function App() {
               className={`nav-tab-btn ${activeTab === "safety" ? "is-active" : ""}`}
               onClick={() => setActiveTab("safety")}
             >
-<<<<<<< HEAD
-              <UsersIcon size={20} />
-              <span>Safety Hub</span>
-=======
               <UsersIcon size={18} />
               <span>Hub</span>
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
+            </button>
+
+            <button
+              id="bottom-nav-live-safety-map-btn"
+              className={`nav-tab-btn ${activeTab === "map" ? "is-active" : ""}`}
+              onClick={() => setActiveTab("map")}
+              title="Open Live Safety Map"
+            >
+              <MapPinIcon size={18} />
+              <span>Live Map</span>
             </button>
           </div>
         </nav>
@@ -1912,6 +1682,12 @@ export default function App() {
         onClose={() => setIsAlarmOpen(false)}
       />
 
+      {/* Dedicated Interactive Leaflet + OpenStreetMap Live Safety Map */}
+      <LiveSafetyMapModal
+        isOpen={isLiveMapModalOpen}
+        onClose={() => setIsLiveMapModalOpen(false)}
+      />
+
       {/* 3. Duress PIN Verification Modal */}
       {showPinModal && (
         <PinCancelModal
@@ -1922,23 +1698,6 @@ export default function App() {
         />
       )}
 
-<<<<<<< HEAD
-      {/* 4. Cinematic Demo Studio Toolbar for Video Recording */}
-      <DemoStudioBar
-        apiBaseUrl={API_BASE_URL}
-        activeEventId={activeEventId}
-        activeShareToken={activeShareToken}
-        onTriggerSOS={fireSOS}
-        onTriggerFakeCall={() => setIsFakeCallOpen(true)}
-        onTriggerAlarm={() => setIsAlarmOpen(true)}
-        onToggleDecoy={() => setDecoyMode(true)}
-        armed={armed}
-        onArm={arm}
-        onGpsUpdate={(loc) => setLiveLocations((prev) => [...prev, loc])}
-      />
-
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       {/* 5. Camera Watch Viewfinder HUD & Persistent Video Element */}
       <div
         style={

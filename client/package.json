@@ -12,18 +12,9 @@
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
     "@supabase/supabase-js": "^2.110.9",
-<<<<<<< HEAD
-    "@tensorflow/tfjs": "^4.22.0",
-    "fingerpose": "^0.1.0",
-    "jspdf": "^4.2.1",
-    "leaflet": "^1.9.4",
-    "lucide-react": "^1.30.0",
-    "qrcode": "^1.5.4",
-=======
     "fingerpose": "^0.1.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.30.0",
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.11.0"

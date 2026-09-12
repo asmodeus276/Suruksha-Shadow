@@ -1,12 +1,10 @@
 import { Router } from "express";
-import { createClient } from "@supabase/supabase-js";
+import { supabase, isSupabaseConfigured } from "../lib/supabase.js";
 import { embedText } from "../lib/embeddings.js";
+import { DOCUMENTS } from "../lib/knowledgeBase.js";
+import { inMemoryTimeline } from "../lib/memoryStore.js";
 
 const router = Router();
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 // The very first message someone sees the instant Shield fires. This is
 // hand-written and deterministic on purpose — it lands during peak
@@ -45,18 +43,27 @@ router.post("/open", async (req, res) => {
   const { eventId } = req.body;
 
   if (eventId) {
-    // Best-effort — a logging failure should never block someone from
-    // actually seeing the opening message.
-    supabase
-      .from("timeline_entries")
-      .insert({
+    if (isSupabaseConfigured) {
+      supabase
+        .from("timeline_entries")
+        .insert({
+          emergency_event_id: eventId,
+          event_type: "sahara_opened",
+          details: "Sahara trauma-informed chat opened",
+        })
+        .then(({ error }) => {
+          if (error) console.warn("Failed to log sahara_opened:", error.message);
+        });
+    } else {
+      const timeline = inMemoryTimeline.get(eventId) || [];
+      timeline.push({
         emergency_event_id: eventId,
         event_type: "sahara_opened",
         details: "Sahara trauma-informed chat opened",
-      })
-      .then(({ error }) => {
-        if (error) console.warn("Failed to log sahara_opened:", error.message);
+        created_at: new Date().toISOString(),
       });
+      inMemoryTimeline.set(eventId, timeline);
+    }
   }
 
   res.json({ reply: OPENING_MESSAGE });
@@ -86,14 +93,23 @@ router.post("/chat", async (req, res) => {
   const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
   if (lastUserMessage?.content) {
     try {
-      const queryEmbedding = await embedText(lastUserMessage.content, "RETRIEVAL_QUERY");
-      const { data, error } = await supabase.rpc("match_knowledge_documents", {
-        query_embedding: queryEmbedding,
-        match_count: 4,
-        similarity_threshold: 0.55,
-      });
-      if (error) throw error;
-      retrievedDocs = data || [];
+      if (isSupabaseConfigured) {
+        const queryEmbedding = await embedText(lastUserMessage.content, "RETRIEVAL_QUERY");
+        const { data, error } = await supabase.rpc("match_knowledge_documents", {
+          query_embedding: queryEmbedding,
+          match_count: 4,
+          similarity_threshold: 0.55,
+        });
+        if (error) throw error;
+        retrievedDocs = data || [];
+      } else {
+        // In-memory keyword match against curated documents
+        const queryWords = lastUserMessage.content.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+        retrievedDocs = DOCUMENTS.filter((doc) => {
+          const text = (doc.title + " " + doc.content).toLowerCase();
+          return queryWords.some((w) => text.includes(w));
+        }).slice(0, 3);
+      }
     } catch (err) {
       // Retrieval failing should degrade gracefully to ungrounded
       // conversation, not break the chat entirely.
@@ -115,34 +131,50 @@ router.post("/chat", async (req, res) => {
       parts: [{ text: m.content }],
     }));
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT + groundingBlock }] },
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 600, // Gemini 3 Flash's internal "thinking" tokens
-            // come out of this same budget — 200 was getting fully consumed
-            // by thinking alone, cutting the actual reply off mid-sentence.
-            thinkingConfig: { thinkingLevel: "low" }, // Gemini 3 Flash can't
-            // fully disable thinking (unlike 2.5), only reduce it.
-          },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "(no body)");
-      throw new Error(`Gemini API returned ${response.status}: ${errorBody}`);
+    const primaryModel = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    const data = await response.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!reply) throw new Error("Empty response from Gemini");
+    const modelsToTry = [primaryModel, "gemini-3.1-flash-lite"].filter((m, i, arr) => arr.indexOf(m) === i);
+    let reply = null;
+    let lastError = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: SYSTEM_PROMPT + groundingBlock }] },
+              contents,
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 600,
+                thinkingConfig: { thinkingLevel: "LOW" },
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorBody = await response.text().catch(() => "(no body)");
+          lastError = new Error(`Gemini API (${modelName}) returned ${response.status}: ${errorBody}`);
+          continue;
+        }
+
+        const data = await response.json();
+        reply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (reply) break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!reply) throw lastError || new Error("Empty response from Gemini");
 
     // De-duplicated source citations, for the UI to show what grounded
     // this specific reply (empty array = pure conversational turn, no
@@ -184,11 +216,14 @@ router.get("/knowledge/:source", async (req, res) => {
       .select("title, content")
       .eq("source", source)
       .order("title", { ascending: true });
-    if (error) throw error;
-    res.json({ documents: data || [] });
+    if (error || !data || data.length === 0) {
+      const fallbackDocs = DOCUMENTS.filter((d) => d.source === source);
+      return res.json({ documents: fallbackDocs });
+    }
+    res.json({ documents: data });
   } catch (err) {
-    console.error(`Failed to load ${source} knowledge:`, err);
-    res.status(500).json({ error: `Failed to load ${source} knowledge` });
+    const fallbackDocs = DOCUMENTS.filter((d) => d.source === source);
+    res.json({ documents: fallbackDocs });
   }
 });
 
@@ -234,43 +269,73 @@ What they've shared so far:
 ${conversationText}`;
 
   if (eventId) {
-    supabase
-      .from("timeline_entries")
-      .insert({
+    if (isSupabaseConfigured) {
+      supabase
+        .from("timeline_entries")
+        .insert({
+          emergency_event_id: eventId,
+          event_type: "complaint_draft_requested",
+          details: `Draft ${complaintType || "complaint"} statement requested`,
+        })
+        .then(({ error }) => {
+          if (error) console.warn("Failed to log complaint_draft_requested:", error.message);
+        });
+    } else {
+      const timeline = inMemoryTimeline.get(eventId) || [];
+      timeline.push({
         emergency_event_id: eventId,
         event_type: "complaint_draft_requested",
         details: `Draft ${complaintType || "complaint"} statement requested`,
-      })
-      .then(({ error }) => {
-        if (error) console.warn("Failed to log complaint_draft_requested:", error.message);
+        created_at: new Date().toISOString(),
       });
+      inMemoryTimeline.set(eventId, timeline);
+    }
   }
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: draftPrompt }] }],
-          generationConfig: {
-            temperature: 0.4, // lower than chat — this should stay close to what was actually said
-            maxOutputTokens: 600,
-            thinkingConfig: { thinkingLevel: "low" },
-          },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "(no body)");
-      throw new Error(`Gemini API returned ${response.status}: ${errorBody}`);
+    const primaryModel = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    const data = await response.json();
-    const draft = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!draft) throw new Error("Empty response from Gemini");
+    const modelsToTry = [primaryModel, "gemini-3.1-flash-lite"].filter((m, i, arr) => arr.indexOf(m) === i);
+    let draft = null;
+    let lastError = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: draftPrompt }] }],
+              generationConfig: {
+                temperature: 0.4, // lower than chat — this should stay close to what was actually said
+                maxOutputTokens: 600,
+                thinkingConfig: { thinkingLevel: "LOW" },
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorBody = await response.text().catch(() => "(no body)");
+          lastError = new Error(`Gemini API (${modelName}) returned ${response.status}: ${errorBody}`);
+          continue;
+        }
+
+        const data = await response.json();
+        draft = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (draft) break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!draft) throw lastError || new Error("Empty response from Gemini");
 
     res.json({ draft });
   } catch (err) {

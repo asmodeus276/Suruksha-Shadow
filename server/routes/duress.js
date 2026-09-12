@@ -1,14 +1,9 @@
 import { Router } from "express";
-import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import { supabase } from "../lib/supabase.js";
 import { inMemoryPinProfiles } from "../lib/memoryStore.js";
 
 const router = Router();
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 const SALT_ROUNDS = 10;
 

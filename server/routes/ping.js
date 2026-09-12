@@ -1,27 +1,17 @@
 import { Router } from "express";
-import { createClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
 import { broadcastToGuardian } from "../lib/broadcast.js";
-<<<<<<< HEAD
-=======
 import { sendSms } from "../lib/sms.js";
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
+import { supabase } from "../lib/supabase.js";
 import {
   inMemoryEvents,
   inMemoryEventsByToken,
   inMemoryTimeline,
   inMemoryPings,
-<<<<<<< HEAD
-=======
   inMemoryContacts,
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 } from "../lib/memoryStore.js";
 
 const router = Router();
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 /**
  * GET /api/emergency/guardian/:token
@@ -265,8 +255,6 @@ router.post("/:eventId/resolve", async (req, res) => {
     });
   }
 
-<<<<<<< HEAD
-=======
   // Dispatch "I'm Safe" confirmation SMS to trusted contacts
   try {
     let targetUserId = memEvent?.user_id;
@@ -301,7 +289,6 @@ router.post("/:eventId/resolve", async (req, res) => {
     console.warn("Failed to dispatch safety confirmation SMS:", smsErr.message);
   }
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   return res.json({ ok: true, evidenceHash });
 });
 

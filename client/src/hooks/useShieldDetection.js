@@ -100,11 +100,7 @@ function isFuzzyCodeWordMatch(spokenText, targetWord) {
 /**
  * Shield's silent trigger — FR-1 / TR-1 / TR-2.
  * Listens for a spoken code word (Web Speech API) and for a sudden,
-<<<<<<< HEAD
- * sustained motion anomaly / shake (Device Motion API).
-=======
  * sustained motion anomaly / shake (Device Motion API) with baseline calibration.
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
  */
 export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const [transcript, setTranscript] = useState("");
@@ -112,19 +108,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const [motionMagnitude, setMotionMagnitude] = useState(0);
   const [lastError, setLastError] = useState(null);
   const [restartCount, setRestartCount] = useState(0);
-
-<<<<<<< HEAD
-=======
-  // Keep latest codeWord and onTrigger in refs so recognition is never torn down on re-renders
-  const codeWordRef = useRef(codeWord);
-  useEffect(() => {
-    codeWordRef.current = codeWord;
-  }, [codeWord]);
-
-  const onTriggerRef = useRef(onTrigger);
-  useEffect(() => {
-    onTriggerRef.current = onTrigger;
-  }, [onTrigger]);
 
   // Calibration state for baseline motion filtering
   const [calibration, setCalibration] = useState({
@@ -135,47 +118,28 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
 
   const baselineMagnitudeRef = useRef(0);
   const calibrationSamplesRef = useRef([]);
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   const motionBufferRef = useRef([]);
   const shakeCounterRef = useRef({ count: 0, lastSign: 0, lastTime: 0 });
   const triggeredRef = useRef(false);
 
   const fire = useCallback(
-<<<<<<< HEAD
-    (type) => {
-      if (triggeredRef.current) return;
-      triggeredRef.current = true;
-      onTrigger?.(type);
-    },
-    [onTrigger]
-=======
     (type, confidence = 0.90, details = "") => {
       if (triggeredRef.current) return;
       triggeredRef.current = true;
       console.log(`[SURAKSHA SHIELD] LIVE sensor trigger fired: ${type} (Confidence: ${Math.round(confidence * 100)}%)`);
-      onTriggerRef.current?.({
+      onTrigger?.({
         triggerType: type,
         mode: "live",
         confidence,
         details: details || `Live sensor trigger: ${type}`,
       });
     },
-    []
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
+    [onTrigger]
   );
 
   // --- Voice trigger: listen continuously for the code word ---
   useEffect(() => {
-<<<<<<< HEAD
     if (!enabled) return;
-=======
-    if (!enabled) {
-      setMicStatus("idle");
-      setTranscript("");
-      return;
-    }
-
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -193,10 +157,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-<<<<<<< HEAD
-      // Use device default or en-US/en-IN
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       recognition.lang = navigator.language || "en-US";
       recognition.maxAlternatives = 5;
 
@@ -207,7 +167,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       };
 
       recognition.onresult = (event) => {
-<<<<<<< HEAD
         const display = Array.from(event.results)
           .map((r) => r[0].transcript)
           .join(" ")
@@ -215,11 +174,30 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         setTranscript(display);
 
         let matched = false;
+        let matchConfidence = 0.85;
+
         for (const result of event.results) {
           for (let i = 0; i < result.length; i++) {
-            const alt = result[i].transcript;
-            if (isFuzzyCodeWordMatch(alt, codeWord)) {
+            const alt = result[i].transcript.toLowerCase();
+            const cleanTarget = (codeWord || "").toLowerCase().trim();
+
+            if (cleanTarget && alt.includes(cleanTarget)) {
               matched = true;
+              matchConfidence = 0.98; // Exact substring match
+              break;
+            }
+
+            for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
+              if (alt.includes(universal)) {
+                matched = true;
+                matchConfidence = 0.95; // Universal emergency keyword
+                break;
+              }
+            }
+
+            if (!matched && isFuzzyCodeWordMatch(alt, codeWord)) {
+              matched = true;
+              matchConfidence = 0.80; // Fuzzy phonetic match
               break;
             }
           }
@@ -227,109 +205,25 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         }
 
         if (matched) {
-          fire("voice");
-=======
-        const fullTranscript = Array.from(event.results)
-          .map((r) => r[0]?.transcript || "")
-          .join(" ")
-          .toLowerCase();
-        setTranscript(fullTranscript);
-
-        const currentTarget = (codeWordRef.current || "").toLowerCase().trim();
-        let matched = false;
-        let matchConfidence = 0.85;
-
-        // 1. Direct check in the full combined transcript
-        if (currentTarget && fullTranscript.includes(currentTarget)) {
-          matched = true;
-          matchConfidence = 0.98;
-        }
-
-        // 2. Check universal emergency keywords
-        if (!matched) {
-          for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
-            if (fullTranscript.includes(universal)) {
-              matched = true;
-              matchConfidence = 0.95;
-              break;
-            }
-          }
-        }
-
-        // 3. Fuzzy match full transcript
-        if (!matched && currentTarget && isFuzzyCodeWordMatch(fullTranscript, currentTarget)) {
-          matched = true;
-          matchConfidence = 0.85;
-        }
-
-        // 4. Check each speech recognition alternative
-        if (!matched) {
-          for (const result of event.results) {
-            for (let i = 0; i < result.length; i++) {
-              const alt = (result[i]?.transcript || "").toLowerCase();
-
-              if (currentTarget && alt.includes(currentTarget)) {
-                matched = true;
-                matchConfidence = 0.98;
-                break;
-              }
-
-              for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
-                if (alt.includes(universal)) {
-                  matched = true;
-                  matchConfidence = 0.95;
-                  break;
-                }
-              }
-
-              if (!matched && currentTarget && isFuzzyCodeWordMatch(alt, currentTarget)) {
-                matched = true;
-                matchConfidence = 0.80;
-                break;
-              }
-            }
-            if (matched) break;
-          }
-        }
-
-        if (matched) {
-          console.log(`[SURAKSHA VOICE] Codeword detected! Target: "${currentTarget}", Spoken: "${fullTranscript}"`);
-          fire("voice", matchConfidence, `Spoken keyword matched in transcript: "${fullTranscript.slice(-40)}"`);
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
+          fire("voice", matchConfidence, `Spoken keyword matched in transcript: "${display.slice(-40)}"`);
         }
       };
 
       recognition.onend = () => {
-<<<<<<< HEAD
         if (stopped || !enabled || triggeredRef.current) return;
         const delay = Math.min(300 + consecutiveErrors * 300, 2500);
         restartTimeout = setTimeout(() => {
-=======
-        if (stopped || !enabled || triggeredRef.current) {
-          setMicStatus("idle");
-          return;
-        }
-        // Continuous listening auto-restart
-        const delay = Math.min(150 + consecutiveErrors * 200, 2000);
-        restartTimeout = setTimeout(() => {
-          if (stopped || !enabled || triggeredRef.current) return;
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           setRestartCount((n) => n + 1);
           current = createRecognition();
           try {
             current.start();
           } catch {
-<<<<<<< HEAD
             /* ignore */
-=======
-            /* ignore concurrent start race */
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           }
         }, delay);
       };
 
       recognition.onerror = (e) => {
-<<<<<<< HEAD
         console.warn("Speech recognition error:", e.error);
         if (e.error === "not-allowed") {
           setMicStatus("error");
@@ -337,16 +231,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         } else if (e.error === "no-speech") {
           // Normal silence, auto-recovers
         } else {
-=======
-        if (e.error === "not-allowed") {
-          console.warn("Speech recognition error:", e.error);
-          setMicStatus("error");
-          setLastError("Microphone permission denied");
-        } else if (e.error === "no-speech" || e.error === "aborted") {
-          // Normal silence or browser abort, auto-recovers on onend
-        } else {
-          console.warn("Speech recognition non-fatal error:", e.error);
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           consecutiveErrors += 1;
         }
       };
@@ -373,12 +257,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         }
       }
     };
-<<<<<<< HEAD
   }, [codeWord, enabled, fire]);
-
-  // --- Motion trigger: spike in acceleration & violent shake detection ---
-=======
-  }, [enabled, fire]);
 
   // --- Motion Calibration (3-second baseline capture upon arming) ---
   useEffect(() => {
@@ -420,7 +299,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   }, [enabled]);
 
   // --- Motion trigger: spike in acceleration & violent shake detection with dynamic threshold ---
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   useEffect(() => {
     if (!enabled) return;
     if (typeof window === "undefined" || typeof DeviceMotionEvent === "undefined") {
@@ -428,11 +306,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     }
 
     const WINDOW_SIZE = 8;
-<<<<<<< HEAD
-    const SUSTAINED_THRESHOLD = 20; // m/s^2
-    const VIOLENT_SHAKE_THRESHOLD = 16;
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     let lastUiUpdate = 0;
     const UI_UPDATE_INTERVAL_MS = 350;
 
@@ -441,8 +314,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       const magnitude = Math.sqrt(x * x + y * y + z * z);
       const now = Date.now();
 
-<<<<<<< HEAD
-=======
       // Collect samples if calibrating
       if (calibration.isCalibrating) {
         calibrationSamplesRef.current.push(magnitude);
@@ -451,7 +322,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         }
       }
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       const buf = motionBufferRef.current;
       buf.push(magnitude);
       if (buf.length > WINDOW_SIZE) buf.shift();
@@ -463,11 +333,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         lastUiUpdate = now;
       }
 
-<<<<<<< HEAD
-      // 1. Sustained linear acceleration (e.g. violent struggle / being dragged)
-      if (buf.length === WINDOW_SIZE && avg > SUSTAINED_THRESHOLD) {
-        fire("motion");
-=======
       // Dynamic thresholds adjusted by calibrated baseline
       const base = baselineMagnitudeRef.current || 0;
       const dynamicSustainedThreshold = Math.max(18, base + 14);
@@ -477,17 +342,10 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       if (buf.length === WINDOW_SIZE && avg > dynamicSustainedThreshold) {
         const conf = Math.min(0.99, Math.round((avg / dynamicSustainedThreshold) * 0.88 * 100) / 100);
         fire("motion", conf, `Sustained struggle acceleration (${avg.toFixed(1)} m/s², baseline: ${base.toFixed(1)})`);
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       }
 
       // 2. Multi-axis violent shake detection (rapid alternating direction)
       const maxAxis = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
-<<<<<<< HEAD
-      const dominantSign = (Math.abs(x) > Math.abs(y) && Math.abs(x) > Math.abs(z)) ? Math.sign(x) : (Math.abs(y) > Math.abs(z) ? Math.sign(y) : Math.sign(z));
-
-      const shake = shakeCounterRef.current;
-      if (maxAxis > VIOLENT_SHAKE_THRESHOLD) {
-=======
       const dominantSign =
         Math.abs(x) > Math.abs(y) && Math.abs(x) > Math.abs(z)
           ? Math.sign(x)
@@ -497,17 +355,12 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
 
       const shake = shakeCounterRef.current;
       if (maxAxis > dynamicViolentShakeThreshold) {
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
         if (shake.lastSign !== 0 && dominantSign !== shake.lastSign && now - shake.lastTime < 450) {
           shake.count += 1;
           if (shake.count >= 4) {
             shake.count = 0;
-<<<<<<< HEAD
-            fire("motion");
-=======
             const conf = Math.min(0.98, Math.round((maxAxis / dynamicViolentShakeThreshold) * 0.90 * 100) / 100);
             fire("motion", conf, `Violent struggle shake (${shake.count} rapid directional shifts, peak: ${maxAxis.toFixed(1)} m/s²)`);
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           }
         }
         shake.lastSign = dominantSign;
@@ -519,11 +372,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
 
     window.addEventListener("devicemotion", handleMotion);
     return () => window.removeEventListener("devicemotion", handleMotion);
-<<<<<<< HEAD
-  }, [enabled, fire]);
-=======
   }, [enabled, calibration.isCalibrating, fire]);
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
   const reset = useCallback(() => {
     triggeredRef.current = false;
@@ -531,9 +380,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     shakeCounterRef.current = { count: 0, lastSign: 0, lastTime: 0 };
   }, []);
 
-<<<<<<< HEAD
-  return { reset, transcript, micStatus, motionMagnitude, lastError, restartCount };
-=======
   return {
     reset,
     transcript,
@@ -543,7 +389,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     restartCount,
     calibration,
   };
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 }
 
 /**

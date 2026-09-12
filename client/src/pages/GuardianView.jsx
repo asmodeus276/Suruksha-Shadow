@@ -13,11 +13,8 @@ import {
   NavigationIcon,
   ShareIcon,
   WhatsAppIcon,
-<<<<<<< HEAD
-=======
   ShieldAlertIcon,
   ShieldIcon,
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 } from "../components/icons";
 import LiveMap from "../components/LiveMap";
 import {
@@ -34,11 +31,6 @@ const SILENT_WAV =
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL !== undefined
     ? import.meta.env.VITE_API_BASE_URL
-<<<<<<< HEAD
-    : import.meta.env.DEV
-    ? "http://localhost:4000"
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     : "";
 
 export default function GuardianView() {
@@ -54,10 +46,7 @@ export default function GuardianView() {
   const [nowTick, setNowTick] = useState(Date.now());
   const [resolvedAddress, setResolvedAddress] = useState(null);
   const [shareNotice, setShareNotice] = useState(null);
-<<<<<<< HEAD
-=======
   const [guardianLoc, setGuardianLoc] = useState(null);
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
   const audioQueueRef = useRef([]);
   const audioElRef = useRef(null);
@@ -69,9 +58,6 @@ export default function GuardianView() {
     return () => clearInterval(timer);
   }, []);
 
-<<<<<<< HEAD
-  // Initial snapshot via Backend API (with Supabase service-role proxy)
-=======
   // Guardian device GPS for distance calculation
   useEffect(() => {
     if (typeof navigator !== "undefined" && "geolocation" in navigator) {
@@ -89,7 +75,6 @@ export default function GuardianView() {
   }, []);
 
   // Initial snapshot via Backend API with Supabase fallback
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   useEffect(() => {
     let cancelled = false;
 
@@ -135,11 +120,7 @@ export default function GuardianView() {
         console.warn("Supabase RPC failed:", rpcErr);
       }
 
-<<<<<<< HEAD
-      // If token is invalid or network failed, render realistic demo simulation so video recording never breaks
-=======
       // Simulation fallback for live demo recording
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       if (!cancelled) {
         setEmergency({
           event_id: "simulated-incident",
@@ -147,29 +128,18 @@ export default function GuardianView() {
           start_time: new Date().toISOString(),
           lat: 28.6328,
           lng: 77.2197,
-<<<<<<< HEAD
-          battery_pct: 79,
-          movement_status: "moving (walking ~4 km/h)",
-          evidence_hash: "3f78b19e2a4c0d5e8f1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f",
-=======
           battery_pct: 78,
           movement_status: "moving (walking ~4.2 km/h)",
           evidence_hash: "9f83c68334b07f89fa6e9b4690c74f57c2c4d51624c87895315be96f64a1329a",
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
         });
         setLocations([
           { lat: 28.6320, lng: 77.2185, created_at: new Date(Date.now() - 30000).toISOString() },
           { lat: 28.6328, lng: 77.2197, created_at: new Date().toISOString() },
         ]);
         setTimeline([
-<<<<<<< HEAD
-          { event_type: "triggered", details: "Silent trigger fired (voice)", created_at: new Date().toISOString() },
-          { event_type: "contacts_notified", details: "3 trusted contact(s) notified", created_at: new Date().toISOString() },
-=======
           { event_type: "triggered", details: "Silent duress trigger fired (Voice Code Word)", created_at: new Date(Date.now() - 60000).toISOString() },
           { event_type: "contacts_notified", details: "3 Trusted Escort Nodes notified with L1/L5 GNSS pin", created_at: new Date(Date.now() - 55000).toISOString() },
           { event_type: "anomaly", details: "PPG Heartbeat Delta > 35% within 15s. Acoustic mic burst recorded.", created_at: new Date(Date.now() - 20000).toISOString() },
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
         ]);
       }
     }
@@ -180,29 +150,7 @@ export default function GuardianView() {
     };
   }, [token]);
 
-<<<<<<< HEAD
-  const [guardianLoc, setGuardianLoc] = useState(null);
-
-  // Query Guardian's own device location to compute live distance to victim
-  useEffect(() => {
-    if (typeof navigator !== "undefined" && "geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setGuardianLoc({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          });
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 6000 }
-      );
-    }
-  }, []);
-
-  // Periodic polling fallback to guarantee live updates even without active WebSocket
-=======
   // Periodic polling fallback
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   useEffect(() => {
     if (!token) return;
     const interval = setInterval(async () => {
@@ -303,14 +251,6 @@ export default function GuardianView() {
     }
   };
 
-<<<<<<< HEAD
-  useEffect(() => {
-    document.body.classList.toggle("is-emergency", emergency?.status === "active");
-    return () => document.body.classList.remove("is-emergency");
-  }, [emergency?.status]);
-
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   const copyHash = async (hash) => {
     if (!hash) return;
     try {
@@ -326,15 +266,9 @@ export default function GuardianView() {
   const currentLat = latestLoc ? latestLoc.lat : emergency?.lat;
   const currentLng = latestLoc ? latestLoc.lng : emergency?.lng;
 
-<<<<<<< HEAD
-  let distanceToVictimKm = null;
-  if (guardianLoc && currentLat != null && currentLng != null) {
-    const R = 6371;
-=======
   let distanceToVictim = "420m";
   if (guardianLoc && currentLat != null && currentLng != null) {
     const R = 6371000;
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     const dLat = ((currentLat - guardianLoc.lat) * Math.PI) / 180;
     const dLng = ((currentLng - guardianLoc.lng) * Math.PI) / 180;
     const a =
@@ -342,17 +276,10 @@ export default function GuardianView() {
       Math.cos((guardianLoc.lat * Math.PI) / 180) *
         Math.cos((currentLat * Math.PI) / 180) *
         Math.sin(dLng / 2) ** 2;
-<<<<<<< HEAD
-    distanceToVictimKm = (2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
-  }
-
-  // Resolve human-readable street/area address (must run before early returns to preserve hook order)
-=======
     const distM = 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     distanceToVictim = distM < 1000 ? `${Math.round(distM)}m` : `${(distM / 1000).toFixed(1)}km`;
   }
 
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
   useEffect(() => {
     if (currentLat != null && currentLng != null) {
       let active = true;
@@ -367,33 +294,19 @@ export default function GuardianView() {
 
   if (error) {
     return (
-<<<<<<< HEAD
-      <div style={{ padding: 32, textAlign: "center" }}>
-        <p className="text-alarm mb-3" style={{ fontSize: 16 }}>⚠️ {error}</p>
-        <p className="text-xs text-dim">Please verify you have opened the exact link received via SMS.</p>
-=======
       <div className="app-viewport" style={{ textAlign: "center", padding: "60px 20px" }}>
         <p style={{ color: "var(--alarm)", fontSize: 18, fontWeight: 600, marginBottom: 8 }}>⚠️ {error}</p>
         <p className="text-dim">Please verify you have opened the exact link received via SMS.</p>
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
       </div>
     );
   }
 
   if (!emergency) {
     return (
-<<<<<<< HEAD
-      <div style={{ padding: "40px 20px" }}>
-        <div className="stack-3">
-          <div className="skeleton" style={{ width: "60%", height: 26 }} />
-          <div className="skeleton" style={{ width: "40%" }} />
-          <div className="skeleton" style={{ width: "100%", height: 260, borderRadius: 16 }} />
-=======
       <div className="app-viewport" style={{ padding: "60px 20px" }}>
         <div className="card" style={{ padding: 40, textAlign: "center" }}>
           <span style={{ fontSize: 24 }} className="animate-pulse">🛰️</span>
           <p style={{ marginTop: 12, color: "var(--ember)" }}>Connecting to Guardian Tactical Mesh…</p>
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
         </div>
       </div>
     );
@@ -403,47 +316,6 @@ export default function GuardianView() {
   const startTime = emergency.start_time ? new Date(emergency.start_time).getTime() : null;
   const elapsedSecs = startTime ? Math.max(0, Math.floor((nowTick - startTime) / 1000)) : 0;
   const elapsedMins = Math.floor(elapsedSecs / 60);
-<<<<<<< HEAD
-
-  const batteryPct = emergency.battery_pct != null ? emergency.battery_pct : null;
-  const batteryColor =
-    batteryPct == null ? "var(--mist)" : batteryPct > 50 ? "var(--safe)" : batteryPct > 20 ? "var(--ember)" : "var(--alarm)";
-
-  return (
-    <div>
-      <header className="header rise-fade">
-        <div className="wordmark">
-          Suraksha <em>Shadow</em>
-        </div>
-        <p className="tagline">Guardian Dispatch & Crisis Command</p>
-      </header>
-
-      {/* Incident Status Banner */}
-      <div className="text-center rise-fade mb-5">
-        <span className={`status-pill ${isActive ? "pill-alarm" : "pill-safe"}`}>
-          <span className="dot" />
-          {isActive ? `Emergency Active · ${elapsedMins}m ago` : "Resolved by user"}
-        </span>
-      </div>
-
-      {/* Guardian Crisis Actions Grid */}
-      <div className="card mb-4" style={{ background: "var(--dusk-soft)", border: "1px solid var(--line)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-          <div>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--paper)" }}>
-              Guardian Emergency Dispatch
-            </div>
-            <p className="text-xs text-dim" style={{ marginTop: 2 }}>
-              {resolvedAddress ? `📍 ${resolvedAddress}` : "Tracking live distress coordinates"}
-              {distanceToVictimKm != null && (
-                <span style={{ color: "var(--ember)", fontWeight: 600 }}> · ~{distanceToVictimKm} km away from you</span>
-              )}
-            </p>
-          </div>
-          {currentLat != null && currentLng != null && (
-            <span className="tag tag-safe" style={{ fontSize: 11 }}>
-              {formatCoords(currentLat, currentLng)}
-=======
   const batteryPct = emergency.battery_pct != null ? emergency.battery_pct : 78;
 
   return (
@@ -547,18 +419,12 @@ export default function GuardianView() {
           {currentLat != null && currentLng != null && (
             <span className="tag tag-gold">
               {formatCoords(currentLat, currentLng)} (±8m)
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
             </span>
           )}
         </div>
 
-<<<<<<< HEAD
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {/* 1-Tap Google Maps Navigation */}
-=======
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
           {/* Turn-by-Turn Directions */}
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           <a
             href={getDirectionsUrl(currentLat, currentLng)}
             target="_blank"
@@ -569,91 +435,22 @@ export default function GuardianView() {
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
-<<<<<<< HEAD
-              textDecoration: "none",
-              padding: "10px 12px",
-              fontSize: 13,
-              fontWeight: 600,
-              background: "linear-gradient(135deg, #f2a65a, #e0833a)",
-              color: "#111",
-              borderRadius: 10,
-              boxShadow: "0 4px 14px rgba(242, 166, 90, 0.25)",
-            }}
-          >
-            <NavigationIcon size={15} />
-            Navigate ↗
-=======
               padding: "11px 14px",
               borderRadius: "var(--radius-sm)",
             }}
           >
             <NavigationIcon size={16} />
             <span>Turn-by-Turn GPS</span>
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           </a>
 
           {/* 1-Tap Call 112 */}
           <a
             href="tel:112"
-<<<<<<< HEAD
-            className="btn-primary"
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
-<<<<<<< HEAD
-              textDecoration: "none",
-              padding: "10px 12px",
-              fontSize: 13,
-              background: "var(--alarm)",
-              color: "#fff",
-              borderRadius: 10,
-            }}
-          >
-            <PhoneIcon size={15} />
-            Call 112
-          </a>
-        </div>
-
-        {/* Secondary Dispatch: Share on WhatsApp / Forward */}
-        <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-          <button
-            type="button"
-            className="btn-quiet"
-            onClick={async () => {
-              const res = await shareEmergencyAlert({
-                shareToken: token,
-                address: resolvedAddress,
-                lat: currentLat,
-                lng: currentLng,
-                status: isActive ? "CRITICAL (Active Emergency)" : "RESOLVED",
-              });
-              if (res?.success && res.method === "native") {
-                setShareNotice("Alert shared successfully");
-                setTimeout(() => setShareNotice(null), 2500);
-              }
-            }}
-            style={{
-              flex: 1,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              fontSize: 12,
-              padding: "8px 10px",
-              background: "var(--dusk)",
-              border: "1px solid var(--line)",
-              borderRadius: 8,
-            }}
-          >
-            <ShareIcon size={13} />
-            Share Live Tracker
-          </button>
-
-=======
               padding: "11px 14px",
               background: "var(--alarm-container)",
               border: "1px solid var(--alarm)",
@@ -667,7 +464,6 @@ export default function GuardianView() {
           </a>
 
           {/* WhatsApp Alert Broadcast */}
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
           <a
             href={getWhatsAppAlertUrl({
               shareToken: token,
@@ -678,112 +474,6 @@ export default function GuardianView() {
             })}
             target="_blank"
             rel="noreferrer"
-<<<<<<< HEAD
-            className="btn-quiet"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 12,
-              padding: "8px 12px",
-              background: "rgba(37, 211, 102, 0.12)",
-              color: "#25d366",
-              border: "1px solid rgba(37, 211, 102, 0.3)",
-              borderRadius: 8,
-              textDecoration: "none",
-            }}
-          >
-            <WhatsAppIcon size={14} />
-            WhatsApp
-          </a>
-        </div>
-        {shareNotice && (
-          <p className="text-xs text-safe mt-2 text-center">{shareNotice}</p>
-        )}
-      </div>
-
-      {/* Live Map */}
-      <section className="section">
-        <div className="flex-center-gap mb-2" style={{ justifyContent: "space-between" }}>
-          <p className="eyebrow" style={{ margin: 0 }}>Real-Time GPS Location Trail</p>
-          {emergency.lat != null && (
-            <span className="tag tag-safe flex-center-gap">
-              <RadioIcon size={11} />
-              <span>Live Ping</span>
-            </span>
-          )}
-        </div>
-
-        <div className="card" style={{ padding: 0, overflow: "hidden", border: "1px solid var(--line)" }}>
-          <LiveMap locations={locations} isActive={isActive} height={290} />
-        </div>
-
-        {currentLat != null && (
-          <div className="mt-2" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span className="text-xs text-dim" style={{ fontFamily: "var(--mono)" }}>
-              {resolvedAddress ? `${resolvedAddress} · ` : ""}{currentLat.toFixed(5)}, {currentLng.toFixed(5)}
-            </span>
-            <a
-              className="btn-quiet"
-              style={{ display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none", fontSize: 12 }}
-              href={getDirectionsUrl(currentLat, currentLng)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <NavigationIcon size={13} />
-              Directions
-            </a>
-          </div>
-        )}
-      </section>
-
-      {/* Telemetry & Device Health */}
-      <section className="section">
-        <p className="eyebrow">Device Telemetry</p>
-        <div className="card stat-grid">
-          <div className="stat-block">
-            <div className="stat-label">
-              <BatteryIcon size={13} style={{ color: batteryColor }} /> Battery
-            </div>
-            <div className="stat-value" style={{ color: batteryColor }}>
-              {batteryPct != null ? `${batteryPct}%` : "—"}
-            </div>
-          </div>
-          <div className="stat-block">
-            <div className="stat-label">
-              <ActivityIcon size={13} /> Movement
-            </div>
-            <div className="stat-value" style={{ fontSize: 16, textTransform: "capitalize" }}>
-              {emergency.movement_status || "Stationary"}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Ambient Audio Stream */}
-      <section className="section">
-        <p className="eyebrow">Live Ambient Audio</p>
-        <div className="card">
-          {audioActive ? (
-            <div>
-              <div className="flex-center-gap mb-2" style={{ color: "var(--safe)" }}>
-                <MicIcon size={15} />
-                <span className="text-sm" style={{ fontWeight: 600 }}>
-                  Audio Streaming Active · {chunksReceived} chunk(s) received
-                </span>
-              </div>
-              <div className="fake-call-wave-bars" style={{ justifyContent: "flex-start", marginBottom: 12 }}>
-                <span className="wave-bar bar-1" />
-                <span className="wave-bar bar-2" />
-                <span className="wave-bar bar-3" />
-                <span className="wave-bar bar-4" />
-                <span className="wave-bar bar-5" />
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-dim mb-2">
-              No audio stream received yet. Audio only streams if ambient audio consent is granted by user.
-=======
             style={{
               display: "flex",
               alignItems: "center",
@@ -924,99 +614,11 @@ export default function GuardianView() {
           ) : (
             <p style={{ fontSize: 12.5, color: "var(--mist-dim)", marginBottom: 14 }}>
               Audio duplex stream standby. Audio transmits automatically when ambient consent is enabled.
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
             </p>
           )}
 
           <button
             onClick={enableAudio}
-<<<<<<< HEAD
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13 }}
-            className={audioUnlocked ? "" : "btn-primary"}
-          >
-            {audioUnlocked && <CheckIcon size={15} />}
-            {audioUnlocked ? "Audio playback enabled on this device" : "🔊 Tap to enable audio playback"}
-          </button>
-          <audio ref={audioElRef} style={{ display: "none" }} />
-        </div>
-      </section>
-
-      {/* Incident Timeline */}
-      <section className="section">
-        <p className="eyebrow">Incident Timeline</p>
-        <div className="card" style={{ textAlign: "left" }}>
-          {timeline.length === 0 ? (
-            <p className="text-sm text-dim">No timeline events logged yet.</p>
-          ) : (
-            timeline.map((entry, i) => (
-              <div
-                key={i}
-                className="text-sm"
-                style={{
-                  padding: "9px 0",
-                  borderBottom: i < timeline.length - 1 ? "1px solid var(--line)" : "none",
-                  display: "flex",
-                  alignItems: "flex-start",
-                }}
-              >
-                <span className="tag" style={{ marginRight: 10, marginTop: 2, flexShrink: 0 }}>
-                  {new Date(entry.created_at).toLocaleTimeString()}
-                </span>
-                <span style={{ color: "var(--paper)" }}>{entry.details}</span>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Cryptographic Forensic Integrity Certificate */}
-      {emergency.evidence_hash && (
-        <section className="section">
-          <p className="eyebrow">Cryptographic Chain of Custody</p>
-          <div className="card">
-            <div className="flex-center-gap mb-2">
-              <ShieldCheckIcon size={16} style={{ color: "var(--safe)" }} />
-              <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--safe)" }}>
-                SHA-256 Tamper-Proof Evidence Seal
-              </span>
-            </div>
-            <p className="text-xs text-dim mb-3">
-              This checksum was calculated over the incident's immutable telemetry and audio hashes. It serves as cryptographic proof in court or police proceedings that evidence has not been modified.
-            </p>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                background: "var(--ink)",
-                border: "1px solid var(--line)",
-                padding: "8px 12px",
-                borderRadius: "var(--radius-sm)",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: 11,
-                  wordBreak: "break-all",
-                  color: "var(--paper)",
-                  paddingRight: 8,
-                }}
-              >
-                {emergency.evidence_hash}
-              </span>
-              <button
-                className="icon-btn"
-                onClick={() => copyHash(emergency.evidence_hash)}
-                title="Copy SHA-256 Hash"
-              >
-                {copiedHash ? <CheckIcon size={15} style={{ color: "var(--safe)" }} /> : <CopyIcon size={15} />}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-=======
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
             className={audioUnlocked ? "" : "btn-primary"}
           >
@@ -1067,7 +669,6 @@ export default function GuardianView() {
           </div>
         </div>
       </div>
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
     </div>
   );
 }

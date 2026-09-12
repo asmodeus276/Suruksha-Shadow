@@ -30,16 +30,17 @@ export default function LiveMap({ locations = [], isActive = true, height = 280 
 
     const map = L.map(containerRef.current, {
       zoomControl: true,
-      attributionControl: false,
+      attributionControl: true,
     }).setView(initialCenter, initialZoom);
 
-    // Dark-themed tiles via CartoDB with standard subdomains
-    const darkTiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    // OpenStreetMap tiles with attribution
+    const osmTiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      subdomains: "abcd",
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
     });
 
-    darkTiles.addTo(map);
+    osmTiles.addTo(map);
 
     // Polyline for the movement trail
     const polyline = L.polyline([], {
