@@ -399,6 +399,7 @@ export default function App() {
     audioLevel,
     audioDb,
     motionMagnitude,
+    simulateVoiceTrigger,
     reset: resetShield,
   } = useShieldDetection({
     codeWord,
@@ -1067,28 +1068,35 @@ export default function App() {
                 </button>
 
                 {/* Live Diagnostics Pill */}
-                {armed && (
+                {armed ? (
                   <div className="diagnostics stack-1 mt-3">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
                       <div
+                        onClick={micStatus === "error" ? toggleArm : undefined}
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
                           gap: 6,
                           color: micStatus === "error" ? "var(--alarm)" : audioLevel > 15 ? "var(--ember)" : "#2ecc71",
-                          fontWeight: audioLevel > 15 ? 600 : 400,
+                          fontWeight: audioLevel > 15 || micStatus === "hearing" ? 600 : 400,
+                          cursor: micStatus === "error" ? "pointer" : "default",
                         }}
+                        title={micStatus === "error" ? "Tap to grant microphone permission" : "Live acoustic microphone surveillance"}
                       >
                         <MicIcon size={13} className="icon" style={{ verticalAlign: -2 }} />
                         <span>
                           {micStatus === "listening"
                             ? `mic active (${audioDb} dB)`
+                            : micStatus === "hearing"
+                            ? `hearing speech (${audioDb} dB)`
+                            : micStatus === "acoustic-only"
+                            ? `acoustic mic (${audioDb} dB)`
                             : micStatus === "error"
-                            ? "mic permission needed"
+                            ? "⚠️ mic permission needed (tap to fix)"
                             : micStatus}
                         </span>
                         {/* Live Animated Audio Waveform */}
-                        {micStatus === "listening" && (
+                        {(micStatus === "listening" || micStatus === "hearing" || micStatus === "acoustic-only") && (
                           <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 2, height: 11, marginLeft: 2 }}>
                             <span style={{ width: 2.5, height: `${Math.max(3, (audioLevel / 100) * 11)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1, transition: "height 0.08s" }} />
                             <span style={{ width: 2.5, height: `${Math.max(4, ((audioLevel * 1.4) / 100) * 11)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1, transition: "height 0.08s" }} />
@@ -1147,18 +1155,51 @@ export default function App() {
                     </div>
                     <div
                       style={{
-                        marginTop: 4,
-                        color: transcript.includes("KEYWORD")
-                          ? "var(--alarm)"
-                          : transcript
-                          ? "var(--ember)"
-                          : "var(--mist-dim)",
-                        fontFamily: "var(--mono)",
-                        fontSize: 11.5,
+                        marginTop: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        flexWrap: "wrap",
                       }}
                     >
-                      {transcript ? `🗣️ Heard: "${transcript}"` : `🎙️ Heard: waiting for speech (say "${codeWord}")...`}
+                      <span
+                        style={{
+                          color: transcript.includes("KEYWORD")
+                            ? "var(--alarm)"
+                            : transcript
+                            ? "var(--ember)"
+                            : "var(--mist-dim)",
+                          fontFamily: "var(--mono)",
+                          fontSize: 11.5,
+                        }}
+                      >
+                        {transcript ? `🗣️ Heard: "${transcript}"` : `🎙️ Listening for "${codeWord}" / "bachao" / "help" / "save me"...`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => simulateVoiceTrigger(codeWord)}
+                        title="Simulate speaking the secret codeword"
+                        style={{
+                          fontSize: 10.5,
+                          padding: "2px 8px",
+                          borderRadius: 12,
+                          background: "rgba(255, 170, 0, 0.12)",
+                          border: "1px solid rgba(255, 170, 0, 0.35)",
+                          color: "var(--ember)",
+                          cursor: "pointer",
+                          fontWeight: 600,
+                        }}
+                      >
+                        🗣️ Test "{codeWord}"
+                      </button>
                     </div>
+                  </div>
+                ) : (
+                  <div className="mt-3" style={{ textAlign: "center" }}>
+                    <p className="text-xs text-dim">
+                      🛡️ Tap <strong style={{ color: "var(--paper)" }}>Arm Shield</strong> to activate live microphone hearing for codeword <code style={{ color: "var(--ember)" }}>"{codeWord}"</code>, <code style={{ color: "var(--ember)" }}>"bachao"</code>, <code style={{ color: "var(--ember)" }}>"help"</code>, and struggle shake detection.
+                    </p>
                   </div>
                 )}
 
@@ -2121,6 +2162,20 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Demo Presentation & Simulation Control Dock */}
+      <DemoStudioBar
+        apiBaseUrl={API_BASE_URL}
+        activeEventId={activeEventId}
+        activeShareToken={activeShareToken}
+        onTriggerSOS={fireSOS}
+        onTriggerFakeCall={fakeCall.trigger}
+        onTriggerAlarm={() => setIsAlarmOpen(true)}
+        onToggleDecoy={() => setDecoyMode((prev) => !prev)}
+        armed={armed}
+        onArm={arm}
+        onGpsUpdate={handleLocationUpdateFromPing}
+      />
 
       {/* Blackout Stealth AMOLED Screen-Off Disguise */}
       <BlackoutStealth
