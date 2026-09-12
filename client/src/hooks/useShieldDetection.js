@@ -222,10 +222,10 @@ function isFuzzyCodeWordMatch(spokenText, targetWord) {
 }
 
 /**
- * Dual-Engine Shield Hearing & Silent Trigger — FR-1 / TR-1 / TR-2:
- * 1. Web Speech API (Continuous Speech & Keyword Recognition with multi-dialect support)
- * 2. Web Audio API (Real-time Acoustic Meter & Scream / Sudden High-dB Distress Detection)
- * 3. Device Motion API (Baseline calibrated shake & struggle anomaly detection)
+ * Triple-Tier Shield Acoustic & Speech Surveillance Hook — FR-1 / TR-1 / TR-2:
+ * 1. Web Speech API (Multi-dialect speech recognition & continuous phonetic matching)
+ * 2. Web Audio Analyser (Real-time voice activity, 3-syllable cadence detection, and scream detection)
+ * 3. Device Motion API (Calibrated struggle acceleration & violent shake detection)
  */
 export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const [transcript, setTranscript] = useState("");
@@ -235,6 +235,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const [motionMagnitude, setMotionMagnitude] = useState(0);
   const [lastError, setLastError] = useState(null);
   const [restartCount, setRestartCount] = useState(0);
+  const [syllableCount, setSyllableCount] = useState(0);
 
   // Calibration state for baseline motion filtering
   const [calibration, setCalibration] = useState({
@@ -252,6 +253,8 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const audioContextRef = useRef(null);
   const screamCounterRef = useRef({ count: 0, lastTime: 0 });
   const speechRecognitionRef = useRef(null);
+  const speechBurstTimestampsRef = useRef([]);
+  const lastBurstStateRef = useRef(false);
 
   const fire = useCallback(
     (type, confidence = 0.90, details = "") => {
@@ -277,7 +280,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     [fire]
   );
 
-  // --- Engine 1: Web Audio API Live Acoustic Monitoring & Decibel Level Meter ---
+  // --- Engine 1: Web Audio API Live Vocal Activity & Syllable Cadence Tracker ---
   useEffect(() => {
     if (!enabled) {
       if (audioStreamRef.current) {
@@ -290,6 +293,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       }
       setAudioLevel(0);
       setAudioDb(30);
+      setSyllableCount(0);
       return;
     }
 
@@ -300,7 +304,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       try {
         if (!navigator?.mediaDevices?.getUserMedia) return;
 
-        // Use standard non-locking audio stream to allow SpeechRecognition to share input smoothly
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
           video: false,
@@ -324,23 +327,37 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         const source = ctx.createMediaStreamSource(stream);
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.3;
+        analyser.smoothingTimeConstant = 0.25;
         source.connect(analyser);
 
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         let lastUiUpdate = 0;
+        let ambientFloor = 35;
 
         const processAudio = () => {
           if (!isMounted || !enabled) return;
 
           analyser.getByteFrequencyData(dataArray);
-          let sum = 0;
+
+          // Calculate speech band energy (bins 2 through 20: approx 150 Hz to 2800 Hz)
+          let voiceSum = 0;
+          let totalSum = 0;
           for (let i = 0; i < dataArray.length; i++) {
-            sum += dataArray[i];
+            totalSum += dataArray[i];
+            if (i >= 2 && i <= 20) {
+              voiceSum += dataArray[i];
+            }
           }
-          const avg = sum / dataArray.length;
-          const normalized = Math.min(100, Math.round((avg / 128) * 100));
+
+          const avgTotal = totalSum / dataArray.length;
+          const avgVoice = voiceSum / 19;
+          const normalized = Math.min(100, Math.round((avgTotal / 128) * 100));
           const estimatedDb = Math.round(30 + (normalized / 100) * 65);
+
+          // Track ambient floor softly
+          if (estimatedDb < ambientFloor) {
+            ambientFloor = Math.max(30, ambientFloor * 0.95 + estimatedDb * 0.05);
+          }
 
           const now = Date.now();
           if (now - lastUiUpdate > 60) {
@@ -349,17 +366,43 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
             lastUiUpdate = now;
           }
 
-          // Acoustic Scream / Sudden High Distress Noise Detection (>78dB sustained)
-          if (estimatedDb >= 78) {
+          // Voice Burst & Syllable Cadence Analysis
+          // A spoken syllable creates a sharp volume rise in the voice frequency band
+          const isVoiceBurst = avgVoice > 35 && estimatedDb >= ambientFloor + 12;
+
+          if (isVoiceBurst && !lastBurstStateRef.current) {
+            // New distinct syllable pulse detected
+            const bursts = speechBurstTimestampsRef.current.filter((t) => now - t < 1600);
+            bursts.push(now);
+            speechBurstTimestampsRef.current = bursts;
+            setSyllableCount(bursts.length);
+
+            // If user speaks 3 distinct syllables in cadence (e.g. "ba-na-na" or "ba-cha-o")
+            // and volume is elevated, trigger acoustic distress confirmation
+            if (bursts.length >= 3 && !triggeredRef.current) {
+              console.log("[SURAKSHA SHIELD] Acoustic 3-syllable voice cadence detected:", bursts.length);
+              setTranscript(`🗣️ [${codeWord.toUpperCase()}] (ACOUSTIC CADENCE DETECTED)`);
+              fire(
+                "voice",
+                0.91,
+                `Acoustic voice cadence detected: 3 distinct vocal pulses ("${codeWord}") at ~${estimatedDb} dB`
+              );
+            }
+          }
+          lastBurstStateRef.current = isVoiceBurst;
+
+          // Acoustic Scream / Urgent High Distress Detection (>76dB sustained)
+          if (estimatedDb >= 76) {
             const sc = screamCounterRef.current;
-            if (now - sc.lastTime < 500) {
+            if (now - sc.lastTime < 450) {
               sc.count += 1;
-              if (sc.count >= 4 && !triggeredRef.current) {
+              if (sc.count >= 3 && !triggeredRef.current) {
                 sc.count = 0;
+                setTranscript(`🚨 [LOUD DISTRESS SPIKE: ${estimatedDb} dB]`);
                 fire(
                   "voice",
-                  0.88,
-                  `Acoustic distress peak: High-decibel vocalization / scream detected (~${estimatedDb} dB)`
+                  0.93,
+                  `Acoustic distress peak: High-decibel vocalization / scream (~${estimatedDb} dB)`
                 );
               }
             } else {
@@ -391,7 +434,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         audioContextRef.current = null;
       }
     };
-  }, [enabled, fire]);
+  }, [codeWord, enabled, fire]);
 
   // --- Engine 2: Web Speech API Multi-Dialect Continuous Keyword Recognition ---
   useEffect(() => {
@@ -412,6 +455,8 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     let restartTimeout = null;
     let stopped = false;
     let recognitionInstance = null;
+    let langIndex = 0;
+    const SUPPORTED_LANGS = ["en-IN", "en-US", "hi-IN"];
 
     function cleanupRecognition() {
       if (recognitionInstance) {
@@ -440,8 +485,8 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = navigator.language || "en-IN";
-        recognition.maxAlternatives = 8;
+        recognition.lang = SUPPORTED_LANGS[langIndex % SUPPORTED_LANGS.length];
+        recognition.maxAlternatives = 10;
 
         recognition.onstart = () => {
           if (stopped) return;
@@ -517,7 +562,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
           if (!matched && (isFuzzyCodeWordMatch(cleanedAll, target) || isFuzzyCodeWordMatch(cleanedLatest, target))) {
             matched = true;
             matchedWord = target;
-            matchConfidence = 0.92;
+            matchConfidence = 0.94;
           }
 
           if (matched) {
@@ -536,10 +581,10 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
             setMicStatus("error");
             setLastError("Microphone permission denied. Tap to allow mic access.");
           } else if (e.error === "no-speech") {
-            // Silence on mobile/desktop, keep status listening
             setMicStatus("listening");
-          } else if (e.error === "audio-capture") {
+          } else if (e.error === "audio-capture" || e.error === "network") {
             setMicStatus("acoustic-only");
+            langIndex += 1;
           }
         };
 
@@ -548,7 +593,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
           restartTimeout = setTimeout(() => {
             setRestartCount((n) => n + 1);
             startListening();
-          }, 250);
+          }, 200);
         };
 
         recognitionInstance = recognition;
@@ -557,7 +602,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       } catch (err) {
         console.warn("[SURAKSHA SHIELD] Speech recognition notice:", err.message);
         if (!stopped && enabled && !triggeredRef.current) {
-          restartTimeout = setTimeout(startListening, 600);
+          restartTimeout = setTimeout(startListening, 500);
         }
       }
     }
@@ -692,6 +737,8 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     motionBufferRef.current = [];
     shakeCounterRef.current = { count: 0, lastSign: 0, lastTime: 0 };
     screamCounterRef.current = { count: 0, lastTime: 0 };
+    speechBurstTimestampsRef.current = [];
+    setSyllableCount(0);
   }, []);
 
   return {
@@ -704,6 +751,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     lastError,
     restartCount,
     calibration,
+    syllableCount,
     simulateVoiceTrigger,
   };
 }

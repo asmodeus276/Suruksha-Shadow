@@ -399,6 +399,7 @@ export default function App() {
     audioLevel,
     audioDb,
     motionMagnitude,
+    syllableCount,
     simulateVoiceTrigger,
     reset: resetShield,
   } = useShieldDetection({
@@ -1290,6 +1291,120 @@ export default function App() {
                     >
                       Map ↗
                     </button>
+                  </div>
+                </div>
+
+                {/* Dedicated Voice Codeword Sentinel & Live Microphone Card */}
+                <div
+                  className="card mt-3"
+                  style={{
+                    background: armed ? "rgba(232, 196, 104, 0.06)" : "rgba(255, 255, 255, 0.03)",
+                    border: armed ? "1px solid rgba(232, 196, 104, 0.25)" : "1px solid var(--line)",
+                    borderRadius: 14,
+                    padding: "14px 16px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 20 }}>🎙️</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>
+                          Voice Distress Codeword: <span style={{ color: "var(--ember)" }}>"{codeWord}"</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--dim)" }}>
+                          Triple-tier listening: Spoken Codeword · 3-Syllable Cadence · High-dB Vocal Spike
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!armed) arm();
+                          simulateVoiceTrigger(codeWord);
+                        }}
+                        style={{
+                          padding: "6px 14px",
+                          fontSize: 11.5,
+                          background: "linear-gradient(135deg, var(--ember), var(--alarm))",
+                          border: "none",
+                          borderRadius: 20,
+                          color: "#fff",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          boxShadow: "0 2px 8px rgba(224, 90, 71, 0.3)",
+                        }}
+                        title="Instantly test speaking the secret codeword"
+                      >
+                        🗣️ Test "{codeWord}"
+                      </button>
+                      {!armed && (
+                        <button
+                          type="button"
+                          onClick={arm}
+                          style={{
+                            padding: "6px 14px",
+                            fontSize: 11.5,
+                            background: "linear-gradient(135deg, #2ecc71, #27ae60)",
+                            border: "none",
+                            borderRadius: 20,
+                            color: "#fff",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          🛡️ Arm Shield
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Live Mic Audio Level & Syllable Feedback Bar */}
+                  <div
+                    style={{
+                      background: "rgba(0, 0, 0, 0.4)",
+                      borderRadius: 10,
+                      padding: "10px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200 }}>
+                      <div
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: armed ? (audioLevel > 15 ? "var(--ember)" : "#2ecc71") : "var(--dim)",
+                          boxShadow: armed && audioLevel > 15 ? "0 0 8px var(--ember)" : "none",
+                        }}
+                      />
+                      <span style={{ fontSize: 12, fontFamily: "var(--mono)", color: transcript ? "var(--ember)" : "var(--paper)" }}>
+                        {transcript
+                          ? `🗣️ Heard: "${transcript}"`
+                          : armed
+                          ? `🎙️ Listening (${micStatus}) · say "${codeWord}" / "bachao" / "help"`
+                          : "Microphone paused. Tap Arm Shield to activate."}
+                      </span>
+                    </div>
+                    {armed && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 11, color: "var(--dim)", fontFamily: "var(--mono)" }}>
+                          {audioDb} dB
+                        </span>
+                        <div style={{ width: 60, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${audioLevel}%`, background: audioLevel > 50 ? "var(--alarm)" : "var(--ember)", transition: "width 0.08s ease" }} />
+                        </div>
+                        {syllableCount > 0 && (
+                          <span style={{ fontSize: 10, color: "var(--ember)", fontWeight: 700 }}>
+                            {syllableCount}/3 syllables
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
