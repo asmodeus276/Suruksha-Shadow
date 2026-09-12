@@ -279,4 +279,20 @@ export async function anchorEvidenceToMST(victimId, sha256Hash, metadata = {}) {
   };
 }
 
+/**
+ * Anchors a 5-frame optical burst composite Merkle hash onto the MST Blockchain.
+ * @param {string} burstId
+ * @param {string} compositeHash
+ * @param {Object} metadata
+ * @returns {Promise<Object>}
+ */
+export async function anchorOpticalBurstToMST(burstId, compositeHash, metadata = {}) {
+  return anchorEvidenceToMST(burstId, compositeHash, {
+    ...metadata,
+    type: "OPTICAL_BURST_5_FRAME",
+    standard: "BSA 2023 §63 / FRE 902(13)&(14)",
+  });
+}
+
 export default anchorEvidenceToMST;
+

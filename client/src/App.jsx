@@ -37,6 +37,7 @@ import SafeZoneManager from "./components/SafeZoneManager";
 import RouteGuardSetup from "./components/RouteGuardSetup";
 import BlackoutStealth from "./components/BlackoutStealth";
 import DemoStudioBar from "./components/DemoStudioBar";
+import CameraWatch from "./components/CameraWatch";
 import {
   ShieldIcon,
   ShieldAlertIcon,
@@ -115,6 +116,7 @@ export default function App() {
   const [isAlarmOpen, setIsAlarmOpen] = useState(false);
   const [isBlackoutOpen, setIsBlackoutOpen] = useState(false);
   const [isLiveMapModalOpen, setIsLiveMapModalOpen] = useState(false);
+  const [showOpticalBurstModal, setShowOpticalBurstModal] = useState(false);
   const [emergencyElapsedSecs, setEmergencyElapsedSecs] = useState(0);
   const [liveLocations, setLiveLocations] = useState([]);
   const [currentCoords, setCurrentCoords] = useState(null); // { lat, lng, accuracy, address, speed, timestamp }
@@ -1601,6 +1603,24 @@ export default function App() {
                     Carrier SMS (SIM)
                   </button>
 
+                  {/* Optical Burst Trigger Button (BSA 2023 §63) */}
+                  <button
+                    id="optical-burst-quick-btn"
+                    className="demo-chip-btn"
+                    onClick={() => setShowOpticalBurstModal(true)}
+                    style={{
+                      padding: "10px 14px",
+                      borderColor: "rgba(232, 196, 104, 0.45)",
+                      background: "rgba(232, 196, 104, 0.12)",
+                      color: "var(--ember)",
+                      fontWeight: 600,
+                    }}
+                    title="Optical Burst: Rapid 5-frame forensic optical stream with SHA-256 digests (BSA 2023 §63 / FRE 902)"
+                  >
+                    <CameraIcon size={14} style={{ marginRight: 6, color: "var(--ember)" }} />
+                    Optical Burst (5-Frame)
+                  </button>
+
                   <button
                     className={`demo-chip-btn ${isCameraActive ? "is-active" : ""}`}
                     onClick={handleToggleCamera}
@@ -2468,6 +2488,14 @@ export default function App() {
         onClose={() => setIsBlackoutOpen(false)}
         isArmed={armed}
         activeEventId={activeEventId}
+      />
+
+      {/* Optical Burst (5-Frame) Modal for BSA 2023 §63 Evidence */}
+      <CameraWatch
+        isOpen={showOpticalBurstModal}
+        onClose={() => setShowOpticalBurstModal(false)}
+        coords={currentCoords}
+        onBurstCaptured={() => setEvidenceRefreshTick((prev) => prev + 1)}
       />
     </div>
   );

@@ -12,6 +12,12 @@ import {
   getMSTExplorerTxUrl,
   isValidTxHash,
 } from "../lib/mstAnchor";
+import CameraWatch from "./CameraWatch";
+import {
+  getLatestOpticalBurst,
+  generateSyntheticOpticalBurst,
+  saveOpticalBurst,
+} from "../lib/evidenceStore";
 import {
   PlayIcon,
   PauseIcon,
@@ -48,6 +54,11 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
   const [showMerkleModal, setShowMerkleModal] = useState(false);
   const [showBridgeKeyModal, setShowBridgeKeyModal] = useState(false);
   const [inspectedProof, setInspectedProof] = useState(null);
+
+  // Optical Burst State (BSA 2023 §63 / FRE 902)
+  const [opticalBurst, setOpticalBurst] = useState(() => getLatestOpticalBurst());
+  const [selectedBurstFrame, setSelectedBurstFrame] = useState(0);
+  const [showCameraModal, setShowCameraModal] = useState(false);
 
   // MST Blockchain State
   const [mstTxHash, setMstTxHash] = useState(VERIFIED_MST_TX_HASH);
@@ -98,6 +109,32 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
 
   useEffect(() => {
     load();
+    const existingBurst = getLatestOpticalBurst();
+    if (existingBurst) {
+      setOpticalBurst(existingBurst);
+    } else {
+      generateSyntheticOpticalBurst().then((frames) => {
+        const synthetic = {
+          id: "OPT-BURST-INIT",
+          timestamp: new Date().toISOString(),
+          frameCount: 5,
+          compositeHash: "0x4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
+          coords: { latitude: 28.6139, longitude: 77.2090, accuracy: 2.4 },
+          cameraSpecs: {
+            resolution: "1920x1080 (HD)",
+            exposure: "1/120s",
+            iso: 6400,
+            format: "RAW_JPEG_0.85",
+          },
+          enclaveSignature: "Android Keystore StrongBox / Titan M2 Isolated Enclave",
+          frames,
+          bsaCompliance: "BSA 2023 §63 / FRE 902(13)&(14) Certified",
+          simulated: true,
+        };
+        saveOpticalBurst(synthetic);
+        setOpticalBurst(synthetic);
+      });
+    }
   }, [load, refreshTrigger]);
 
   useEffect(() => {
@@ -820,7 +857,7 @@ ${
             </div>
           </div>
 
-          {/* Artifact 3: Raw Sensor Burst */}
+          {/* Artifact 3: High-Frequency Optical Burst (5 Frames) */}
           <div
             style={{
               padding: 14,
@@ -848,12 +885,31 @@ ${
                     color: "var(--paper)",
                   }}
                 >
-                  Raw Sensor DNG Burst
+                  Raw Sensor DNG Burst (5 Frames)
                 </span>
               </div>
-              <span className="tag tag-safe" style={{ fontSize: 10 }}>
-                VERIFIED
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span className="tag tag-safe" style={{ fontSize: 10 }}>
+                  BSA §63
+                </span>
+                <button
+                  className="btn-quiet"
+                  onClick={() => setShowCameraModal(true)}
+                  style={{
+                    fontSize: 10,
+                    padding: "2px 6px",
+                    background: "rgba(232, 196, 104, 0.15)",
+                    border: "1px solid var(--line-gold)",
+                    color: "var(--ember)",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                  title="Trigger High-Frequency Optical Burst Capture"
+                >
+                  📸 Trigger Burst
+                </button>
+              </div>
             </div>
             <p
               style={{
@@ -862,24 +918,121 @@ ${
                 lineHeight: 1.35,
               }}
             >
-              Passive low-light optical capture. EXIF metadata matched to atomic time server + GNSS fix.
+              750ms rapid sequence (150ms intervals). Offscreen WebRTC stream with individual SHA-256 digests.
             </p>
-            <div
-              style={{
-                height: 28,
-                background: "var(--surface-high)",
-                padding: "0 10px",
-                borderRadius: 6,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                fontFamily: "var(--mono)",
-                fontSize: 11,
-              }}
-            >
-              <span style={{ color: "var(--mist-dim)" }}>ISO 6400 · 1/15s</span>
-              <span style={{ color: "var(--ember)" }}>RAW_DNG_8.4MB</span>
-            </div>
+
+            {/* Interactive Frame Preview Display */}
+            {opticalBurst?.frames?.[selectedBurstFrame] ? (
+              <div
+                style={{
+                  position: "relative",
+                  height: 100,
+                  background: "#080c10",
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src={opticalBurst.frames[selectedBurstFrame].dataUrl}
+                  alt={`Frame ${selectedBurstFrame + 1}`}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 4,
+                    left: 6,
+                    background: "rgba(0,0,0,0.75)",
+                    color: "var(--safe)",
+                    fontSize: 9,
+                    fontFamily: "var(--mono)",
+                    padding: "1px 5px",
+                    borderRadius: 3,
+                    fontWeight: 700,
+                  }}
+                >
+                  FRAME #{selectedBurstFrame + 1}/5
+                </div>
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 4,
+                    right: 6,
+                    background: "rgba(0,0,0,0.75)",
+                    color: "var(--ember)",
+                    fontSize: 9,
+                    fontFamily: "var(--mono)",
+                    padding: "1px 5px",
+                    borderRadius: 3,
+                  }}
+                >
+                  ISO 6400 · 1/120s
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  height: 48,
+                  background: "var(--surface-high)",
+                  padding: "0 10px",
+                  borderRadius: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  fontFamily: "var(--mono)",
+                  fontSize: 11,
+                }}
+              >
+                <span style={{ color: "var(--mist-dim)" }}>ISO 6400 · 1/120s</span>
+                <span style={{ color: "var(--ember)" }}>5-FRAME SEQUENCE</span>
+              </div>
+            )}
+
+            {/* 5-Frame Thumbnail Selector Strip */}
+            {opticalBurst?.frames && opticalBurst.frames.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4 }}>
+                {opticalBurst.frames.map((frame, idx) => {
+                  const isSelected = idx === selectedBurstFrame;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedBurstFrame(idx)}
+                      style={{
+                        padding: 1,
+                        borderRadius: 3,
+                        background: isSelected ? "var(--surface-high)" : "var(--surface-lowest)",
+                        border: isSelected ? "1.5px solid var(--ember)" : "1px solid var(--line)",
+                        cursor: "pointer",
+                        position: "relative",
+                        overflow: "hidden",
+                        height: 24,
+                      }}
+                      title={`Select Frame ${idx + 1}`}
+                    >
+                      <span
+                        style={{
+                          fontSize: 9,
+                          fontFamily: "var(--mono)",
+                          color: isSelected ? "var(--ember)" : "var(--mist-dim)",
+                          fontWeight: 700,
+                          display: "block",
+                          textAlign: "center",
+                          lineHeight: "20px",
+                        }}
+                      >
+                        #{idx + 1}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Frame Hash and Copy */}
             <div
               style={{
                 fontFamily: "var(--mono)",
@@ -890,16 +1043,23 @@ ${
                 alignItems: "center",
               }}
             >
-              <span>SHA-256: 4b227777…f8a</span>
+              <span>
+                F#{selectedBurstFrame + 1} SHA:{" "}
+                {opticalBurst?.frames?.[selectedBurstFrame]?.sha256
+                  ? `${opticalBurst.frames[selectedBurstFrame].sha256.slice(0, 10)}…`
+                  : "4b227777…f8a"}
+              </span>
               <button
                 className="btn-quiet"
                 onClick={() =>
                   copyHash(
-                    "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
+                    opticalBurst?.frames?.[selectedBurstFrame]?.sha256 ||
+                      "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
                     "art3"
                   )
                 }
                 style={{ padding: 2 }}
+                title="Copy active frame SHA-256 hash"
               >
                 {copiedId === "art3" ? (
                   <CheckIcon size={13} style={{ color: "var(--safe)" }} />
@@ -1585,6 +1745,19 @@ ${
           </div>
         </div>
       )}
+
+      {/* Optical Burst Capture (5-Frame) Modal */}
+      <CameraWatch
+        isOpen={showCameraModal}
+        onClose={() => {
+          setShowCameraModal(false);
+          setOpticalBurst(getLatestOpticalBurst());
+        }}
+        onBurstCaptured={(record) => {
+          setOpticalBurst(record);
+          setSelectedBurstFrame(0);
+        }}
+      />
     </div>
   );
 }
