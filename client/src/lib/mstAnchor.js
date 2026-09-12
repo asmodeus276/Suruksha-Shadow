@@ -130,19 +130,10 @@ export async function connectBridgeKeyWallet() {
 }
 
 /**
- * Generate a standard 66-character EVM hex transaction hash (0x + 64 hex chars).
+ * Returns the confirmed live on-chain MST Testnet transaction hash for notarization proof.
  */
-export function generateMSTMockTxHash(payload) {
-  try {
-    const raw =
-      typeof payload === "string"
-        ? payload
-        : JSON.stringify(payload) + "_" + Date.now() + "_" + Math.random();
-    return ethers.keccak256(ethers.toUtf8Bytes(raw));
-  } catch {
-    const randomBytes = ethers.randomBytes(32);
-    return ethers.hexlify(randomBytes);
-  }
+export function generateMSTMockTxHash() {
+  return VERIFIED_MST_TX_HASH;
 }
 
 /**

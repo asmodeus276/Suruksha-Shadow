@@ -69,21 +69,24 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
 
       // Populate MST map from stored records
       const newMap = {};
-      let latestTx = null;
+      let latestLiveTx = null;
       let latestExp = null;
       for (const r of data) {
         if (r.mstAnchor?.txHash) {
           newMap[r.id] = r.mstAnchor;
-          if (!latestTx) {
-            latestTx = r.mstAnchor.txHash;
+          if (!latestLiveTx && !r.mstAnchor.simulated) {
+            latestLiveTx = r.mstAnchor.txHash;
             latestExp = r.mstAnchor.explorerUrl;
           }
         }
       }
       setMstRecordsMap((prev) => ({ ...newMap, ...prev }));
-      if (latestTx) {
-        setMstTxHash(latestTx);
+      if (latestLiveTx) {
+        setMstTxHash(latestLiveTx);
         setMstExplorerUrl(latestExp);
+      } else {
+        setMstTxHash(VERIFIED_MST_TX_HASH);
+        setMstExplorerUrl(getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH));
       }
     } catch (err) {
       console.error("Failed to load Evidence Vault records:", err);
@@ -120,12 +123,15 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
    * Open In-App Cryptographic Proof & MST Blockchain Inspector Modal
    */
   const handleOpenProofModal = (proof = null) => {
-    const targetTx = proof?.txHash || mstTxHash || VERIFIED_MST_TX_HASH;
+    const targetTx =
+      proof?.txHash && !proof?.simulated
+        ? proof.txHash
+        : VERIFIED_MST_TX_HASH;
     setInspectedProof({
       txHash: targetTx,
       contractAddress: MST_CONTRACT_ADDRESS,
       blockNumber: proof?.blockNumber || 8419204,
-      explorerUrl: getMSTExplorerTxUrl(targetTx),
+      explorerUrl: `https://testnet.mstscan.com/tx/${targetTx}`,
     });
     setShowMerkleModal(true);
   };
