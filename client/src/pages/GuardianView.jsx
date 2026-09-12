@@ -86,7 +86,7 @@ export default function GuardianView() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/emergency/guardian/${token}`);
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.json().catch(() => ({}));
           if (cancelled) return;
           if (data.emergency) {
             setEmergency(data.emergency);
@@ -157,7 +157,7 @@ export default function GuardianView() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/emergency/guardian/${token}`);
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.json().catch(() => ({}));
           if (data.emergency) {
             setEmergency((prev) => ({ ...prev, ...data.emergency }));
             if (data.locations && data.locations.length > 0) {

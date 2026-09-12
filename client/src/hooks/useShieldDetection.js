@@ -2,16 +2,26 @@ import { useEffect, useRef, useCallback, useState } from "react";
 
 // Standard universal emergency phrases that always trigger distress detection
 const UNIVERSAL_EMERGENCY_WORDS = [
+  "banana",
   "help",
   "help me",
   "bachao",
+  "bachao mujhe",
   "save me",
+  "save",
   "emergency",
   "danger",
   "khatra",
   "call police",
   "police",
   "suraksha",
+  "madad",
+  "madad karo",
+  "chhoro",
+  "chor",
+  "chodo",
+  "attack",
+  "koi hai",
 ];
 
 /**
@@ -98,13 +108,16 @@ function isFuzzyCodeWordMatch(spokenText, targetWord) {
 }
 
 /**
- * Shield's silent trigger — FR-1 / TR-1 / TR-2.
- * Listens for a spoken code word (Web Speech API) and for a sudden,
- * sustained motion anomaly / shake (Device Motion API) with baseline calibration.
+ * Dual-Engine Shield Hearing & Silent Trigger — FR-1 / TR-1 / TR-2:
+ * 1. Web Speech API (Continuous Speech & Keyword Recognition with multi-dialect support)
+ * 2. Web Audio API (Real-time Acoustic Meter & Scream / Sudden High-dB Distress Detection)
+ * 3. Device Motion API (Baseline calibrated shake & struggle anomaly detection)
  */
 export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const [transcript, setTranscript] = useState("");
   const [micStatus, setMicStatus] = useState("idle"); // idle | listening | error | unsupported
+  const [audioLevel, setAudioLevel] = useState(0); // 0-100 real-time audio meter
+  const [audioDb, setAudioDb] = useState(30); // Estimated dB (30-95)
   const [motionMagnitude, setMotionMagnitude] = useState(0);
   const [lastError, setLastError] = useState(null);
   const [restartCount, setRestartCount] = useState(0);
@@ -121,6 +134,9 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const motionBufferRef = useRef([]);
   const shakeCounterRef = useRef({ count: 0, lastSign: 0, lastTime: 0 });
   const triggeredRef = useRef(false);
+  const audioStreamRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const screamCounterRef = useRef({ count: 0, lastTime: 0 });
 
   const fire = useCallback(
     (type, confidence = 0.90, details = "") => {
@@ -137,13 +153,137 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     [onTrigger]
   );
 
-  // --- Voice trigger: listen continuously for the code word ---
+  // --- Engine 1: Web Audio API Live Acoustic Monitoring & Decibel Level Meter ---
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach((track) => track.stop());
+        audioStreamRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+      }
+      setAudioLevel(0);
+      setAudioDb(30);
+      return;
+    }
+
+    let isMounted = true;
+    let animFrame = null;
+
+    async function initAcousticEngine() {
+      try {
+        if (!navigator?.mediaDevices?.getUserMedia) return;
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video: false,
+        });
+
+        if (!isMounted) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        audioStreamRef.current = stream;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+
+        const ctx = new AudioCtx();
+        if (ctx.state === "suspended") {
+          await ctx.resume();
+        }
+        audioContextRef.current = ctx;
+
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.4;
+        source.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        let lastUiUpdate = 0;
+
+        const processAudio = () => {
+          if (!isMounted || !enabled) return;
+
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+          }
+          const avg = sum / dataArray.length;
+          const normalized = Math.min(100, Math.round((avg / 128) * 100));
+          const estimatedDb = Math.round(30 + (normalized / 100) * 65);
+
+          const now = Date.now();
+          if (now - lastUiUpdate > 80) {
+            setAudioLevel(normalized);
+            setAudioDb(estimatedDb);
+            lastUiUpdate = now;
+          }
+
+          // Acoustic Scream / Sudden High Distress Noise Detection (>82dB sustained)
+          if (estimatedDb >= 82) {
+            const sc = screamCounterRef.current;
+            if (now - sc.lastTime < 500) {
+              sc.count += 1;
+              if (sc.count >= 6 && !triggeredRef.current) {
+                sc.count = 0;
+                fire(
+                  "voice",
+                  0.88,
+                  `Acoustic distress peak: High-decibel scream / scream spike detected (~${estimatedDb} dB)`
+                );
+              }
+            } else {
+              sc.count = 1;
+            }
+            sc.lastTime = now;
+          }
+
+          animFrame = requestAnimationFrame(processAudio);
+        };
+
+        processAudio();
+      } catch (err) {
+        console.warn("[SURAKSHA SHIELD] Acoustic audio meter unavailable:", err.message);
+      }
+    }
+
+    initAcousticEngine();
+
+    return () => {
+      isMounted = false;
+      if (animFrame) cancelAnimationFrame(animFrame);
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach((track) => track.stop());
+        audioStreamRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+      }
+    };
+  }, [enabled, fire]);
+
+  // --- Engine 2: Web Speech API Multi-Dialect Continuous Keyword Recognition ---
+  useEffect(() => {
+    if (!enabled) {
+      setMicStatus("idle");
+      return;
+    }
+
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
-      console.warn("Web Speech API not supported in this browser.");
+      console.warn("Web Speech API not supported in this browser environment.");
       setMicStatus("unsupported");
       return;
     }
@@ -153,113 +293,125 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     let stopped = false;
     let current = null;
 
-    function createRecognition() {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = navigator.language || "en-US";
-      recognition.maxAlternatives = 5;
+    function startListening() {
+      if (stopped || !enabled || triggeredRef.current) return;
 
-      recognition.onstart = () => {
-        setMicStatus("listening");
-        consecutiveErrors = 0;
-        setLastError(null);
-      };
+      try {
+        const recognition = new SpeechRecognition();
+        // On mobile browsers, continuous=false with auto-restart loop is significantly
+        // more reliable than continuous=true which drops out after short silences
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = navigator.language || "en-US";
+        recognition.maxAlternatives = 5;
 
-      recognition.onresult = (event) => {
-        const display = Array.from(event.results)
-          .map((r) => r[0].transcript)
-          .join(" ")
-          .toLowerCase();
-        setTranscript(display);
+        recognition.onstart = () => {
+          setMicStatus("listening");
+          consecutiveErrors = 0;
+          setLastError(null);
+        };
 
-        let matched = false;
-        let matchConfidence = 0.85;
+        recognition.onresult = (event) => {
+          let latestTranscript = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            latestTranscript += event.results[i][0].transcript + " ";
+          }
+          const cleaned = latestTranscript.trim().toLowerCase();
+          if (cleaned) {
+            setTranscript(cleaned);
+          }
 
-        for (const result of event.results) {
-          for (let i = 0; i < result.length; i++) {
-            const alt = result[i].transcript.toLowerCase();
-            const cleanTarget = (codeWord || "").toLowerCase().trim();
+          let matched = false;
+          let matchConfidence = 0.90;
+          let matchedWord = "";
 
-            if (cleanTarget && alt.includes(cleanTarget)) {
-              matched = true;
-              matchConfidence = 0.98; // Exact substring match
-              break;
-            }
+          // Check all alternatives across current results
+          for (let i = 0; i < event.results.length; i++) {
+            const result = event.results[i];
+            for (let j = 0; j < result.length; j++) {
+              const alt = result[j].transcript.toLowerCase().trim();
+              const target = (codeWord || "banana").toLowerCase().trim();
 
-            for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
-              if (alt.includes(universal)) {
+              if (target && (alt.includes(target) || isFuzzyCodeWordMatch(alt, target))) {
                 matched = true;
-                matchConfidence = 0.95; // Universal emergency keyword
+                matchedWord = target;
+                matchConfidence = 0.98;
                 break;
               }
+
+              for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
+                if (alt.includes(universal) || isFuzzyCodeWordMatch(alt, universal)) {
+                  matched = true;
+                  matchedWord = universal;
+                  matchConfidence = 0.95;
+                  break;
+                }
+              }
             }
-
-            if (!matched && isFuzzyCodeWordMatch(alt, codeWord)) {
-              matched = true;
-              matchConfidence = 0.80; // Fuzzy phonetic match
-              break;
-            }
+            if (matched) break;
           }
-          if (matched) break;
-        }
 
-        if (matched) {
-          fire("voice", matchConfidence, `Spoken keyword matched in transcript: "${display.slice(-40)}"`);
-        }
-      };
-
-      recognition.onend = () => {
-        if (stopped || !enabled || triggeredRef.current) return;
-        const delay = Math.min(300 + consecutiveErrors * 300, 2500);
-        restartTimeout = setTimeout(() => {
-          setRestartCount((n) => n + 1);
-          current = createRecognition();
-          try {
-            current.start();
-          } catch {
-            /* ignore */
+          if (matched) {
+            setTranscript(`🚨 "${matchedWord}" (KEYWORD DETECTED)`);
+            fire(
+              "voice",
+              matchConfidence,
+              `Spoken distress keyword detected: "${matchedWord}" (Full transcript: "${cleaned}")`
+            );
           }
-        }, delay);
-      };
+        };
 
-      recognition.onerror = (e) => {
-        console.warn("Speech recognition error:", e.error);
-        if (e.error === "not-allowed") {
-          setMicStatus("error");
-          setLastError("Microphone permission denied");
-        } else if (e.error === "no-speech") {
-          // Normal silence, auto-recovers
-        } else {
-          consecutiveErrors += 1;
+        recognition.onerror = (e) => {
+          if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+            setMicStatus("error");
+            setLastError("Microphone permission denied. Allow mic access to enable voice shield.");
+          } else if (e.error === "no-speech") {
+            // Normal silence on mobile, ignore and let auto-restart handle it
+          } else if (e.error === "network") {
+            consecutiveErrors += 1;
+          } else {
+            consecutiveErrors += 1;
+          }
+        };
+
+        recognition.onend = () => {
+          if (stopped || !enabled || triggeredRef.current) return;
+          const delay = Math.min(120 + consecutiveErrors * 250, 2000);
+          restartTimeout = setTimeout(() => {
+            setRestartCount((n) => n + 1);
+            startListening();
+          }, delay);
+        };
+
+        current = recognition;
+        recognition.start();
+      } catch (err) {
+        console.warn("[SURAKSHA SHIELD] Speech recognition start error:", err.message);
+        if (!stopped && enabled && !triggeredRef.current) {
+          restartTimeout = setTimeout(startListening, 1000);
         }
-      };
-
-      return recognition;
+      }
     }
 
-    current = createRecognition();
-    try {
-      current.start();
-    } catch {
-      /* ignore */
-    }
+    startListening();
 
     return () => {
       stopped = true;
       if (restartTimeout) clearTimeout(restartTimeout);
       if (current) {
         current.onend = null;
+        current.onerror = null;
         try {
-          current.stop();
+          current.abort();
         } catch {
           /* ignore */
         }
+        current = null;
       }
     };
   }, [codeWord, enabled, fire]);
 
-  // --- Motion Calibration (3-second baseline capture upon arming) ---
+  // --- Engine 3: Motion Calibration (2.5-second baseline capture upon arming) ---
   useEffect(() => {
     if (!enabled) {
       setCalibration({ isCalibrating: false, progress: 0, baseline: 0 });
@@ -298,7 +450,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     return () => clearInterval(calInterval);
   }, [enabled]);
 
-  // --- Motion trigger: spike in acceleration & violent shake detection with dynamic threshold ---
+  // --- Engine 4: Motion trigger (Struggle acceleration & Violent Shake Detection) ---
   useEffect(() => {
     if (!enabled) return;
     if (typeof window === "undefined" || typeof DeviceMotionEvent === "undefined") {
@@ -338,13 +490,13 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       const dynamicSustainedThreshold = Math.max(18, base + 14);
       const dynamicViolentShakeThreshold = Math.max(15, base + 11);
 
-      // 1. Sustained linear acceleration (e.g. violent struggle / being dragged)
+      // 1. Sustained struggle acceleration
       if (buf.length === WINDOW_SIZE && avg > dynamicSustainedThreshold) {
         const conf = Math.min(0.99, Math.round((avg / dynamicSustainedThreshold) * 0.88 * 100) / 100);
         fire("motion", conf, `Sustained struggle acceleration (${avg.toFixed(1)} m/s², baseline: ${base.toFixed(1)})`);
       }
 
-      // 2. Multi-axis violent shake detection (rapid alternating direction)
+      // 2. Multi-axis violent shake detection
       const maxAxis = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
       const dominantSign =
         Math.abs(x) > Math.abs(y) && Math.abs(x) > Math.abs(z)
@@ -376,14 +528,18 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
 
   const reset = useCallback(() => {
     triggeredRef.current = false;
+    setTranscript("");
     motionBufferRef.current = [];
     shakeCounterRef.current = { count: 0, lastSign: 0, lastTime: 0 };
+    screamCounterRef.current = { count: 0, lastTime: 0 };
   }, []);
 
   return {
     reset,
     transcript,
     micStatus,
+    audioLevel,
+    audioDb,
     motionMagnitude,
     lastError,
     restartCount,
@@ -392,14 +548,36 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
 }
 
 /**
- * iOS 13+ motion permission request helper
+ * Microphone & Motion permissions helper with mobile touch gesture unlock
  */
-export async function requestMotionPermission() {
+export async function requestDevicePermissions() {
+  const results = { motion: "granted", audio: "granted" };
+
+  // iOS 13+ motion permission
   if (
     typeof DeviceMotionEvent !== "undefined" &&
     typeof DeviceMotionEvent.requestPermission === "function"
   ) {
-    return DeviceMotionEvent.requestPermission();
+    try {
+      results.motion = await DeviceMotionEvent.requestPermission();
+    } catch {
+      results.motion = "denied";
+    }
   }
-  return "granted";
+
+  // Microphone stream permission unlock
+  if (navigator?.mediaDevices?.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      // Keep track or stop test stream
+      stream.getTracks().forEach((t) => t.stop());
+      results.audio = "granted";
+    } catch {
+      results.audio = "denied";
+    }
+  }
+
+  return results;
 }
+
+export const requestMotionPermission = requestDevicePermissions;

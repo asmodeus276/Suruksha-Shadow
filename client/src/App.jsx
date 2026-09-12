@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useShieldDetection, requestMotionPermission } from "./hooks/useShieldDetection";
+import { useShieldDetection, requestDevicePermissions, requestMotionPermission } from "./hooks/useShieldDetection";
 import { useGestureDetection } from "./hooks/useGestureDetection";
 import { useGuardianPing } from "./hooks/useGuardianPing";
 import { useAmbientAudioStream } from "./hooks/useAmbientAudioStream";
@@ -361,8 +361,14 @@ export default function App() {
             lng: sendLng,
           }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `Server responded ${res.status}`);
+        let data = {};
+        try {
+          const rawText = await res.text();
+          data = rawText ? JSON.parse(rawText) : {};
+        } catch {
+          data = {};
+        }
+        if (!res.ok) throw new Error(data.error || `Server responded with status ${res.status}`);
         setActiveEventId(data.eventId);
         setActiveShareToken(data.shareToken);
         setSosError(null);
@@ -387,6 +393,8 @@ export default function App() {
   const {
     transcript,
     micStatus,
+    audioLevel,
+    audioDb,
     motionMagnitude,
     reset: resetShield,
   } = useShieldDetection({
@@ -489,7 +497,7 @@ export default function App() {
       resetShield();
       resetGesture();
     } else {
-      await requestMotionPermission();
+      await requestDevicePermissions();
       setArmed(true);
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try {
@@ -1027,6 +1035,7 @@ export default function App() {
                 <AudioVisualizer
                   isListening={armed}
                   isActive={Boolean(activeEventId)}
+                  audioLevel={audioLevel}
                 />
 
                 <button
@@ -1058,9 +1067,31 @@ export default function App() {
                 {armed && (
                   <div className="diagnostics stack-1 mt-3">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-                      <div>
-                        <MicIcon size={13} className="icon" style={{ marginRight: 4, verticalAlign: -2 }} />
-                        {micStatus === "listening" ? "live mic active" : micStatus}
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          color: micStatus === "error" ? "var(--alarm)" : audioLevel > 15 ? "var(--ember)" : "#2ecc71",
+                          fontWeight: audioLevel > 15 ? 600 : 400,
+                        }}
+                      >
+                        <MicIcon size={13} className="icon" style={{ verticalAlign: -2 }} />
+                        <span>
+                          {micStatus === "listening"
+                            ? `mic active (${audioDb} dB)`
+                            : micStatus === "error"
+                            ? "mic permission needed"
+                            : micStatus}
+                        </span>
+                        {/* Live Animated Audio Waveform */}
+                        {micStatus === "listening" && (
+                          <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 2, height: 11, marginLeft: 2 }}>
+                            <span style={{ width: 2.5, height: `${Math.max(3, (audioLevel / 100) * 11)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1, transition: "height 0.08s" }} />
+                            <span style={{ width: 2.5, height: `${Math.max(4, ((audioLevel * 1.4) / 100) * 11)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1, transition: "height 0.08s" }} />
+                            <span style={{ width: 2.5, height: `${Math.max(3, ((audioLevel * 0.8) / 100) * 11)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1, transition: "height 0.08s" }} />
+                          </span>
+                        )}
                       </div>
                       <div>
                         <ActivityIcon size={13} className="icon" style={{ marginRight: 4, verticalAlign: -2 }} />
@@ -1111,7 +1142,20 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                    <div>Heard: {transcript ? `"${transcript}"` : "waiting for speech…"}</div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        color: transcript.includes("KEYWORD")
+                          ? "var(--alarm)"
+                          : transcript
+                          ? "var(--ember)"
+                          : "var(--mist-dim)",
+                        fontFamily: "var(--mono)",
+                        fontSize: 11.5,
+                      }}
+                    >
+                      {transcript ? `🗣️ Heard: "${transcript}"` : `🎙️ Heard: waiting for speech (say "${codeWord}")...`}
+                    </div>
                   </div>
                 )}
 

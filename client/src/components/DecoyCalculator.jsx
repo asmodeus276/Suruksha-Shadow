@@ -3,13 +3,11 @@ import { useState } from "react";
 /**
  * DecoyCalculator
  * -----------------------------------------------------------
- * Genuinely-functional calculator. Renders full-screen in place
- * of the real app while decoy mode is active.
+ * Genuinely-functional calculator disguise.
+ * Full-screen, mobile-ergonomic, safe-area aware.
  *
- * Re-entry: typing 1, 1, 2, then "=" with no operator pressed in
- * between silently calls onUnlock() instead of computing 112.
- * No dialog, no sound, no visual tell — it should look exactly
- * like someone fat-fingered a sum.
+ * Re-entry codes:
+ * Typing 112 = OR 8042 = instantly and silently restores the Suraksha Shadow app.
  */
 function useCalculator(onUnlock) {
   const [display, setDisplay] = useState("0");
@@ -132,13 +130,16 @@ function Btn({ children, onClick, wide, tone = "num" }) {
         color: t.color,
         border: "none",
         borderRadius: 999,
-        fontSize: 24,
+        fontSize: "clamp(20px, 5.5vw, 28px)",
         fontWeight: 500,
-        padding: "16px 0",
+        padding: "clamp(12px, 3.5vw, 18px) 0",
         textAlign: wide ? "left" : "center",
-        paddingLeft: wide ? 28 : 0,
+        paddingLeft: wide ? "clamp(20px, 6vw, 32px)" : 0,
         cursor: "pointer",
-        transition: "opacity 0.1s ease",
+        transition: "opacity 0.1s ease, transform 0.08s ease",
+        touchAction: "manipulation",
+        WebkitTapHighlightColor: "transparent",
+        minHeight: "clamp(52px, 12vw, 70px)",
       }}
     >
       {children}
@@ -158,49 +159,64 @@ export default function DecoyCalculator({ onUnlock }) {
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
-        padding: "24px 14px 20px",
+        padding: "max(20px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)) 16px",
         boxSizing: "border-box",
-        fontFamily: "-apple-system, Helvetica, Arial, sans-serif",
-        zIndex: 9999,
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        zIndex: 99999,
+        userSelect: "none",
+        WebkitUserSelect: "none",
       }}
     >
       <div
         style={{
-          color: "#fff",
-          fontSize: 64,
-          fontWeight: 300,
-          textAlign: "right",
-          padding: "0 12px 24px",
-          overflow: "hidden",
-          whiteSpace: "nowrap",
+          maxWidth: 440,
+          width: "100%",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
+          height: "100%",
         }}
       >
-        {calc.display}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-        <Btn tone="fn" onClick={calc.pressClear}>AC</Btn>
-        <Btn tone="fn" onClick={calc.pressToggleSign}>+/−</Btn>
-        <Btn tone="fn" onClick={calc.pressBackspace}>⌫</Btn>
-        <Btn tone="op" onClick={() => calc.pressOperator("÷")}>÷</Btn>
+        <div
+          style={{
+            color: "#fff",
+            fontSize: "clamp(44px, 13vw, 72px)",
+            fontWeight: 300,
+            textAlign: "right",
+            padding: "0 12px clamp(12px, 3vh, 28px)",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {calc.display}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "clamp(8px, 2.5vw, 14px)" }}>
+          <Btn tone="fn" onClick={calc.pressClear}>AC</Btn>
+          <Btn tone="fn" onClick={calc.pressToggleSign}>+/−</Btn>
+          <Btn tone="fn" onClick={calc.pressBackspace}>⌫</Btn>
+          <Btn tone="op" onClick={() => calc.pressOperator("÷")}>÷</Btn>
 
-        <Btn onClick={() => calc.pressDigit("7")}>7</Btn>
-        <Btn onClick={() => calc.pressDigit("8")}>8</Btn>
-        <Btn onClick={() => calc.pressDigit("9")}>9</Btn>
-        <Btn tone="op" onClick={() => calc.pressOperator("×")}>×</Btn>
+          <Btn onClick={() => calc.pressDigit("7")}>7</Btn>
+          <Btn onClick={() => calc.pressDigit("8")}>8</Btn>
+          <Btn onClick={() => calc.pressDigit("9")}>9</Btn>
+          <Btn tone="op" onClick={() => calc.pressOperator("×")}>×</Btn>
 
-        <Btn onClick={() => calc.pressDigit("4")}>4</Btn>
-        <Btn onClick={() => calc.pressDigit("5")}>5</Btn>
-        <Btn onClick={() => calc.pressDigit("6")}>6</Btn>
-        <Btn tone="op" onClick={() => calc.pressOperator("−")}>−</Btn>
+          <Btn onClick={() => calc.pressDigit("4")}>4</Btn>
+          <Btn onClick={() => calc.pressDigit("5")}>5</Btn>
+          <Btn onClick={() => calc.pressDigit("6")}>6</Btn>
+          <Btn tone="op" onClick={() => calc.pressOperator("−")}>−</Btn>
 
-        <Btn onClick={() => calc.pressDigit("1")}>1</Btn>
-        <Btn onClick={() => calc.pressDigit("2")}>2</Btn>
-        <Btn onClick={() => calc.pressDigit("3")}>3</Btn>
-        <Btn tone="op" onClick={() => calc.pressOperator("+")}>+</Btn>
+          <Btn onClick={() => calc.pressDigit("1")}>1</Btn>
+          <Btn onClick={() => calc.pressDigit("2")}>2</Btn>
+          <Btn onClick={() => calc.pressDigit("3")}>3</Btn>
+          <Btn tone="op" onClick={() => calc.pressOperator("+")}>+</Btn>
 
-        <Btn wide onClick={() => calc.pressDigit("0")}>0</Btn>
-        <Btn onClick={calc.pressDecimal}>.</Btn>
-        <Btn tone="op" onClick={calc.pressEquals}>=</Btn>
+          <Btn wide onClick={() => calc.pressDigit("0")}>0</Btn>
+          <Btn onClick={calc.pressDecimal}>.</Btn>
+          <Btn tone="op" onClick={calc.pressEquals}>=</Btn>
+        </div>
       </div>
     </div>
   );

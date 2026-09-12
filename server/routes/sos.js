@@ -15,12 +15,12 @@ import {
 const router = Router();
 
 /**
- * POST /api/sos
+ * POST /api/sos (and /api/sos/trigger)
  * body: { userId, triggerType: "voice" | "motion" | "manual" | "gesture" | "checkin", mode: "live" | "simulated", confidence, details }
  * FR-2 / TR-3 — creates the emergency, logs it, and dispatches SMS to
  * every trusted contact within a target of 3 seconds.
  */
-router.post("/", async (req, res) => {
+router.post(["/", "/trigger"], async (req, res) => {
   const { userId, triggerType, lat, lng, mode, confidence, details } = req.body;
 
   if (!userId || !triggerType) {
