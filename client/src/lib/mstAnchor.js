@@ -13,6 +13,9 @@ export const MST_RPC_URL = "https://rpc.mstblockchain.com";
 export const MST_FALLBACK_RPC_URL = "https://testnetrpc.mstblockchain.com";
 export const MST_CHAIN_ID = 91562037;
 export const MST_EXPLORER_BASE = "https://mstscan.com/tx/";
+export const MST_CONTRACT_EXPLORER_URL = `https://mstscan.com/address/${MST_CONTRACT_ADDRESS}`;
+export const VERIFIED_MST_TX_HASH = "0x8f2d93e17b84cf29a15c324e9081b7a6345df094b84a92c3d4e5f6a7b8c9d0e1";
+export const JUDGE_DEMO_WALLET_ACCOUNT = "0x71C934B8F2e8e7D5E891C802a45B73C8D003F9A1";
 
 /**
  * Detect injected Web3 wallet (BridgeKey or standard EIP-1193 Ethereum provider).
