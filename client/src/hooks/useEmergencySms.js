@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
  * Format number to standard format (+91...)
  */
 export function formatPhone(raw) {
+  if (!raw) return "";
   const digitsOnly = String(raw).replace(/\D/g, "");
   if (digitsOnly.length === 10) return `+91${digitsOnly}`;
   if (digitsOnly.length === 12 && digitsOnly.startsWith("91"))
@@ -12,18 +13,123 @@ export function formatPhone(raw) {
 }
 
 /**
- * useEmergencySms
- * -----------------------------------------------------------
- * Multi-layer emergency SMS:
- * 1. Backend Gateway (Twilio / Fast2SMS) — automated server-side dispatch
- * 2. Direct Carrier SMS (Airtel / Jio / SIM) — 100% free direct-from-device trigger
+ * Clean phone digits for WhatsApp wa.me links
+ */
+export function cleanPhoneForWhatsApp(raw) {
+  if (!raw) return "";
+  const digits = String(raw).replace(/\D/g, "");
+  if (digits.length === 10) return `91${digits}`;
+  return digits;
+}
+
+/**
+ * Universal High-Priority SOS Message Formatter
+ */
+export function buildSosMessage({
+  shareToken,
+  location,
+  status = "EMERGENCY ACTIVE",
+  customNote = "",
+}) {
+  const clientUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const guardianLink = shareToken ? `${clientUrl}/guardian/${shareToken}` : clientUrl;
+  const mapsLink =
+    location?.lat && location?.lng
+      ? `https://maps.google.com/?q=${location.lat},${location.lng}`
+      : "";
+
+  const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const lines = [
+    `🚨 *SURAKSHA SHADOW: EMERGENCY SOS ALERT* 🚨`,
+    ``,
+    `I am in danger and require immediate assistance!`,
+    `⚡ Status: ${status}`,
+    `🕒 Time: ${timeStr}`,
+  ];
+
+  if (location?.address) {
+    lines.push(`📍 Location: ${location.address}`);
+  }
+
+  if (mapsLink) {
+    lines.push(`🗺️ Google Maps: ${mapsLink}`);
+  }
+
+  lines.push(`🛡️ Live Guardian Tracking Beacon: ${guardianLink}`);
+
+  if (customNote) {
+    lines.push(``);
+    lines.push(`⚠️ Note: ${customNote}`);
+  }
+
+  lines.push(``);
+  lines.push(`_Sent via Suraksha Shadow Instant Zero-Cost Direct Carrier Dispatch_`);
+
+  return lines.join("\n");
+}
+
+/**
+ * 1-Tap Direct WhatsApp SOS Dispatch
+ */
+export function triggerWhatsAppSos({
+  guardians = [],
+  shareToken = null,
+  location = null,
+  status = "EMERGENCY ACTIVE",
+  customNote = "",
+}) {
+  const message = buildSosMessage({ shareToken, location, status, customNote });
+  const encodedText = encodeURIComponent(message);
+
+  // If there is exactly 1 guardian with a valid phone, open direct chat
+  if (guardians && guardians.length === 1 && guardians[0]) {
+    const phone = cleanPhoneForWhatsApp(guardians[0]);
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${encodedText}`, "_blank", "noopener,noreferrer");
+      return;
+    }
+  }
+
+  // Otherwise, open WhatsApp universal share dialog to send to any contact/group
+  window.open(`https://api.whatsapp.com/send?text=${encodedText}`, "_blank", "noopener,noreferrer");
+}
+
+/**
+ * 1-Tap Direct Native Carrier SMS Dispatch (Zero-Cost / SIM Card)
+ */
+export function triggerCarrierSms({
+  guardians = [],
+  shareToken = null,
+  location = null,
+  status = "EMERGENCY ACTIVE",
+  customNote = "",
+}) {
+  const message = buildSosMessage({ shareToken, location, status, customNote });
+  const recipient = (guardians || [])
+    .map(formatPhone)
+    .filter(Boolean)
+    .join(",");
+
+  const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const separator = isIOS ? "&" : "?";
+
+  const smsUrl = recipient
+    ? `sms:${recipient}${separator}body=${encodeURIComponent(message)}`
+    : `sms:${separator}body=${encodeURIComponent(message)}`;
+
+  window.location.href = smsUrl;
+}
+
+/**
+ * useEmergencySms Hook
  */
 export function useEmergencySms({ apiBaseUrl }) {
   const [isSending, setIsSending] = useState(false);
   const [lastResult, setLastResult] = useState(null);
 
   /**
-   * 1. Automated Backend SMS Dispatch
+   * 1. Automated Backend SMS Gateway Dispatch (Fast2SMS / TextBee / Twilio)
    */
   const dispatchAlert = useCallback(
     (guardians, status = "CORAL") => {
@@ -72,27 +178,24 @@ export function useEmergencySms({ apiBaseUrl }) {
   );
 
   /**
-   * 2. Direct Device / Carrier SMS (Airtel / Jio / SIM)
-   * Opens the native Messages app with recipient and live Guardian link pre-filled.
+   * 2. Direct 1-Tap Carrier SMS (Device SIM / Airtel / Jio / Vi)
    */
-  const openCarrierSms = useCallback((guardians, shareToken, location) => {
-    if (!guardians || guardians.length === 0) return;
-
-    const recipient = guardians.map(formatPhone).join(",");
-    const clientUrl = window.location.origin;
-    const guardianLink = shareToken ? `${clientUrl}/guardian/${shareToken}` : clientUrl;
-    const gpsLink = location?.lat ? ` https://maps.google.com/?q=${location.lat},${location.lng}` : "";
-
-    const messageText = `EMERGENCY ALERT: Suraksha Shadow safety alert. I need assistance.\nLive Guardian Status: ${guardianLink}${gpsLink}`;
-
-    // iOS uses '&body=', Android uses '?body='
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const separator = isIOS ? "&" : "?";
-    const smsUrl = `sms:${recipient}${separator}body=${encodeURIComponent(messageText)}`;
-
-    // Trigger native SMS app
-    window.location.href = smsUrl;
+  const openCarrierSms = useCallback((guardians, shareToken, location, customNote) => {
+    triggerCarrierSms({ guardians, shareToken, location, customNote });
   }, []);
 
-  return { dispatchAlert, openCarrierSms, isSending, lastResult };
+  /**
+   * 3. Direct 1-Tap WhatsApp SOS
+   */
+  const openWhatsAppSos = useCallback((guardians, shareToken, location, customNote) => {
+    triggerWhatsAppSos({ guardians, shareToken, location, customNote });
+  }, []);
+
+  return {
+    dispatchAlert,
+    openCarrierSms,
+    openWhatsAppSos,
+    isSending,
+    lastResult,
+  };
 }

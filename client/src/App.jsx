@@ -6,7 +6,7 @@ import { useAmbientAudioStream } from "./hooks/useAmbientAudioStream";
 import { useFakeCall } from "./hooks/useFakeCall";
 import { useBackgroundKeepAlive } from "./hooks/useBackgroundKeepAlive";
 import { useEvidenceVault } from "./hooks/useEvidenceVault";
-import { useEmergencySms } from "./hooks/useEmergencySms";
+import { useEmergencySms, triggerWhatsAppSos, triggerCarrierSms } from "./hooks/useEmergencySms";
 import { useHeartbeat } from "./hooks/useHeartbeat";
 import { useSafeZones } from "./hooks/useSafeZones";
 import { useRouteGuard } from "./hooks/useRouteGuard";
@@ -51,6 +51,7 @@ import {
   RadioIcon,
   ShareIcon,
   WhatsAppIcon,
+  MessageSquareIcon,
   CameraIcon,
   CameraOffIcon,
   HandIcon,
@@ -888,21 +889,57 @@ export default function App() {
 
           {/* Quick Action Matrix for High Distress */}
           <div className="emergency-action-grid">
-            {/* Action 1: Fake Call Escape */}
+            {/* Action 1: 1-Tap WhatsApp SOS */}
             <div
+              id="emergency-whatsapp-sos-card"
               className="emergency-action-card"
-              onClick={() => setIsFakeCallOpen(true)}
+              onClick={() => {
+                emergencySms.openWhatsAppSos(
+                  contacts.map((c) => c.phone),
+                  activeShareToken,
+                  currentCoords || liveLocations[liveLocations.length - 1]
+                );
+              }}
               role="button"
               tabIndex={0}
+              style={{
+                borderColor: "rgba(37, 211, 102, 0.45)",
+                background: "rgba(37, 211, 102, 0.08)",
+              }}
             >
-              <div className="action-card-icon is-amber">
-                <PhoneIcon size={20} />
+              <div className="action-card-icon" style={{ background: "rgba(37, 211, 102, 0.2)", color: "#25d366" }}>
+                <WhatsAppIcon size={20} />
               </div>
-              <div className="action-card-title">Fake Call</div>
-              <div className="action-card-desc">Simulate realistic incoming call</div>
+              <div className="action-card-title" style={{ color: "#25d366" }}>WhatsApp SOS</div>
+              <div className="action-card-desc">1-Tap live GPS broadcast</div>
             </div>
 
-            {/* Action 2: Strobe & Siren Deterrent */}
+            {/* Action 2: Direct Carrier SMS (Zero-Cost / SIM) */}
+            <div
+              id="emergency-carrier-sms-card"
+              className="emergency-action-card"
+              onClick={() => {
+                emergencySms.openCarrierSms(
+                  contacts.map((c) => c.phone),
+                  activeShareToken,
+                  currentCoords || liveLocations[liveLocations.length - 1]
+                );
+              }}
+              role="button"
+              tabIndex={0}
+              style={{
+                borderColor: "rgba(52, 152, 219, 0.45)",
+                background: "rgba(52, 152, 219, 0.08)",
+              }}
+            >
+              <div className="action-card-icon" style={{ background: "rgba(52, 152, 219, 0.2)", color: "#3498db" }}>
+                <MessageSquareIcon size={20} />
+              </div>
+              <div className="action-card-title" style={{ color: "#3498db" }}>Carrier SMS</div>
+              <div className="action-card-desc">Zero-cost direct SIM dispatch</div>
+            </div>
+
+            {/* Action 3: Strobe & Siren Deterrent */}
             <div
               className="emergency-action-card"
               onClick={() => setIsAlarmOpen(true)}
@@ -916,26 +953,21 @@ export default function App() {
               <div className="action-card-desc">Acoustic alarm to attract help</div>
             </div>
 
-            {/* Action 3: Direct Cellular SMS */}
+            {/* Action 4: Fake Call Escape */}
             <div
               className="emergency-action-card"
-              onClick={() => {
-                emergencySms.openCarrierSms(
-                  contacts.map((c) => c.phone),
-                  activeShareToken
-                );
-              }}
+              onClick={() => setIsFakeCallOpen(true)}
               role="button"
               tabIndex={0}
             >
-              <div className="action-card-icon is-safe">
-                <ShieldIcon size={20} />
+              <div className="action-card-icon is-amber">
+                <PhoneIcon size={20} />
               </div>
-              <div className="action-card-title">Carrier SMS</div>
-              <div className="action-card-desc">Open phone Messages app</div>
+              <div className="action-card-title">Fake Call</div>
+              <div className="action-card-desc">Simulate realistic incoming call</div>
             </div>
 
-            {/* Action 4: Guardian Live View Link */}
+            {/* Action 5: Guardian Live View Link */}
             <div
               className="emergency-action-card"
               onClick={() => {
@@ -953,7 +985,7 @@ export default function App() {
               <div className="action-card-desc">Open live tracking link</div>
             </div>
 
-            {/* Action 5: Dedicated Live Safety Map */}
+            {/* Action 6: Dedicated Live Safety Map */}
             <div
               id="emergency-live-safety-map-card"
               className="emergency-action-card"
@@ -969,46 +1001,78 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick WhatsApp / Native Emergency Broadcast Banner */}
+          {/* Quick 1-Tap WhatsApp & Native SMS Carrier Dispatch Banner */}
           {activeShareToken && (
-            <div className="card mb-4" style={{ background: "var(--dusk-soft)", border: "1px solid var(--line)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <div className="card mb-4" style={{ background: "linear-gradient(135deg, rgba(37, 211, 102, 0.08) 0%, rgba(52, 152, 219, 0.08) 100%)", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--paper)" }}>
-                    Multi-Channel Broadcast
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>⚡ 1-Tap Carrier & WhatsApp SOS</span>
+                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(46, 204, 113, 0.2)", color: "#2ecc71", fontWeight: 700 }}>
+                      ZERO-COST
+                    </span>
                   </div>
-                  <p className="text-xs text-dim" style={{ margin: 0 }}>Forward live beacon to family or WhatsApp</p>
+                  <p className="text-xs text-dim" style={{ margin: "2px 0 0" }}>Direct cellular SIM dispatch + instant WhatsApp beacon with live GPS</p>
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <a
-                    href={getWhatsAppAlertUrl({
-                      shareToken: activeShareToken,
-                      lat: liveLocations[liveLocations.length - 1]?.lat,
-                      lng: liveLocations[liveLocations.length - 1]?.lng,
-                      status: "EMERGENCY ACTIVE",
-                    })}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-quiet"
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      emergencySms.openWhatsAppSos(
+                        contacts.map((c) => c.phone),
+                        activeShareToken,
+                        currentCoords || liveLocations[liveLocations.length - 1]
+                      );
+                    }}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 6,
                       fontSize: 12,
-                      padding: "7px 11px",
-                      background: "rgba(37, 211, 102, 0.15)",
+                      fontWeight: 700,
+                      padding: "8px 14px",
+                      background: "rgba(37, 211, 102, 0.2)",
                       color: "#25d366",
-                      border: "1px solid rgba(37, 211, 102, 0.3)",
+                      border: "1px solid rgba(37, 211, 102, 0.4)",
                       borderRadius: 8,
-                      textDecoration: "none",
+                      cursor: "pointer",
                     }}
+                    title="1-Tap WhatsApp SOS Alert"
                   >
-                    <WhatsAppIcon size={14} />
-                    WhatsApp
-                  </a>
+                    <WhatsAppIcon size={15} />
+                    WhatsApp SOS
+                  </button>
+
                   <button
                     type="button"
-                    className="btn-quiet"
+                    onClick={() => {
+                      emergencySms.openCarrierSms(
+                        contacts.map((c) => c.phone),
+                        activeShareToken,
+                        currentCoords || liveLocations[liveLocations.length - 1]
+                      );
+                    }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      padding: "8px 14px",
+                      background: "rgba(52, 152, 219, 0.2)",
+                      color: "#3498db",
+                      border: "1px solid rgba(52, 152, 219, 0.4)",
+                      borderRadius: 8,
+                      cursor: "pointer",
+                    }}
+                    title="1-Tap Direct SIM Carrier SMS to all emergency contacts"
+                  >
+                    <MessageSquareIcon size={15} />
+                    Carrier SMS (SIM)
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => {
                       shareEmergencyAlert({
                         shareToken: activeShareToken,
@@ -1022,8 +1086,12 @@ export default function App() {
                       alignItems: "center",
                       gap: 6,
                       fontSize: 12,
-                      padding: "7px 11px",
+                      padding: "8px 12px",
+                      background: "rgba(255, 255, 255, 0.05)",
+                      border: "1px solid var(--line)",
+                      color: "var(--paper)",
                       borderRadius: 8,
+                      cursor: "pointer",
                     }}
                   >
                     <ShareIcon size={13} />
@@ -1491,6 +1559,46 @@ export default function App() {
                   >
                     <span style={{ marginRight: 6 }}>📍</span>
                     Live Safety Map
+                  </button>
+
+                  {/* 1-Tap WhatsApp SOS Direct Carrier/App Dispatch */}
+                  <button
+                    id="whatsapp-sos-quick-btn"
+                    className="demo-chip-btn"
+                    onClick={() => {
+                      emergencySms.openWhatsAppSos(activeShareToken, currentCoords, "Emergency Distress Alert (1-Tap WhatsApp)");
+                    }}
+                    style={{
+                      padding: "10px 14px",
+                      borderColor: "rgba(37, 211, 102, 0.4)",
+                      background: "rgba(37, 211, 102, 0.12)",
+                      color: "#25D366",
+                      fontWeight: 600,
+                    }}
+                    title="1-Tap WhatsApp SOS: Direct instant emergency dispatch with live GPS & beacon link"
+                  >
+                    <WhatsAppIcon size={14} style={{ marginRight: 6, color: "#25D366" }} />
+                    WhatsApp SOS
+                  </button>
+
+                  {/* 1-Tap Carrier Native SIM SMS (Zero Gateway Cost / Cellular Direct) */}
+                  <button
+                    id="carrier-sms-quick-btn"
+                    className="demo-chip-btn"
+                    onClick={() => {
+                      emergencySms.openCarrierSms(activeShareToken, currentCoords, "Emergency Distress Alert (1-Tap SIM SMS)");
+                    }}
+                    style={{
+                      padding: "10px 14px",
+                      borderColor: "rgba(56, 189, 248, 0.4)",
+                      background: "rgba(56, 189, 248, 0.12)",
+                      color: "#38bdf8",
+                      fontWeight: 600,
+                    }}
+                    title="1-Tap Carrier SMS: Direct device SIM messaging to guardians with GPS coordinates (Zero gateway cost / Works offline)"
+                  >
+                    <MessageSquareIcon size={14} style={{ marginRight: 6, color: "#38bdf8" }} />
+                    Carrier SMS (SIM)
                   </button>
 
                   <button
