@@ -363,10 +363,15 @@ async function transcribeWithOpenAI(audioBuffer, mimeType, apiKey, codeWord = "b
 }
 
 /**
- * Transcribe via Gemini 2.5 Flash Audio Multimodal API
+ * Transcribe via Gemini Flash Audio Multimodal API
  */
 async function transcribeWithGemini(audioBase64, mimeType, apiKey, codeWord = "banana") {
-  const modelsToTry = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"];
+  const modelsToTry = [
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-flash-latest",
+  ];
   let lastError = null;
 
   const payload = {
@@ -380,7 +385,7 @@ async function transcribeWithGemini(audioBase64, mimeType, apiKey, codeWord = "b
             },
           },
           {
-            text: `Transcribe the spoken words in this short emergency audio clip exactly in their spoken language (English, Hindi, or Hinglish). Spoken words may include "${codeWord}", "bachao", "help", "save me", or numbers. Return ONLY the transcribed words with no commentary. If silence or inaudible noise, return silence.`,
+            text: `Transcribe human speech in this emergency audio clip. Spoken words may include "${codeWord}", "bachao", "help", "save me", or numbers. Return ONLY the transcribed words with no commentary or formatting. If there is no human speech or only silence/static, respond with SILENCE.`,
           },
         ],
       },
@@ -408,7 +413,11 @@ async function transcribeWithGemini(audioBase64, mimeType, apiKey, codeWord = "b
 
       const data = await res.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      return text.trim();
+      const cleaned = text.trim();
+      if (/^(silence|none|no speech|inaudible|\[silence\])$/i.test(cleaned)) {
+        return "";
+      }
+      return cleaned;
     } catch (err) {
       lastError = err;
     }

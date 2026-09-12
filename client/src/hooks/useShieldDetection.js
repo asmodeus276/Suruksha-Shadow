@@ -133,6 +133,31 @@ const PHONETIC_ALIASES = {
 };
 
 /**
+ * Downsample Float32 audio samples from hardware sample rate to 16kHz mono
+ */
+function downsampleTo16k(samples, inputSampleRate) {
+  if (!inputSampleRate || inputSampleRate === 16000 || !samples?.length) return samples;
+  const ratio = inputSampleRate / 16000;
+  const newLength = Math.round(samples.length / ratio);
+  const result = new Float32Array(newLength);
+  let offsetResult = 0;
+  let offsetSource = 0;
+  while (offsetResult < result.length) {
+    const nextOffsetSource = Math.round((offsetResult + 1) * ratio);
+    let accum = 0;
+    let count = 0;
+    for (let i = offsetSource; i < nextOffsetSource && i < samples.length; i++) {
+      accum += samples[i];
+      count++;
+    }
+    result[offsetResult] = count > 0 ? accum / count : (samples[offsetSource] || 0);
+    offsetResult++;
+    offsetSource = nextOffsetSource;
+  }
+  return result;
+}
+
+/**
  * Pure JavaScript 16kHz Mono PCM WAV Encoder
  */
 function encodeWav(samples, sampleRate = 16000) {
@@ -464,22 +489,29 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         analyser.smoothingTimeConstant = 0.2;
         source.connect(analyser);
 
+        const actualSampleRate = ctx.sampleRate || 16000;
+        const ringCapacity = Math.round(actualSampleRate * 1.5);
+        const maxUtteranceCapacity = Math.round(actualSampleRate * 3.0);
+        const preRollCount = Math.round(actualSampleRate * 0.45);
+        const postRollCount = Math.round(actualSampleRate * 0.35);
+        const minUtteranceSamples = Math.round(actualSampleRate * 0.25);
+
         const isVoiceActiveRef = { current: false };
 
-        // Continuous 16kHz PCM Rolling Ring Buffer with 500ms Pre-roll & VAD Collector
+        // Continuous PCM Rolling Ring Buffer with pre-roll & active utterance collector
         if (ctx.createScriptProcessor) {
           processorNode = ctx.createScriptProcessor(4096, 1, 1);
           processorNode.onaudioprocess = (e) => {
             if (!isMounted || !enabled) return;
             const channel = e.inputBuffer.getChannelData(0);
 
-            // 1. Maintain rolling 1.5s ring buffer (24000 samples @ 16kHz)
+            // 1. Maintain rolling 1.5s ring buffer
             const ring = pcmRollingRingRef.current;
             for (let i = 0; i < channel.length; i++) {
               ring.push(channel[i]);
             }
-            if (ring.length > 24000) {
-              ring.splice(0, ring.length - 24000);
+            if (ring.length > ringCapacity) {
+              ring.splice(0, ring.length - ringCapacity);
             }
 
             // 2. If voice is active, accumulate into active utterance buffer
@@ -489,8 +521,8 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
                 active.push(channel[i]);
               }
               // Limit single utterance chunk to 3.0 seconds max
-              if (active.length > 48000) {
-                active.splice(0, active.length - 48000);
+              if (active.length > maxUtteranceCapacity) {
+                active.splice(0, active.length - maxUtteranceCapacity);
               }
             }
           };
@@ -552,10 +584,9 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
               syllableEnergyPeaks = 1;
               lastEnergyDip = false;
 
-              // STEP 4: Grab 500ms (8,000 samples @ 16kHz) pre-roll overlap from ring buffer
+              // Grab pre-roll overlap from ring buffer to capture word onset
               const ring = pcmRollingRingRef.current;
-              const preRollCount = Math.min(8000, ring.length);
-              const preRoll = ring.slice(ring.length - preRollCount);
+              const preRoll = ring.slice(Math.max(0, ring.length - preRollCount));
               activeUtterancePcmRef.current = [...preRoll];
             } else {
               utterancePeakDb = Math.max(utterancePeakDb, estimatedDb);
@@ -575,11 +606,12 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
             setSyllableCount(liveSyllables);
             setTranscript(`🗣️ Voice: ${liveSyllables}/3 syllables (${estimatedDb} dB)`);
 
-            // If voice duration reaches typical codeword length (~350ms - 1500ms):
-            if (durationMs >= 350 && durationMs <= 1800) {
-              if (activeUtterancePcmRef.current.length >= 8000 && !isTranscribingRef.current) {
+            // If voice duration reaches typical codeword length (~400ms - 1800ms):
+            if (durationMs >= 400 && durationMs <= 1800) {
+              if (activeUtterancePcmRef.current.length >= minUtteranceSamples && !isTranscribingRef.current) {
                 const sampleSlice = activeUtterancePcmRef.current.slice();
-                const wavBlob = encodeWav(sampleSlice, ctx.sampleRate || 16000);
+                const downsampled = downsampleTo16k(sampleSlice, actualSampleRate);
+                const wavBlob = encodeWav(downsampled, 16000);
                 sendWavToWhisper(wavBlob);
               }
             }
@@ -587,32 +619,20 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
             // Voice silence frame
             voiceSilenceFrames += 1;
 
-            // Wait for 12 silence frames (~200ms) before finalizing utterance
-            if (utteranceStartTime && voiceSilenceFrames >= 12) {
+            // Wait for 10 silence frames (~160ms) before finalizing utterance
+            if (utteranceStartTime && voiceSilenceFrames >= 10) {
               isVoiceActiveRef.current = false;
               const utteranceDuration = now - utteranceStartTime;
 
-              // Append 300ms post-roll padding (4800 samples) to catch trailing consonants
+              // Append post-roll padding to catch trailing consonants
               const ring = pcmRollingRingRef.current;
-              const postRollCount = Math.min(4800, ring.length);
-              const postRoll = ring.slice(ring.length - postRollCount);
+              const postRoll = ring.slice(Math.max(0, ring.length - postRollCount));
               const fullUtterance = [...activeUtterancePcmRef.current, ...postRoll];
 
-              // Local Acoustic Codeword Classifier:
-              // Any vocal utterance (duration 220ms–2200ms, peak >= 33 dB) triggers emergency!
-              if (utteranceDuration >= 220 && utteranceDuration <= 2200 && utterancePeakDb >= 33) {
-                console.log(`[SURAKSHA SHIELD] Live vocal codeword utterance detected: ${utteranceDuration}ms, peak: ${utterancePeakDb} dB, syllables: ${syllableEnergyPeaks}`);
-                setTranscript(`🚨 "${codeWord.toUpperCase()}" (VOICE CODEWORD DETECTED)`);
-                fire(
-                  "voice",
-                  0.96,
-                  `Live vocal utterance detected: "${codeWord}" (${utteranceDuration}ms duration, ${utterancePeakDb} dB)`
-                );
-              }
-
-              // Dispatch final complete utterance with 500ms pre-roll + 300ms post-roll to Whisper
-              if (fullUtterance.length >= 4000 && !isTranscribingRef.current) {
-                const wavBlob = encodeWav(fullUtterance, ctx.sampleRate || 16000);
+              // Dispatch complete utterance downsampled to 16kHz to Cloud Speech AI
+              if (fullUtterance.length >= minUtteranceSamples && !isTranscribingRef.current) {
+                const downsampled = downsampleTo16k(fullUtterance, actualSampleRate);
+                const wavBlob = encodeWav(downsampled, 16000);
                 sendWavToWhisper(wavBlob);
               }
 

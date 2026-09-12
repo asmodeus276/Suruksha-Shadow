@@ -1141,84 +1141,212 @@ export default function App() {
                   </span>
                 </button>
 
-                {/* Live Diagnostics & Sentinel Status Bar */}
-                {armed ? (
+                {/* Unified Sentinel Protection Command Center */}
+                <div
+                  className="card mt-4"
+                  style={{
+                    maxWidth: 540,
+                    margin: "16px auto 0",
+                    background: armed
+                      ? "linear-gradient(180deg, rgba(232, 196, 104, 0.08) 0%, rgba(18, 20, 24, 0.95) 100%)"
+                      : "linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(18, 20, 24, 0.85) 100%)",
+                    border: armed ? "1px solid rgba(232, 196, 104, 0.3)" : "1px solid var(--line)",
+                    borderRadius: 16,
+                    padding: "16px 18px",
+                    boxShadow: armed ? "0 8px 32px rgba(232, 196, 104, 0.08)" : "0 4px 20px rgba(0, 0, 0, 0.3)",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  {/* Header: Codeword & Quick Test Pill */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingBottom: 12, borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 16 }}>🛡️</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: armed ? "var(--ember)" : "var(--dim)" }}>
+                        {armed ? "Sentinel Protection Active" : "Sentinel Standby"}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          padding: "2px 7px",
+                          borderRadius: 12,
+                          fontWeight: 700,
+                          background: armed ? "rgba(46, 204, 113, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                          color: armed ? "#2ecc71" : "var(--dim)",
+                          border: armed ? "1px solid rgba(46, 204, 113, 0.3)" : "1px solid var(--line)",
+                        }}
+                      >
+                        {armed ? "AI ARMED" : "DISARMED"}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!armed) arm();
+                        simulateVoiceTrigger(codeWord);
+                      }}
+                      style={{
+                        padding: "5px 12px",
+                        fontSize: 11.5,
+                        background: "linear-gradient(135deg, var(--ember), var(--alarm))",
+                        border: "none",
+                        borderRadius: 14,
+                        color: "#fff",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        boxShadow: "0 2px 8px rgba(224, 90, 71, 0.3)",
+                      }}
+                      title={`Simulate speaking emergency codeword "${codeWord}"`}
+                    >
+                      🗣️ Test "{codeWord}"
+                    </button>
+                  </div>
+
+                  {/* Live Speech Recognition & Audio Wave Strip */}
                   <div
-                    className="mt-3"
                     style={{
+                      marginTop: 12,
+                      background: "rgba(0, 0, 0, 0.4)",
+                      borderRadius: 10,
+                      padding: "10px 12px",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
                       display: "flex",
-                      flexDirection: "column",
                       alignItems: "center",
-                      gap: 8,
-                      width: "100%",
-                      maxWidth: 520,
-                      margin: "12px auto 0",
+                      justifyContent: "space-between",
+                      gap: 10,
                     }}
                   >
-                    {/* Unified Multi-Sensor Sentinel HUD */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: armed
+                            ? isWhisperTranscribing
+                              ? "var(--alarm)"
+                              : audioLevel > 15
+                              ? "var(--ember)"
+                              : "#2ecc71"
+                            : "var(--dim)",
+                          boxShadow: armed && (isWhisperTranscribing || audioLevel > 15) ? "0 0 8px currentColor" : "none",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontFamily: "var(--mono)",
+                          color: transcript?.includes("DETECTED") || transcript?.includes("MATCHED")
+                            ? "var(--alarm)"
+                            : transcript
+                            ? "var(--ember)"
+                            : "var(--paper)",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {transcript
+                          ? transcript
+                          : isWhisperTranscribing
+                          ? "⚡ Cloud Speech AI analyzing..."
+                          : armed
+                          ? `Say "${codeWord}", "bachao", or "help"`
+                          : `Shield paused · Codeword: "${codeWord}"`}
+                      </span>
+                    </div>
+
+                    {armed && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, color: "var(--dim)", fontFamily: "var(--mono)" }}>
+                          {audioDb} dB
+                        </span>
+                        <div style={{ width: 44, height: 5, borderRadius: 3, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                          <div
+                            style={{
+                              height: "100%",
+                              width: `${audioLevel}%`,
+                              background: audioLevel > 45 ? "var(--alarm)" : "var(--ember)",
+                              transition: "width 0.08s ease",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Grid of Active Sentinel Sensors */}
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(115px, 1fr))",
+                      gap: 6,
+                    }}
+                  >
+                    {/* Sensor 1: Voice */}
                     <div
                       style={{
+                        padding: "6px 8px",
+                        borderRadius: 8,
+                        background: "rgba(255, 255, 255, 0.02)",
+                        border: "1px solid rgba(255, 255, 255, 0.04)",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        flexWrap: "wrap",
-                        padding: "6px 12px",
-                        background: "rgba(255, 255, 255, 0.03)",
-                        border: "1px solid var(--line)",
-                        borderRadius: 20,
-                        fontSize: 11.5,
+                        gap: 6,
+                        fontSize: 11,
                       }}
                     >
-                      {/* Microphone Status */}
-                      <div
-                        onClick={micStatus === "error" ? toggleArm : undefined}
+                      <MicIcon size={12} style={{ color: armed ? (audioLevel > 15 ? "var(--ember)" : "#2ecc71") : "var(--dim)" }} />
+                      <span style={{ color: "var(--dim)" }}>Voice:</span>
+                      <span style={{ color: armed ? "var(--paper)" : "var(--dim)", fontWeight: 600 }}>
+                        {armed ? `"${codeWord}"` : "Standby"}
+                      </span>
+                    </div>
+
+                    {/* Sensor 2: Motion Struggle */}
+                    <div
+                      style={{
+                        padding: "6px 8px",
+                        borderRadius: 8,
+                        background: "rgba(255, 255, 255, 0.02)",
+                        border: "1px solid rgba(255, 255, 255, 0.04)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 11,
+                      }}
+                    >
+                      <ActivityIcon size={12} style={{ color: armed ? "#2ecc71" : "var(--dim)" }} />
+                      <span style={{ color: "var(--dim)" }}>Motion:</span>
+                      <span style={{ color: armed ? "var(--paper)" : "var(--dim)", fontWeight: 600 }}>
+                        {armed ? `${motionMagnitude} m/s²` : "Standby"}
+                      </span>
+                    </div>
+
+                    {/* Sensor 3: Gesture Camera */}
+                    <div
+                      onClick={handleToggleCamera}
+                      style={{
+                        padding: "6px 8px",
+                        borderRadius: 8,
+                        background: "rgba(255, 255, 255, 0.02)",
+                        border: "1px solid rgba(255, 255, 255, 0.04)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 11,
+                        cursor: "pointer",
+                      }}
+                      title="Tap to toggle Camera Gesture Watch (Signal for Help)"
+                    >
+                      <CameraIcon
+                        size={12}
                         style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                          color: micStatus === "error" ? "var(--alarm)" : audioLevel > 15 ? "var(--ember)" : "#2ecc71",
-                          fontWeight: audioLevel > 15 || micStatus === "hearing" ? 600 : 400,
-                          cursor: micStatus === "error" ? "pointer" : "default",
-                        }}
-                        title={micStatus === "error" ? "Tap to grant microphone permission" : "Microphone active & listening for voice codewords"}
-                      >
-                        <MicIcon size={12} className="icon" />
-                        <span>
-                          {micStatus === "listening"
-                            ? `Mic Active (${audioDb} dB)`
-                            : micStatus === "hearing"
-                            ? `Hearing (${audioDb} dB)`
-                            : micStatus === "error"
-                            ? "Mic Permission Needed"
-                            : `Mic (${audioDb} dB)`}
-                        </span>
-                        {(micStatus === "listening" || micStatus === "hearing") && (
-                          <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 1.5, height: 10, marginLeft: 2 }}>
-                            <span style={{ width: 2, height: `${Math.max(3, (audioLevel / 100) * 10)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1 }} />
-                            <span style={{ width: 2, height: `${Math.max(4, ((audioLevel * 1.4) / 100) * 10)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1 }} />
-                            <span style={{ width: 2, height: `${Math.max(3, ((audioLevel * 0.8) / 100) * 10)}px`, background: audioLevel > 40 ? "var(--alarm)" : "var(--ember)", borderRadius: 1 }} />
-                          </span>
-                        )}
-                      </div>
-
-                      <span style={{ opacity: 0.3 }}>•</span>
-
-                      {/* Motion Status */}
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--paper)", opacity: 0.9 }}>
-                        <ActivityIcon size={12} className="icon" />
-                        <span>Motion: {motionMagnitude} m/s²</span>
-                      </div>
-
-                      <span style={{ opacity: 0.3 }}>•</span>
-
-                      {/* Gesture Watch */}
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 4,
-                          cursor: "pointer",
                           color: isCameraActive
                             ? gestureProgress > 0
                               ? "var(--alarm)"
@@ -1227,237 +1355,118 @@ export default function App() {
                               : "var(--ember)"
                             : "var(--dim)",
                         }}
-                        onClick={handleToggleCamera}
-                        title="Tap to toggle Camera Gesture Watch (Signal for Help)"
-                      >
-                        <CameraIcon size={12} className="icon" />
-                        <span>
-                          Gesture: {isCameraActive
+                      />
+                      <span style={{ color: "var(--dim)" }}>Gesture:</span>
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color: isCameraActive
                             ? gestureProgress > 0
-                              ? `Holding (${Math.round(gestureProgress * 100)}%)`
-                              : handDetected
-                              ? "Hand Detected"
-                              : "Watching"
-                            : "Off"}
-                        </span>
-                      </div>
-
-                      <span style={{ opacity: 0.3 }}>•</span>
-
-                      {/* Heartbeat Status */}
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#2ecc71" }} title="Silence Detection: Guardians alerted if device goes silent >3 min">
-                        <HeartbeatIcon size={12} className="icon" />
-                        <span>Heartbeat Active</span>
-                      </div>
+                              ? "var(--alarm)"
+                              : "#2ecc71"
+                            : "var(--dim)",
+                        }}
+                      >
+                        {isCameraActive ? (handDetected ? "Hand Seen" : "Watching") : "Off"}
+                      </span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="mt-3" style={{ textAlign: "center" }}>
-                    <p className="text-xs text-dim">
-                      🛡️ Tap <strong style={{ color: "var(--paper)" }}>Arm Shield</strong> to activate live microphone hearing for codeword <code style={{ color: "var(--ember)" }}>"{codeWord}"</code>, <code style={{ color: "var(--ember)" }}>"bachao"</code>, <code style={{ color: "var(--ember)" }}>"help"</code>, and struggle shake detection.
-                    </p>
-                  </div>
-                )}
 
-                {/* Live Real-Time Device GPS Location Badge */}
-                <div className="mt-2" style={{ display: "flex", justifyContent: "center" }}>
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "5px 14px",
-                      borderRadius: 20,
-                      background: "rgba(255, 255, 255, 0.03)",
-                      border: "1px solid var(--line)",
-                      fontSize: 11.5,
-                      color: "var(--paper)",
-                      maxWidth: "94%",
-                    }}
-                  >
-                    <span
+                    {/* Sensor 4: Heartbeat Silence */}
+                    <div
                       style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: "50%",
-                        background:
-                          gpsStatus === "locked"
-                            ? "#2ecc71"
-                            : gpsStatus === "acquiring"
-                            ? "var(--ember)"
-                            : "var(--alarm)",
-                        boxShadow: gpsStatus === "locked" ? "0 0 6px #2ecc71" : "none",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {gpsStatus === "locked"
-                        ? currentCoords?.address
-                          ? `📍 ${currentCoords.address}`
-                          : `📍 ${formatCoords(currentCoords?.lat, currentCoords?.lng)}`
-                        : gpsStatus === "acquiring"
-                        ? "🛰️ Acquiring live GPS fix…"
-                        : gpsStatus === "denied"
-                        ? "⚠️ GPS Permission Disabled"
-                        : "📍 GPS Offline"}
-                      {gpsStatus === "locked" && currentCoords?.accuracy && (
-                        <span className="text-dim" style={{ marginLeft: 4 }}>
-                          (±{currentCoords.accuracy}m)
-                        </span>
-                      )}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={refreshGpsFix}
-                      title="Refresh GPS Fix"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--ember)",
-                        cursor: "pointer",
-                        padding: "0 2px",
-                        fontSize: 12,
+                        padding: "6px 8px",
+                        borderRadius: 8,
+                        background: "rgba(255, 255, 255, 0.02)",
+                        border: "1px solid rgba(255, 255, 255, 0.04)",
                         display: "flex",
                         alignItems: "center",
+                        gap: 6,
+                        fontSize: 11,
                       }}
+                      title="Automatic check-in every 3 minutes. Dispatches distress if phone goes silent."
                     >
-                      ↻
-                    </button>
-                    <button
-                      id="gps-badge-live-safety-map-btn"
-                      type="button"
-                      onClick={() => setIsLiveMapModalOpen(true)}
-                      title="Open interactive Live Safety Map"
-                      style={{
-                        background: "rgba(232, 196, 104, 0.15)",
-                        border: "1px solid rgba(232, 196, 104, 0.3)",
-                        color: "var(--ember)",
-                        borderRadius: 6,
-                        cursor: "pointer",
-                        padding: "2px 7px",
-                        fontSize: 10.5,
-                        fontWeight: 600,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 3,
-                        marginLeft: 4,
-                        flexShrink: 0,
-                      }}
-                    >
-                      Map ↗
-                    </button>
-                  </div>
-                </div>
-
-                {/* Dedicated Voice Codeword Sentinel & Live Microphone Card */}
-                <div
-                  className="card mt-3"
-                  style={{
-                    background: armed ? "rgba(232, 196, 104, 0.05)" : "rgba(255, 255, 255, 0.025)",
-                    border: armed ? "1px solid rgba(232, 196, 104, 0.22)" : "1px solid var(--line)",
-                    borderRadius: 14,
-                    padding: "14px 16px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 22 }}>🎙️</span>
-                      <div>
-                        <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--paper)", display: "flex", alignItems: "center", gap: 6 }}>
-                          <span>Voice Codeword:</span>
-                          <span style={{ color: "var(--ember)", fontSize: 14 }}>"{codeWord}"</span>
-                          <span
-                            style={{
-                              fontSize: 9.5,
-                              padding: "2px 6px",
-                              borderRadius: 4,
-                              background: armed ? "rgba(46, 204, 113, 0.15)" : "rgba(255, 255, 255, 0.05)",
-                              color: armed ? "#2ecc71" : "var(--dim)",
-                              fontWeight: 700,
-                              border: armed ? "1px solid rgba(46, 204, 113, 0.3)" : "1px solid var(--line)",
-                            }}
-                          >
-                            {armed ? "⚡ SPEECH AI ACTIVE" : "STANDBY"}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 11, color: "var(--dim)", marginTop: 2 }}>
-                          Universal phrases: "banana" · "bachao" · "help" · "save me" · "police"
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!armed) arm();
-                          simulateVoiceTrigger(codeWord);
-                        }}
-                        style={{
-                          padding: "7px 16px",
-                          fontSize: 12,
-                          background: "linear-gradient(135deg, var(--ember), var(--alarm))",
-                          border: "none",
-                          borderRadius: 20,
-                          color: "#fff",
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          boxShadow: "0 2px 10px rgba(224, 90, 71, 0.35)",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6,
-                        }}
-                        title="Instantly test speaking the secret codeword"
-                      >
-                        🗣️ Test "{codeWord}"
-                      </button>
+                      <HeartbeatIcon size={12} style={{ color: armed ? "#2ecc71" : "var(--dim)" }} />
+                      <span style={{ color: "var(--dim)" }}>Heartbeat:</span>
+                      <span style={{ color: armed ? "#2ecc71" : "var(--dim)", fontWeight: 600 }}>
+                        {armed ? "Active" : "Standby"}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Live Microphone Audio Level & Heard Speech Banner */}
+                  {/* Footer: Live GPS Badge with Map Link */}
                   <div
                     style={{
-                      background: "rgba(0, 0, 0, 0.45)",
-                      borderRadius: 10,
-                      padding: "10px 14px",
+                      marginTop: 10,
+                      paddingTop: 8,
+                      borderTop: "1px solid rgba(255, 255, 255, 0.04)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 10,
-                      border: "1px solid rgba(255, 255, 255, 0.05)",
+                      gap: 8,
+                      fontSize: 11,
+                      color: "var(--dim)",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200 }}>
-                      <div
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+                      <span
                         style={{
-                          width: 8,
-                          height: 8,
+                          width: 6,
+                          height: 6,
                           borderRadius: "50%",
-                          background: armed ? (isWhisperTranscribing ? "var(--alarm)" : audioLevel > 15 ? "var(--ember)" : "#2ecc71") : "var(--dim)",
-                          boxShadow: armed && (isWhisperTranscribing || audioLevel > 15) ? "0 0 8px currentColor" : "none",
+                          background: gpsStatus === "locked" ? "#2ecc71" : gpsStatus === "acquiring" ? "var(--ember)" : "var(--alarm)",
+                          boxShadow: gpsStatus === "locked" ? "0 0 6px #2ecc71" : "none",
                           flexShrink: 0,
                         }}
                       />
-                      <span style={{ fontSize: 12, fontFamily: "var(--mono)", color: transcript.includes("DETECTED") || transcript.includes("MATCHED") ? "var(--alarm)" : transcript ? "var(--ember)" : "var(--paper)" }}>
-                        {transcript
-                          ? transcript
-                          : isWhisperTranscribing
-                          ? "⚡ Cloud AI analyzing voice stream…"
-                          : armed
-                          ? `🎙️ Listening · say "${codeWord}" / "bachao" / "help"`
-                          : "Microphone paused. Tap Arm Shield to activate."}
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {gpsStatus === "locked"
+                          ? currentCoords?.address
+                            ? `📍 ${currentCoords.address}`
+                            : `📍 ${formatCoords(currentCoords?.lat, currentCoords?.lng)}`
+                          : gpsStatus === "acquiring"
+                          ? "🛰️ Acquiring live GPS fix…"
+                          : "📍 GPS Offline"}
                       </span>
                     </div>
-                    {armed && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                        <span style={{ fontSize: 11, color: "var(--dim)", fontFamily: "var(--mono)" }}>
-                          {audioDb} dB
-                        </span>
-                        <div style={{ width: 64, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${audioLevel}%`, background: audioLevel > 45 ? "var(--alarm)" : "var(--ember)", transition: "width 0.08s ease" }} />
-                        </div>
-                      </div>
-                    )}
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={refreshGpsFix}
+                        title="Refresh GPS Fix"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--dim)",
+                          cursor: "pointer",
+                          fontSize: 12,
+                          padding: 0,
+                        }}
+                      >
+                        ↻
+                      </button>
+                      <button
+                        id="gps-badge-live-safety-map-btn"
+                        type="button"
+                        onClick={() => setIsLiveMapModalOpen(true)}
+                        title="Open interactive Live Safety Map"
+                        style={{
+                          background: "rgba(232, 196, 104, 0.12)",
+                          border: "1px solid rgba(232, 196, 104, 0.25)",
+                          color: "var(--ember)",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          padding: "2px 8px",
+                          fontSize: 10.5,
+                          fontWeight: 600,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 3,
+                        }}
+                      >
+                        Map ↗
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
