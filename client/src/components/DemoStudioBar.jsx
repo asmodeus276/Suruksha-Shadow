@@ -19,6 +19,7 @@ export default function DemoStudioBar({
   onTriggerFakeCall,
   onTriggerAlarm,
   onToggleDecoy,
+  onTriggerOpticalBurst,
   armed,
   onArm,
   onGpsUpdate,
@@ -202,6 +203,16 @@ export default function DemoStudioBar({
               title="Trigger acoustic siren and screen strobe"
             >
               🚨 Strobe Alarm
+            </button>
+
+            {/* Action: Optical Burst 5-Frame Capture */}
+            <button
+              className="demo-chip-btn"
+              onClick={onTriggerOpticalBurst}
+              title="Trigger 5-Frame Optical Burst Capture (BSA 2023 §63 / FRE 902)"
+              style={{ borderColor: "var(--line-gold)", color: "var(--ember)" }}
+            >
+              📸 5-Frame Optical Burst
             </button>
 
             {/* Action: Simulate GPS Movement */}

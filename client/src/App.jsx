@@ -1461,6 +1461,29 @@ export default function App() {
                         {armed ? "Active" : "Standby"}
                       </span>
                     </div>
+
+                    {/* Sensor 5: Optical Burst (BSA 2023 §63) */}
+                    <div
+                      onClick={() => setShowOpticalBurstModal(true)}
+                      style={{
+                        padding: "6px 8px",
+                        borderRadius: 8,
+                        background: "rgba(232, 196, 104, 0.08)",
+                        border: "1px solid rgba(232, 196, 104, 0.25)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 11,
+                        cursor: "pointer",
+                      }}
+                      title="Tap to trigger 5-Frame Optical Burst Capture (BSA 2023 §63 / FRE 902)"
+                    >
+                      <CameraIcon size={12} style={{ color: "var(--ember)" }} />
+                      <span style={{ color: "var(--ember)" }}>Burst:</span>
+                      <span style={{ color: "var(--paper)", fontWeight: 600 }}>
+                        5-Frame Ready
+                      </span>
+                    </div>
                   </div>
 
                   {/* Footer: Live GPS Badge with Map Link */}
@@ -2477,6 +2500,7 @@ export default function App() {
         onTriggerFakeCall={fakeCall.trigger}
         onTriggerAlarm={() => setIsAlarmOpen(true)}
         onToggleDecoy={() => setDecoyMode((prev) => !prev)}
+        onTriggerOpticalBurst={() => setShowOpticalBurstModal(true)}
         armed={armed}
         onArm={arm}
         onGpsUpdate={handleLocationUpdateFromPing}
