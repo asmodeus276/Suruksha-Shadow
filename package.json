@@ -1,0 +1,17 @@
+{
+  "name": "suraksha-shadow",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm --prefix client run build"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.9",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "multer": "^2.3.0"
+  }
+}

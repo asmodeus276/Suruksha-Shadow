@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="100" fill="#1C1A24"/>
+  <rect x="64" y="64" width="384" height="110" rx="24" fill="#0B0A14" stroke="#322D47" stroke-width="4"/>
+  <text x="420" y="142" fill="#F3F1F8" font-family="-apple-system, system-ui, sans-serif" font-size="58" font-weight="300" text-anchor="end">0</text>
+  
+  <!-- Row 1 -->
+  <rect x="64" y="202" width="80" height="58" rx="16" fill="#A5A5A5"/>
+  <text x="104" y="240" fill="#1A1A1A" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="600" text-anchor="middle">C</text>
+  
+  <rect x="165" y="202" width="80" height="58" rx="16" fill="#A5A5A5"/>
+  <text x="205" y="240" fill="#1A1A1A" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="600" text-anchor="middle">±</text>
+  
+  <rect x="266" y="202" width="80" height="58" rx="16" fill="#A5A5A5"/>
+  <text x="306" y="240" fill="#1A1A1A" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="600" text-anchor="middle">%</text>
+  
+  <rect x="368" y="202" width="80" height="58" rx="16" fill="#E8935B"/>
+  <text x="408" y="242" fill="#1A1206" font-family="-apple-system, system-ui, sans-serif" font-size="34" font-weight="600" text-anchor="middle">÷</text>
+
+  <!-- Row 2 -->
+  <rect x="64" y="276" width="80" height="58" rx="16" fill="#3A3A3C"/>
+  <text x="104" y="316" fill="#F5F5F5" font-family="-apple-system, system-ui, sans-serif" font-size="30" font-weight="500" text-anchor="middle">7</text>
+  
+  <rect x="165" y="276" width="80" height="58" rx="16" fill="#3A3A3C"/>
+  <text x="205" y="316" fill="#F5F5F5" font-family="-apple-system, system-ui, sans-serif" font-size="30" font-weight="500" text-anchor="middle">8</text>
+  
+  <rect x="266" y="276" width="80" height="58" rx="16" fill="#3A3A3C"/>
+  <text x="306" y="316" fill="#F5F5F5" font-family="-apple-system, system-ui, sans-serif" font-size="30" font-weight="500" text-anchor="middle">9</text>
+  
+  <rect x="368" y="276" width="80" height="58" rx="16" fill="#E8935B"/>
+  <text x="408" y="316" fill="#1A1206" font-family="-apple-system, system-ui, sans-serif" font-size="34" font-weight="600" text-anchor="middle">×</text>
+
+  <!-- Row 3 -->
+  <rect x="64" y="350" width="80" height="58" rx="16" fill="#3A3A3C"/>
+  <text x="104" y="390" fill="#F5F5F5" font-family="-apple-system, system-ui, sans-serif" font-size="30" font-weight="500" text-anchor="middle">4</text>
+  
+  <rect x="165" y="350" width="80" height="58" rx="16" fill="#3A3A3C"/>
+  <text x="205" y="390" fill="#F5F5F5" font-family="-apple-system, system-ui, sans-serif" font-size="30" font-weight="500" text-anchor="middle">5</text>
+  
+  <rect x="266" y="350" width="80" height="58" rx="16" fill="#3A3A3C"/>
+  <text x="306" y="390" fill="#F5F5F5" font-family="-apple-system, system-ui, sans-serif" font-size="30" font-weight="500" text-anchor="middle">6</text>
+  
+  <rect x="368" y="350" width="80" height="58" rx="16" fill="#E8935B"/>
+  <text x="408" y="390" fill="#1A1206" font-family="-apple-system, system-ui, sans-serif" font-size="34" font-weight="600" text-anchor="middle">−</text>
+
+  <!-- Row 4 -->
+  <rect x="64" y="424" width="181" height="58" rx="16" fill="#3A3A3C"/>
+  <text x="154" y="464" fill="#F5F5F5" font-family="-apple-system, system-ui, sans-serif" font-size="30" font-weight="500" text-anchor="middle">0</text>
+  
+  <rect x="266" y="424" width="80" height="58" rx="16" fill="#3A3A3C"/>
+  <text x="306" y="464" fill="#F5F5F5" font-family="-apple-system, system-ui, sans-serif" font-size="30" font-weight="500" text-anchor="middle">.</text>
+  
+  <rect x="368" y="424" width="80" height="58" rx="16" fill="#E8935B"/>
+  <text x="408" y="464" fill="#1A1206" font-family="-apple-system, system-ui, sans-serif" font-size="34" font-weight="600" text-anchor="middle">=</text>
+</svg>
