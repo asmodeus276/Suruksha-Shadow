@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
-import {
-  GestureDescription,
-  Finger,
-  FingerCurl,
-  GestureEstimator,
-} from "fingerpose";
+import * as fpModule from "fingerpose";
+
+/**
+ * Robust CJS / ESM interop for fingerpose module
+ */
+const fp = fpModule.default || fpModule.fp || fpModule;
+const GestureDescription = fp?.GestureDescription || fpModule?.GestureDescription;
+const Finger = fp?.Finger || fpModule?.Finger || { Thumb: 0, Index: 1, Middle: 2, Ring: 3, Pinky: 4 };
+const FingerCurl = fp?.FingerCurl || fpModule?.FingerCurl || { NoCurl: 0, HalfCurl: 1, FullCurl: 2 };
+const GestureEstimator = fp?.GestureEstimator || fpModule?.GestureEstimator;
 
 /**
  * ============================================================================
@@ -23,19 +27,28 @@ import {
  */
 
 // Configure rule-based GestureDescription for the trapped-thumb fist position.
-const signalForHelpGesture = new GestureDescription("signal_for_help");
+let signalForHelpGesture = null;
+let GESTURE_ESTIMATOR = null;
 
-// Thumb: curled and tucked across the palm
-signalForHelpGesture.addCurl(Finger.Thumb, FingerCurl.FullCurl, 1.0);
-signalForHelpGesture.addCurl(Finger.Thumb, FingerCurl.HalfCurl, 0.9);
+if (GestureDescription && GestureEstimator && Finger && FingerCurl) {
+  try {
+    signalForHelpGesture = new GestureDescription("signal_for_help");
 
-// Four fingers (Index, Middle, Ring, Pinky) folded over the tucked thumb
-for (const finger of [Finger.Index, Finger.Middle, Finger.Ring, Finger.Pinky]) {
-  signalForHelpGesture.addCurl(finger, FingerCurl.FullCurl, 1.0);
-  signalForHelpGesture.addCurl(finger, FingerCurl.HalfCurl, 0.85);
+    // Thumb: curled and tucked across the palm
+    signalForHelpGesture.addCurl(Finger.Thumb, FingerCurl.FullCurl, 1.0);
+    signalForHelpGesture.addCurl(Finger.Thumb, FingerCurl.HalfCurl, 0.9);
+
+    // Four fingers (Index, Middle, Ring, Pinky) folded over the tucked thumb
+    for (const finger of [Finger.Index, Finger.Middle, Finger.Ring, Finger.Pinky]) {
+      signalForHelpGesture.addCurl(finger, FingerCurl.FullCurl, 1.0);
+      signalForHelpGesture.addCurl(finger, FingerCurl.HalfCurl, 0.85);
+    }
+
+    GESTURE_ESTIMATOR = new GestureEstimator([signalForHelpGesture]);
+  } catch (err) {
+    console.warn("[Fingerpose] Rule initialization error:", err);
+  }
 }
-
-const GESTURE_ESTIMATOR = new GestureEstimator([signalForHelpGesture]);
 
 /**
  * 3D Geometric Invariant check for the Signal for Help.
@@ -319,8 +332,8 @@ export function useGestureDetection({
 
                 let fpMatch = false;
                 try {
-                  const estimation = GESTURE_ESTIMATOR.estimate(handLandmarks, 5.0);
-                  const found = estimation.gestures.find(
+                  const estimation = GESTURE_ESTIMATOR?.estimate(handLandmarks, 5.0);
+                  const found = estimation?.gestures?.find(
                     (g) => g.name === "signal_for_help" && g.score >= 5.0
                   );
                   if (found) fpMatch = true;
