@@ -41,10 +41,7 @@ mount("/checkin", checkinRouter);
 mount("/security", duressRouter);
 mount("/evidence", evidenceRouter);
 mount("/heartbeat", heartbeatRouter);
-<<<<<<< HEAD
 mount("/police", policeRouter);
-=======
->>>>>>> c2e7849a6003318640d9e7aa82668477f1172799
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 app.get("/api/health", (req, res) => res.json({ ok: true }));
