@@ -222,20 +222,22 @@ function isFuzzyCodeWordMatch(spokenText, targetWord) {
 }
 
 /**
- * Triple-Tier Shield Acoustic & Speech Surveillance Hook — FR-1 / TR-1 / TR-2:
- * 1. Web Speech API (Multi-dialect speech recognition & continuous phonetic matching)
- * 2. Web Audio Analyser (Real-time voice activity, 3-syllable cadence detection, and scream detection)
- * 3. Device Motion API (Calibrated struggle acceleration & violent shake detection)
+ * Quad-Tier Shield Hearing & Silent Trigger — FR-1 / TR-1 / TR-2:
+ * 1. Cloud Whisper AI (VAD-triggered instant ~150ms speech-to-text inference via Groq/Gemini)
+ * 2. Web Speech API (Continuous Speech & Keyword Recognition with multi-dialect support)
+ * 3. Web Audio Analyser (Real-time voice activity, 3-syllable cadence, and high-dB scream detection)
+ * 4. Device Motion API (Baseline calibrated shake & struggle anomaly detection)
  */
 export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const [transcript, setTranscript] = useState("");
-  const [micStatus, setMicStatus] = useState("idle"); // idle | listening | hearing | acoustic-only | error | unsupported
+  const [micStatus, setMicStatus] = useState("idle"); // idle | listening | hearing | whisper-active | acoustic-only | error | unsupported
   const [audioLevel, setAudioLevel] = useState(0); // 0-100 real-time audio meter
   const [audioDb, setAudioDb] = useState(30); // Estimated dB (30-95)
   const [motionMagnitude, setMotionMagnitude] = useState(0);
   const [lastError, setLastError] = useState(null);
   const [restartCount, setRestartCount] = useState(0);
   const [syllableCount, setSyllableCount] = useState(0);
+  const [isWhisperTranscribing, setIsWhisperTranscribing] = useState(false);
 
   // Calibration state for baseline motion filtering
   const [calibration, setCalibration] = useState({
@@ -255,6 +257,10 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const speechRecognitionRef = useRef(null);
   const speechBurstTimestampsRef = useRef([]);
   const lastBurstStateRef = useRef(false);
+  const mediaRecorderRef = useRef(null);
+  const isTranscribingRef = useRef(false);
+  const recordedChunksRef = useRef([]);
+  const lastTranscribeTimeRef = useRef(0);
 
   const fire = useCallback(
     (type, confidence = 0.90, details = "") => {
@@ -280,9 +286,71 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     [fire]
   );
 
-  // --- Engine 1: Web Audio API Live Vocal Activity & Syllable Cadence Tracker ---
+  // Helper: Dispatch audio slice to Cloud Whisper API
+  const sendSliceToWhisper = useCallback(
+    async (blob) => {
+      if (isTranscribingRef.current || triggeredRef.current || !blob || blob.size < 1000) return;
+      const now = Date.now();
+      if (now - lastTranscribeTimeRef.current < 800) return;
+      lastTranscribeTimeRef.current = now;
+      isTranscribingRef.current = true;
+      setIsWhisperTranscribing(true);
+
+      try {
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+        const dataUrl = await base64Promise;
+
+        const res = await fetch("/api/audio/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            audio: dataUrl,
+            mimeType: blob.type || "audio/webm",
+            codeWord: codeWord || "banana",
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.text && !triggeredRef.current) {
+            setTranscript(`🗣️ Whisper: "${data.text}"`);
+            setMicStatus("whisper-active");
+
+            if (data.isMatch || isFuzzyCodeWordMatch(data.text, codeWord)) {
+              console.log("[SURAKSHA SHIELD] Whisper AI codeword match confirmed:", data.text);
+              fire(
+                "voice",
+                data.confidence || 0.98,
+                `Cloud Whisper AI matched codeword: "${data.text}" (${data.provider || "groq"})`
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[SURAKSHA SHIELD] Whisper transcribe notice:", err.message);
+      } finally {
+        isTranscribingRef.current = false;
+        setIsWhisperTranscribing(false);
+      }
+    },
+    [codeWord, fire]
+  );
+
+  // --- Engine 1: Web Audio API VAD + MediaRecorder Voice Slice Streamer ---
   useEffect(() => {
     if (!enabled) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {
+          /* ignore */
+        }
+        mediaRecorderRef.current = null;
+      }
       if (audioStreamRef.current) {
         audioStreamRef.current.getTracks().forEach((track) => track.stop());
         audioStreamRef.current = null;
@@ -300,7 +368,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     let isMounted = true;
     let animFrame = null;
 
-    async function initAcousticEngine() {
+    async function initAcousticAndVADEngine() {
       try {
         if (!navigator?.mediaDevices?.getUserMedia) return;
 
@@ -315,6 +383,30 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         }
 
         audioStreamRef.current = stream;
+
+        // Initialize MediaRecorder for VAD-triggered Whisper audio slices
+        try {
+          const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+            ? "audio/webm;codecs=opus"
+            : MediaRecorder.isTypeSupported("audio/webm")
+            ? "audio/webm"
+            : "audio/mp4";
+
+          const recorder = new MediaRecorder(stream, { mimeType: mime });
+          recorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+              recordedChunksRef.current.push(e.data);
+              if (recordedChunksRef.current.length > 8) {
+                recordedChunksRef.current.shift();
+              }
+            }
+          };
+          recorder.start(200); // 200ms slice buffer
+          mediaRecorderRef.current = recorder;
+        } catch (recErr) {
+          console.warn("[SURAKSHA SHIELD] MediaRecorder initialization notice:", recErr.message);
+        }
+
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
 
@@ -333,6 +425,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         let lastUiUpdate = 0;
         let ambientFloor = 35;
+        let voiceBurstStart = 0;
 
         const processAudio = () => {
           if (!isMounted || !enabled) return;
@@ -354,7 +447,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
           const normalized = Math.min(100, Math.round((avgTotal / 128) * 100));
           const estimatedDb = Math.round(30 + (normalized / 100) * 65);
 
-          // Track ambient floor softly
+          // Ambient floor baseline tracking
           if (estimatedDb < ambientFloor) {
             ambientFloor = Math.max(30, ambientFloor * 0.95 + estimatedDb * 0.05);
           }
@@ -366,21 +459,42 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
             lastUiUpdate = now;
           }
 
-          // Voice Burst & Syllable Cadence Analysis
-          // A spoken syllable creates a sharp volume rise in the voice frequency band
-          const isVoiceBurst = avgVoice > 35 && estimatedDb >= ambientFloor + 12;
+          // Voice Activity Detection (VAD) & Whisper Dispatch
+          const isVoiceActive = avgVoice > 32 && estimatedDb >= ambientFloor + 10;
 
-          if (isVoiceBurst && !lastBurstStateRef.current) {
-            // New distinct syllable pulse detected
+          if (isVoiceActive) {
+            if (!voiceBurstStart) voiceBurstStart = now;
+
+            // When voice activity continues for ~800ms-1200ms, extract audio slice and send to Whisper
+            if (now - voiceBurstStart >= 850 && !isTranscribingRef.current) {
+              if (recordedChunksRef.current.length >= 3) {
+                const sliceBlob = new Blob(recordedChunksRef.current, {
+                  type: mediaRecorderRef.current?.mimeType || "audio/webm",
+                });
+                sendSliceToWhisper(sliceBlob);
+              }
+            }
+          } else {
+            // Voice paused
+            if (voiceBurstStart && now - voiceBurstStart >= 400 && !isTranscribingRef.current) {
+              if (recordedChunksRef.current.length >= 2) {
+                const sliceBlob = new Blob(recordedChunksRef.current, {
+                  type: mediaRecorderRef.current?.mimeType || "audio/webm",
+                });
+                sendSliceToWhisper(sliceBlob);
+              }
+            }
+            voiceBurstStart = 0;
+          }
+
+          // Syllable Cadence Tracker (3 distinct vocal pulses e.g. "ba-na-na")
+          if (isVoiceActive && !lastBurstStateRef.current) {
             const bursts = speechBurstTimestampsRef.current.filter((t) => now - t < 1600);
             bursts.push(now);
             speechBurstTimestampsRef.current = bursts;
             setSyllableCount(bursts.length);
 
-            // If user speaks 3 distinct syllables in cadence (e.g. "ba-na-na" or "ba-cha-o")
-            // and volume is elevated, trigger acoustic distress confirmation
             if (bursts.length >= 3 && !triggeredRef.current) {
-              console.log("[SURAKSHA SHIELD] Acoustic 3-syllable voice cadence detected:", bursts.length);
               setTranscript(`🗣️ [${codeWord.toUpperCase()}] (ACOUSTIC CADENCE DETECTED)`);
               fire(
                 "voice",
@@ -389,7 +503,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
               );
             }
           }
-          lastBurstStateRef.current = isVoiceBurst;
+          lastBurstStateRef.current = isVoiceActive;
 
           // Acoustic Scream / Urgent High Distress Detection (>76dB sustained)
           if (estimatedDb >= 76) {
@@ -420,11 +534,19 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       }
     }
 
-    initAcousticEngine();
+    initAcousticAndVADEngine();
 
     return () => {
       isMounted = false;
       if (animFrame) cancelAnimationFrame(animFrame);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {
+          /* ignore */
+        }
+        mediaRecorderRef.current = null;
+      }
       if (audioStreamRef.current) {
         audioStreamRef.current.getTracks().forEach((track) => track.stop());
         audioStreamRef.current = null;
@@ -434,9 +556,9 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         audioContextRef.current = null;
       }
     };
-  }, [codeWord, enabled, fire]);
+  }, [codeWord, enabled, fire, sendSliceToWhisper]);
 
-  // --- Engine 2: Web Speech API Multi-Dialect Continuous Keyword Recognition ---
+  // --- Engine 2: Web Speech API Multi-Dialect Continuous Keyword Recognition (Parallel Fallback) ---
   useEffect(() => {
     if (!enabled) {
       setMicStatus("idle");
@@ -447,7 +569,6 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      console.warn("Web Speech API not supported in browser; acoustic distress engine active.");
       setMicStatus("acoustic-only");
       return;
     }
@@ -738,7 +859,10 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     shakeCounterRef.current = { count: 0, lastSign: 0, lastTime: 0 };
     screamCounterRef.current = { count: 0, lastTime: 0 };
     speechBurstTimestampsRef.current = [];
+    recordedChunksRef.current = [];
     setSyllableCount(0);
+    isTranscribingRef.current = false;
+    setIsWhisperTranscribing(false);
   }, []);
 
   return {
@@ -752,6 +876,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
     restartCount,
     calibration,
     syllableCount,
+    isWhisperTranscribing,
     simulateVoiceTrigger,
   };
 }

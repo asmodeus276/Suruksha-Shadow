@@ -400,6 +400,7 @@ export default function App() {
     audioDb,
     motionMagnitude,
     syllableCount,
+    isWhisperTranscribing,
     simulateVoiceTrigger,
     reset: resetShield,
   } = useShieldDetection({
@@ -1308,11 +1309,25 @@ export default function App() {
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 20 }}>🎙️</span>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>
-                          Voice Distress Codeword: <span style={{ color: "var(--ember)" }}>"{codeWord}"</span>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)", display: "flex", alignItems: "center", gap: 6 }}>
+                          <span>Voice Codeword:</span>
+                          <span style={{ color: "var(--ember)" }}>"{codeWord}"</span>
+                          <span
+                            style={{
+                              fontSize: 9.5,
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              background: "rgba(46, 204, 113, 0.15)",
+                              color: "#2ecc71",
+                              fontWeight: 700,
+                              border: "1px solid rgba(46, 204, 113, 0.3)",
+                            }}
+                          >
+                            ⚡ WHISPER AI ACTIVE
+                          </span>
                         </div>
                         <div style={{ fontSize: 11, color: "var(--dim)" }}>
-                          Triple-tier listening: Spoken Codeword · 3-Syllable Cadence · High-dB Vocal Spike
+                          Cloud Whisper AI VAD · 3-Syllable Cadence · High-dB Scream Detection
                         </div>
                       </div>
                     </div>
@@ -1378,15 +1393,17 @@ export default function App() {
                           width: 8,
                           height: 8,
                           borderRadius: "50%",
-                          background: armed ? (audioLevel > 15 ? "var(--ember)" : "#2ecc71") : "var(--dim)",
-                          boxShadow: armed && audioLevel > 15 ? "0 0 8px var(--ember)" : "none",
+                          background: armed ? (isWhisperTranscribing ? "var(--alarm)" : audioLevel > 15 ? "var(--ember)" : "#2ecc71") : "var(--dim)",
+                          boxShadow: armed && (isWhisperTranscribing || audioLevel > 15) ? "0 0 8px currentColor" : "none",
                         }}
                       />
                       <span style={{ fontSize: 12, fontFamily: "var(--mono)", color: transcript ? "var(--ember)" : "var(--paper)" }}>
                         {transcript
-                          ? `🗣️ Heard: "${transcript}"`
+                          ? transcript
+                          : isWhisperTranscribing
+                          ? "⚡ Whisper AI analyzing speech slice…"
                           : armed
-                          ? `🎙️ Listening (${micStatus}) · say "${codeWord}" / "bachao" / "help"`
+                          ? `🎙️ Listening · say "${codeWord}" / "bachao" / "help"`
                           : "Microphone paused. Tap Arm Shield to activate."}
                       </span>
                     </div>

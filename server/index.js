@@ -18,13 +18,14 @@ import duressRouter from "./routes/duress.js";
 import evidenceRouter from "./routes/evidence.js";
 import heartbeatRouter from "./routes/heartbeat.js";
 import policeRouter from "./routes/police.js";
+import transcribeRouter from "./routes/transcribe.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "2mb" })); // ambient-audio chunks are small but bigger than typical JSON bodies
+app.use(express.json({ limit: "4mb" })); // allow audio chunks
 
 function mount(routePath, router) {
   app.use(`/api${routePath}`, router);
@@ -35,6 +36,7 @@ mount("/sos", sosRouter);
 mount("/emergency", pingRouter);
 mount("/emergency", audioRouter);
 mount("/emergency", checklistRouter);
+mount("/audio", transcribeRouter);
 mount("/fake-call", fakeCallRouter);
 mount("/contacts", contactsRouter);
 mount("/consent", consentRouter);
