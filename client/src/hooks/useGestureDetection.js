@@ -187,6 +187,10 @@ export function useGestureDetection({
   const [gestureMatched, setGestureMatched] = useState(false);
   const [diagnosticInfo, setDiagnosticInfo] = useState("Camera off");
 
+  const [facingMode, setFacingMode] = useState("user");
+  const [deviceIndex, setDeviceIndex] = useState(0);
+  const [availableDevices, setAvailableDevices] = useState([]);
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const animFrameIdRef = useRef(null);
@@ -236,7 +240,7 @@ export function useGestureDetection({
   }, []);
 
   // Request camera stream and start HandLandmarker loop
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (targetDeviceId = null, targetFacingMode = null) => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setStatus("unsupported");
       setLastError("Camera not supported on this device/browser");
@@ -252,15 +256,27 @@ export function useGestureDetection({
       // Load or retrieve cached MediaPipe HandLandmarker
       const landmarker = await getHandLandmarker();
 
-      // Request front-facing camera with fallback
+      // Enumerate available camera devices
+      try {
+        const devs = await navigator.mediaDevices.enumerateDevices();
+        const vDevs = devs.filter((d) => d.kind === "videoinput");
+        setAvailableDevices(vDevs);
+      } catch {
+        // ignore enumeration errors
+      }
+
+      // Request camera stream with fallback
       let stream;
+      const desiredFacing = targetFacingMode || facingMode;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-          },
+          video: targetDeviceId
+            ? { deviceId: { exact: targetDeviceId } }
+            : {
+                facingMode: desiredFacing ? { ideal: desiredFacing } : undefined,
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+              },
           audio: false,
         });
       } catch {
@@ -449,6 +465,20 @@ export function useGestureDetection({
     }
   }, [isCameraActive]);
 
+  // Cycle through available camera devices or flip front/back
+  const cycleCamera = useCallback(() => {
+    if (availableDevices.length > 1) {
+      const nextIdx = (deviceIndex + 1) % availableDevices.length;
+      setDeviceIndex(nextIdx);
+      const nextDevice = availableDevices[nextIdx];
+      startCamera(nextDevice.deviceId);
+    } else {
+      const nextFacing = facingMode === "user" ? "environment" : "user";
+      setFacingMode(nextFacing);
+      startCamera(null, nextFacing);
+    }
+  }, [availableDevices, deviceIndex, facingMode, startCamera]);
+
   return {
     status,
     isCameraActive,
@@ -458,6 +488,9 @@ export function useGestureDetection({
     diagnosticInfo,
     lastError,
     videoRef,
+    availableDevices,
+    facingMode,
+    cycleCamera,
     startCamera,
     stopCamera,
     toggleCameraWatch,

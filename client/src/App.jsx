@@ -495,6 +495,7 @@ export default function App() {
     diagnosticInfo: cameraDiagnostic,
     lastError: cameraError,
     videoRef,
+    cycleCamera,
     toggleCameraWatch,
     stopCamera,
     reset: resetGesture,
@@ -2179,7 +2180,26 @@ export default function App() {
                 Camera Watch
               </span>
             </div>
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", gap: 5 }}>
+              <button
+                type="button"
+                onClick={cycleCamera}
+                title="Switch camera device / flip camera"
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  border: "none",
+                  color: "var(--paper)",
+                  padding: "3px 6px",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  fontSize: 10.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                }}
+              >
+                🔄
+              </button>
               <button
                 type="button"
                 onClick={() => setCameraViewfinderOpen(false)}
@@ -2234,6 +2254,7 @@ export default function App() {
         >
           <video
             ref={videoRef}
+            autoPlay
             playsInline
             webkit-playsinline="true"
             muted
