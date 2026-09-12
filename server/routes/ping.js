@@ -2,11 +2,13 @@ import { Router } from "express";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
 import { broadcastToGuardian } from "../lib/broadcast.js";
+import { sendSms } from "../lib/sms.js";
 import {
   inMemoryEvents,
   inMemoryEventsByToken,
   inMemoryTimeline,
   inMemoryPings,
+  inMemoryContacts,
 } from "../lib/memoryStore.js";
 
 const router = Router();
@@ -255,6 +257,40 @@ router.post("/:eventId/resolve", async (req, res) => {
       details: "Primary User marked themselves safe",
       created_at: endTime,
     });
+  }
+
+  // Dispatch "I'm Safe" confirmation SMS to trusted contacts
+  try {
+    let targetUserId = memEvent?.user_id;
+    if (!targetUserId) {
+      const { data: evRow } = await supabase
+        .from("emergency_events")
+        .select("user_id")
+        .eq("id", eventId)
+        .maybeSingle();
+      if (evRow?.user_id) targetUserId = evRow.user_id;
+    }
+
+    let contacts = [];
+    if (targetUserId) {
+      const { data: dbContacts } = await supabase
+        .from("trusted_contacts")
+        .select("phone, name")
+        .eq("user_id", targetUserId);
+      if (dbContacts && dbContacts.length > 0) contacts = dbContacts;
+      if (contacts.length === 0) {
+        contacts = inMemoryContacts.get(targetUserId) || [];
+      }
+    }
+
+    if (contacts && contacts.length > 0) {
+      const safeSms = "🟢 SURAKSHA SHADOW: Emergency resolved. Your contact has marked themselves SAFE and deactivated the alert.";
+      Promise.allSettled(
+        contacts.map((c) => sendSms(c.phone, safeSms))
+      ).catch(() => {});
+    }
+  } catch (smsErr) {
+    console.warn("Failed to dispatch safety confirmation SMS:", smsErr.message);
   }
 
   return res.json({ ok: true, evidenceHash });

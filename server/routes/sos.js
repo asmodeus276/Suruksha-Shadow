@@ -128,7 +128,7 @@ router.post("/", async (req, res) => {
       (contacts || []).map((contact) =>
         sendSms(
           contact.phone,
-          `Suraksha Shadow [${smsTag}]: your contact may need help. Live status: ${guardianUrl}`
+          `🚨 SURAKSHA SHADOW [${smsTag}]: Your contact may need immediate assistance! Track live GPS & status: ${guardianUrl}`
         )
       )
     );
@@ -184,7 +184,7 @@ router.post("/", async (req, res) => {
       contacts.map((contact) =>
         sendSms(
           contact.phone,
-          `Suraksha Shadow [${smsTag}]: your contact may need help. Live status: ${guardianUrl}`
+          `🚨 SURAKSHA SHADOW [${smsTag}]: Your contact may need immediate assistance! Track live GPS & status: ${guardianUrl}`
         )
       )
     ).catch(() => {});
@@ -273,6 +273,30 @@ router.post("/verify-pin", async (req, res) => {
       if (memEvent) {
         memEvent.status = "resolved";
         memEvent.end_time = new Date().toISOString();
+      }
+
+      // Notify trusted contacts that user is safe
+      try {
+        let contactsList = [];
+        if (userId) {
+          const { data: dbContacts } = await supabase
+            .from("trusted_contacts")
+            .select("phone, name")
+            .eq("user_id", userId);
+          if (dbContacts && dbContacts.length > 0) contactsList = dbContacts;
+        }
+        if (contactsList.length === 0) {
+          contactsList = inMemoryContacts.get(userId) || [];
+        }
+
+        if (contactsList.length > 0) {
+          const safeMsg = "🟢 SURAKSHA SHADOW: Emergency resolved. Your contact entered their PIN and marked themselves SAFE.";
+          Promise.allSettled(
+            contactsList.map((c) => sendSms(c.phone, safeMsg))
+          ).catch(() => {});
+        }
+      } catch (err) {
+        console.warn("Failed to dispatch safe confirmation SMS:", err.message);
       }
 
       return res.json({ status: "DEACTIVATED" });

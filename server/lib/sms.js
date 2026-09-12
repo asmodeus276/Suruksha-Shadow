@@ -2,15 +2,16 @@
  * Multi-Provider SMS Dispatcher for Suraksha Shadow
  * --------------------------------------------------
  * Supports:
- *  1. Twilio (Free Trial / Global / E.164 format)
- *  2. Fast2SMS (India domestic)
- *  3. Demo Mode (Zero cost / simulated log fallback)
+ *  1. Textbee.dev (Free Open-Source Android SMS Gateway / E.164)
+ *  2. Twilio (Free Trial / Global / E.164 format)
+ *  3. Fast2SMS (India domestic)
+ *  4. Demo Mode (Zero cost / simulated log fallback)
  *
- * Uses native fetch with standard basic auth (no extra dependencies needed).
+ * Uses native fetch (no extra dependencies needed).
  */
 
 /**
- * Format number to international E.164 (+919876543210) for Twilio.
+ * Format number to international E.164 (+919876543210) for Textbee / Twilio.
  */
 export function formatToE164(raw) {
   const digitsOnly = String(raw).replace(/\D/g, "");
@@ -34,6 +35,56 @@ export function normalizeToTenDigitIndian(raw) {
   if (digitsOnly.length === 13 && digitsOnly.startsWith("091"))
     return digitsOnly.slice(3);
   return null;
+}
+
+/**
+ * Send an SMS via Textbee.dev API (https://textbee.dev).
+ * Turns your Android phone into an automated SMS gateway.
+ */
+async function sendViaTextbee(numbers, message) {
+  const apiKey = process.env.TEXTBEE_API_KEY;
+  const deviceId = process.env.TEXTBEE_DEVICE_ID;
+
+  const numberList = Array.isArray(numbers)
+    ? numbers
+    : String(numbers)
+        .split(",")
+        .map((n) => n.trim())
+        .filter(Boolean);
+
+  const e164Numbers = numberList.map(formatToE164).filter(Boolean);
+  if (e164Numbers.length === 0) {
+    throw new Error("No valid phone numbers found for Textbee dispatch");
+  }
+
+  const payload = {
+    recipients: e164Numbers,
+    message,
+  };
+
+  if (deviceId && deviceId.trim()) {
+    payload.deviceId = deviceId.trim();
+  }
+
+  const response = await fetch("https://api.textbee.dev/api/v1/gateway/send-sms", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(12000),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "(no response body)");
+    throw new Error(
+      `Textbee dispatch failed with HTTP ${response.status}: ${errorBody}`
+    );
+  }
+
+  const data = await response.json().catch(() => ({ ok: true }));
+  return { ok: true, provider: "textbee", recipients: e164Numbers.length, data };
 }
 
 /**
@@ -114,8 +165,8 @@ async function sendViaFast2Sms(numbers, message) {
 }
 
 /**
- * Main sendSms function. Automatically routes through Twilio, Fast2SMS,
- * or Demo Mode depending on what credentials are configured in .env.
+ * Main sendSms function. Automatically routes through Textbee, Twilio,
+ * Fast2SMS, or Demo Mode depending on what credentials are configured in .env.
  *
  * @param {string | string[]} numbers Phone number or array of numbers
  * @param {string} message The alert message text
@@ -134,6 +185,11 @@ export async function sendSms(numbers, message) {
     return { ok: false, error: "Recipient list is empty" };
   }
 
+  const isTextbeeConfigured =
+    Boolean(process.env.TEXTBEE_API_KEY) &&
+    process.env.TEXTBEE_API_KEY !== "placeholder" &&
+    process.env.TEXTBEE_API_KEY !== "your_textbee_api_key_here";
+
   const isTwilioConfigured =
     Boolean(process.env.TWILIO_ACCOUNT_SID) &&
     Boolean(process.env.TWILIO_AUTH_TOKEN) &&
@@ -143,9 +199,12 @@ export async function sendSms(numbers, message) {
     Boolean(process.env.FAST2SMS_API_KEY) &&
     process.env.FAST2SMS_API_KEY !== "placeholder";
 
+  const providerPreference = (process.env.SMS_PROVIDER || "").toLowerCase().trim();
+
   const isDemoMode =
     process.env.SMS_DEMO_MODE === "true" ||
-    (!isTwilioConfigured && !isFast2SmsConfigured);
+    providerPreference === "demo" ||
+    (!isTextbeeConfigured && !isTwilioConfigured && !isFast2SmsConfigured);
 
   if (isDemoMode) {
     console.log(
@@ -156,8 +215,27 @@ export async function sendSms(numbers, message) {
     return { ok: true, demo: true, recipients: numberList.length };
   }
 
-  // --- Twilio Dispatch ---
-  if (isTwilioConfigured) {
+  // --- 1. Textbee Dispatch (Default / Preferred if configured or SMS_PROVIDER=textbee) ---
+  if ((providerPreference === "textbee" || !providerPreference) && isTextbeeConfigured) {
+    try {
+      console.log(
+        `[Textbee] Dispatching alert to ${numberList.length} contact(s)...`
+      );
+      const res = await sendViaTextbee(numberList, message);
+      console.log(`[Textbee] Alert successfully dispatched:`, res);
+      return res;
+    } catch (err) {
+      console.error("[Textbee] Dispatch failed:", err.message);
+      // If Textbee was specifically requested, don't silently fallback unless others exist
+      if (providerPreference === "textbee") {
+        return { ok: false, error: err.message };
+      }
+      console.warn("[Textbee] Falling back to secondary SMS providers...");
+    }
+  }
+
+  // --- 2. Twilio Dispatch ---
+  if ((providerPreference === "twilio" || !providerPreference) && isTwilioConfigured) {
     try {
       console.log(
         `[Twilio] Dispatching alert to ${numberList.length} contact(s)...`
@@ -184,12 +262,14 @@ export async function sendSms(numbers, message) {
       };
     } catch (err) {
       console.error("[Twilio] Unexpected error during dispatch:", err.message);
-      return { ok: false, error: err.message };
+      if (providerPreference === "twilio") {
+        return { ok: false, error: err.message };
+      }
     }
   }
 
-  // --- Fast2SMS Dispatch ---
-  if (isFast2SmsConfigured) {
+  // --- 3. Fast2SMS Dispatch ---
+  if ((providerPreference === "fast2sms" || !providerPreference) && isFast2SmsConfigured) {
     try {
       const tenDigitNumbers = numberList
         .map(normalizeToTenDigitIndian)
@@ -209,5 +289,5 @@ export async function sendSms(numbers, message) {
     }
   }
 
-  return { ok: false, error: "No SMS gateway configured" };
+  return { ok: false, error: "No configured SMS gateway available" };
 }
