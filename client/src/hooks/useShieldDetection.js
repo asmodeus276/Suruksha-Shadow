@@ -109,6 +109,17 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
   const [lastError, setLastError] = useState(null);
   const [restartCount, setRestartCount] = useState(0);
 
+  // Keep latest codeWord and onTrigger in refs so recognition is never torn down on re-renders
+  const codeWordRef = useRef(codeWord);
+  useEffect(() => {
+    codeWordRef.current = codeWord;
+  }, [codeWord]);
+
+  const onTriggerRef = useRef(onTrigger);
+  useEffect(() => {
+    onTriggerRef.current = onTrigger;
+  }, [onTrigger]);
+
   // Calibration state for baseline motion filtering
   const [calibration, setCalibration] = useState({
     isCalibrating: false,
@@ -127,19 +138,24 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       if (triggeredRef.current) return;
       triggeredRef.current = true;
       console.log(`[SURAKSHA SHIELD] LIVE sensor trigger fired: ${type} (Confidence: ${Math.round(confidence * 100)}%)`);
-      onTrigger?.({
+      onTriggerRef.current?.({
         triggerType: type,
         mode: "live",
         confidence,
         details: details || `Live sensor trigger: ${type}`,
       });
     },
-    [onTrigger]
+    []
   );
 
   // --- Voice trigger: listen continuously for the code word ---
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      setMicStatus("idle");
+      setTranscript("");
+      return;
+    }
+
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -167,70 +183,103 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
       };
 
       recognition.onresult = (event) => {
-        const display = Array.from(event.results)
-          .map((r) => r[0].transcript)
+        const fullTranscript = Array.from(event.results)
+          .map((r) => r[0]?.transcript || "")
           .join(" ")
           .toLowerCase();
-        setTranscript(display);
+        setTranscript(fullTranscript);
 
+        const currentTarget = (codeWordRef.current || "").toLowerCase().trim();
         let matched = false;
         let matchConfidence = 0.85;
 
-        for (const result of event.results) {
-          for (let i = 0; i < result.length; i++) {
-            const alt = result[i].transcript.toLowerCase();
-            const cleanTarget = (codeWord || "").toLowerCase().trim();
+        // 1. Direct check in the full combined transcript
+        if (currentTarget && fullTranscript.includes(currentTarget)) {
+          matched = true;
+          matchConfidence = 0.98;
+        }
 
-            if (cleanTarget && alt.includes(cleanTarget)) {
+        // 2. Check universal emergency keywords
+        if (!matched) {
+          for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
+            if (fullTranscript.includes(universal)) {
               matched = true;
-              matchConfidence = 0.98; // Exact substring match
-              break;
-            }
-
-            for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
-              if (alt.includes(universal)) {
-                matched = true;
-                matchConfidence = 0.95; // Universal emergency keyword
-                break;
-              }
-            }
-
-            if (!matched && isFuzzyCodeWordMatch(alt, codeWord)) {
-              matched = true;
-              matchConfidence = 0.80; // Fuzzy phonetic match
+              matchConfidence = 0.95;
               break;
             }
           }
-          if (matched) break;
+        }
+
+        // 3. Fuzzy match full transcript
+        if (!matched && currentTarget && isFuzzyCodeWordMatch(fullTranscript, currentTarget)) {
+          matched = true;
+          matchConfidence = 0.85;
+        }
+
+        // 4. Check each speech recognition alternative
+        if (!matched) {
+          for (const result of event.results) {
+            for (let i = 0; i < result.length; i++) {
+              const alt = (result[i]?.transcript || "").toLowerCase();
+
+              if (currentTarget && alt.includes(currentTarget)) {
+                matched = true;
+                matchConfidence = 0.98;
+                break;
+              }
+
+              for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
+                if (alt.includes(universal)) {
+                  matched = true;
+                  matchConfidence = 0.95;
+                  break;
+                }
+              }
+
+              if (!matched && currentTarget && isFuzzyCodeWordMatch(alt, currentTarget)) {
+                matched = true;
+                matchConfidence = 0.80;
+                break;
+              }
+            }
+            if (matched) break;
+          }
         }
 
         if (matched) {
-          fire("voice", matchConfidence, `Spoken keyword matched in transcript: "${display.slice(-40)}"`);
+          console.log(`[SURAKSHA VOICE] Codeword detected! Target: "${currentTarget}", Spoken: "${fullTranscript}"`);
+          fire("voice", matchConfidence, `Spoken keyword matched in transcript: "${fullTranscript.slice(-40)}"`);
         }
       };
 
       recognition.onend = () => {
-        if (stopped || !enabled || triggeredRef.current) return;
-        const delay = Math.min(300 + consecutiveErrors * 300, 2500);
+        if (stopped || !enabled || triggeredRef.current) {
+          setMicStatus("idle");
+          return;
+        }
+        // Continuous listening auto-restart
+        const delay = Math.min(150 + consecutiveErrors * 200, 2000);
         restartTimeout = setTimeout(() => {
+          if (stopped || !enabled || triggeredRef.current) return;
           setRestartCount((n) => n + 1);
           current = createRecognition();
           try {
             current.start();
           } catch {
-            /* ignore */
+            /* ignore concurrent start race */
           }
         }, delay);
       };
 
       recognition.onerror = (e) => {
-        console.warn("Speech recognition error:", e.error);
         if (e.error === "not-allowed") {
+          console.warn("Speech recognition error:", e.error);
           setMicStatus("error");
           setLastError("Microphone permission denied");
-        } else if (e.error === "no-speech") {
-          // Normal silence, auto-recovers
+        } else if (e.error === "no-speech" || e.error === "aborted") {
+          // Normal silence or browser abort, auto-recovers on onend
         } else {
+          console.warn("Speech recognition non-fatal error:", e.error);
           consecutiveErrors += 1;
         }
       };
@@ -257,7 +306,7 @@ export function useShieldDetection({ codeWord, onTrigger, enabled = true }) {
         }
       }
     };
-  }, [codeWord, enabled, fire]);
+  }, [enabled, fire]);
 
   // --- Motion Calibration (3-second baseline capture upon arming) ---
   useEffect(() => {

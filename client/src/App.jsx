@@ -60,8 +60,6 @@ import {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL !== undefined
     ? import.meta.env.VITE_API_BASE_URL
-    : import.meta.env.DEV
-    ? "http://localhost:4000"
     : "";
 const USER_ID = getUserId();
 
@@ -367,10 +365,7 @@ export default function App() {
         setSaharaMessages([]);
         fakeCall.start();
         evidenceVault?.startAutomatedCapture?.(10000, data.eventId);
-        emergencySms.dispatchAlert(
-          contacts.map((c) => c.phone),
-          "CORAL"
-        );
+        // Note: Emergency SMS with live Guardian tracking is dispatched server-side by /api/sos
       } catch (err) {
         console.error("Failed to fire SOS:", err);
         isFiringRef.current = false;
@@ -488,6 +483,15 @@ export default function App() {
       resetGesture();
     } else {
       await requestMotionPermission();
+      // Explicitly prompt and unlock microphone permission so Web Speech API works immediately
+      if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+        try {
+          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          micStream.getTracks().forEach((track) => track.stop());
+        } catch (micErr) {
+          console.warn("Microphone access prompt failed or denied:", micErr);
+        }
+      }
       setArmed(true);
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try {
