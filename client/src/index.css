@@ -345,52 +345,60 @@ textarea::placeholder {
 .brand-badge {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   text-decoration: none;
   transition: transform var(--transition-fast);
 }
 
 .brand-icon-shield {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   background: #000000;
-  border: 1px solid rgba(232, 196, 104, 0.4);
+  border: 1.5px solid rgba(232, 196, 104, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 0 14px rgba(232, 196, 104, 0.35), inset 0 0 10px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 0 18px rgba(232, 196, 104, 0.4), inset 0 0 12px rgba(0, 0, 0, 0.9);
   flex-shrink: 0;
   overflow: visible;
-  padding: 2px;
+  padding: 3px;
+}
+
+@media (min-width: 640px) {
+  .brand-icon-shield {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+  }
 }
 
 .brand-logo-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
+  object-fit: contain;
+  border-radius: 10px;
   display: block;
-  filter: drop-shadow(0 0 4px rgba(232, 196, 104, 0.4));
+  filter: drop-shadow(0 0 6px rgba(232, 196, 104, 0.45));
   transition: transform 0.25s ease, filter 0.25s ease;
 }
 
 .brand-badge:hover .brand-logo-img {
-  transform: scale(1.05);
-  filter: drop-shadow(0 0 10px rgba(232, 196, 104, 0.7));
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 14px rgba(232, 196, 104, 0.8));
 }
 
 .brand-icon-shield .pulse-dot {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 9px;
-  height: 9px;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: var(--ember-container);
-  box-shadow: 0 0 8px var(--ember-container);
-  border: 1.5px solid #000000;
+  box-shadow: 0 0 10px var(--ember-container);
+  border: 2px solid #000000;
   animation: pulse-ring 2s infinite ease-in-out;
   z-index: 2;
 }
@@ -402,8 +410,8 @@ textarea::placeholder {
 
 .brand-title {
   font-family: var(--display);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--paper);
   line-height: 1.15;
@@ -411,13 +419,13 @@ textarea::placeholder {
 
 @media (min-width: 640px) {
   .brand-title {
-    font-size: 20px;
+    font-size: 23px;
   }
 }
 
 .brand-subtitle {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--mist-dim);
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -614,8 +622,8 @@ textarea::placeholder {
 }
 
 .guardian-circle {
-  width: 160px;
-  height: 160px;
+  width: 178px;
+  height: 178px;
   border-radius: 50%;
   border: 2px solid var(--line-highlight);
   background: radial-gradient(circle at 35% 35%, var(--surface-high) 0%, var(--surface-lowest) 100%);
@@ -623,9 +631,9 @@ textarea::placeholder {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   cursor: pointer;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.1);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   z-index: 5;
@@ -637,31 +645,31 @@ textarea::placeholder {
 }
 
 .guardian-circle .icon {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   color: var(--ember);
   transition: color 0.3s ease;
 }
 
 .guardian-circle-logo {
-  width: 46px;
-  height: 46px;
+  width: 66px;
+  height: 66px;
   object-fit: contain;
-  border-radius: 50%;
-  filter: drop-shadow(0 0 10px rgba(232, 196, 104, 0.5));
+  border-radius: 12px;
+  filter: drop-shadow(0 0 14px rgba(232, 196, 104, 0.65));
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
   display: block;
 }
 
 .guardian-circle:hover .guardian-circle-logo {
-  transform: scale(1.08);
-  filter: drop-shadow(0 0 16px rgba(232, 196, 104, 0.85));
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 24px rgba(232, 196, 104, 1));
 }
 
 .guardian-circle .label {
   font-family: var(--display);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 19px;
+  font-weight: 700;
   color: var(--paper);
   letter-spacing: -0.01em;
 }
