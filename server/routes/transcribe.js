@@ -187,16 +187,16 @@ function checkCodewordMatch(rawText, targetWord = "banana") {
     return { isMatch: false, matchedWord: "", confidence: 0, normalizedText: "" };
   }
 
-  // Normalize text: lowercase, strip punctuation/symbols, collapse whitespace
+  // Normalize text: lowercase, strip punctuation/symbols, collapse whitespace (preserve \p{M} matras)
   const normalizedText = rawText
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 
   const cleanTarget = (targetWord || "banana")
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 
