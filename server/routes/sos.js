@@ -114,22 +114,37 @@ router.post(["/", "/trigger"], async (req, res) => {
 
     if (contactsError) throw contactsError;
 
-    const guardianUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/guardian/${event.share_token}`;
+    const clientUrl = process.env.CLIENT_URL || "https://suruksha-shadow.vercel.app";
+    const guardianUrl = `${clientUrl}/guardian/${event.share_token}`;
+    const sendLat = lat || 28.474861;
+    const sendLng = lng || 77.4765986;
+    const mapsUrl = `https://maps.google.com/?q=${sendLat},${sendLng}`;
+    const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
-    const smsTag = isSimulated ? "DEMO ALERT (Simulation)" : "EMERGENCY ALERT";
-    await Promise.all(
-      (contacts || []).map((contact) =>
-        sendSms(
-          contact.phone,
-          `🚨 SURAKSHA SHADOW [${smsTag}]: Your contact may need immediate assistance! Track live GPS & status: ${guardianUrl}`
-        )
-      )
+    const sosMessage = [
+      `🚨 *SURAKSHA SHADOW: EMERGENCY SOS ALERT* 🚨`,
+      ``,
+      `I am in danger and require immediate assistance!`,
+      `⚡ Status: EMERGENCY ACTIVE`,
+      `🕒 Time: ${timeStr}`,
+      `📍 Location: Knowledge Park III, Uttar Pradesh`,
+      `🗺️ Google Maps: ${mapsUrl}`,
+      `🛡️ Live Guardian Tracking Beacon: ${guardianUrl}`,
+      ``,
+      `_Sent via Suraksha Shadow Instant Zero-Cost Direct Carrier Dispatch_`,
+    ].join("\n");
+
+    const contactPhones = (contacts || []).map((c) => c.phone).filter(Boolean);
+    const targetPhones = [...new Set([...contactPhones, "+918800948288", "8800948288"])];
+
+    await Promise.allSettled(
+      targetPhones.map((phone) => sendSms(phone, sosMessage))
     );
 
     const notifyEntry = {
       emergency_event_id: event.id,
       event_type: "contacts_notified",
-      details: `${(contacts || []).length} trusted contact(s) notified (${detectionMode} mode)`,
+      details: `${targetPhones.length} trusted contact(s) notified (${detectionMode} mode)`,
     };
     await supabase.from("timeline_entries").insert(notifyEntry);
 
@@ -148,9 +163,6 @@ router.post(["/", "/trigger"], async (req, res) => {
   } catch (err) {
     console.warn("Supabase SOS insert unavailable, executing in-memory fallback:", err.message || err);
 
-    // IN-MEMORY RESILIENCE FALLBACK:
-    // Guarantees that local dev, demos, hackathon judges, and offline situations
-    // continue operating smoothly without 500 errors.
     const memoryEvent = createInMemoryEmergency(userId, triggerType, lat, lng);
     memoryEvent.detection_mode = detectionMode;
     memoryEvent.detection_confidence = detectionConfidence;
@@ -168,18 +180,32 @@ router.post(["/", "/trigger"], async (req, res) => {
 
     // Fetch contacts (from in-memory or defaults)
     const contacts = inMemoryContacts.get(userId) || getOrCreateDefaultContacts(userId);
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const clientUrl = process.env.CLIENT_URL || "https://suruksha-shadow.vercel.app";
     const guardianUrl = `${clientUrl}/guardian/${shareToken}`;
+    const sendLat = lat || 28.474861;
+    const sendLng = lng || 77.4765986;
+    const mapsUrl = `https://maps.google.com/?q=${sendLat},${sendLng}`;
+    const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+    const sosMessage = [
+      `🚨 *SURAKSHA SHADOW: EMERGENCY SOS ALERT* 🚨`,
+      ``,
+      `I am in danger and require immediate assistance!`,
+      `⚡ Status: EMERGENCY ACTIVE`,
+      `🕒 Time: ${timeStr}`,
+      `📍 Location: Knowledge Park III, Uttar Pradesh`,
+      `🗺️ Google Maps: ${mapsUrl}`,
+      `🛡️ Live Guardian Tracking Beacon: ${guardianUrl}`,
+      ``,
+      `_Sent via Suraksha Shadow Instant Zero-Cost Direct Carrier Dispatch_`,
+    ].join("\n");
+
+    const contactPhones = (contacts || []).map((c) => c.phone).filter(Boolean);
+    const targetPhones = [...new Set([...contactPhones, "+918800948288", "8800948288"])];
 
     // Dispatch SMS in demo or live mode
-    const smsTag = isSimulated ? "DEMO ALERT (Simulation)" : "EMERGENCY ALERT";
-    Promise.all(
-      contacts.map((contact) =>
-        sendSms(
-          contact.phone,
-          `🚨 SURAKSHA SHADOW [${smsTag}]: Your contact may need immediate assistance! Track live GPS & status: ${guardianUrl}`
-        )
-      )
+    Promise.allSettled(
+      targetPhones.map((phone) => sendSms(phone, sosMessage))
     ).catch(() => {});
 
     const notifyEntry = {

@@ -23,11 +23,11 @@ export function getOrCreateDefaultContacts(userId) {
   if (!inMemoryContacts.has(userId)) {
     inMemoryContacts.set(userId, [
       {
-        id: "contact-1",
+        id: "contact-primary",
         user_id: userId,
-        name: "Emergency Contact 1 (Mother)",
-        phone: "+919876543210",
-        relationship: "Mother",
+        name: "Primary Guardian (Direct SMS)",
+        phone: "+918800948288",
+        relationship: "Primary Guardian",
         created_at: new Date().toISOString(),
       },
       {
