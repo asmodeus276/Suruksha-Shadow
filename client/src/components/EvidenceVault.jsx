@@ -13,6 +13,7 @@ import {
   isValidTxHash,
 } from "../lib/mstAnchor";
 import CameraWatch from "./CameraWatch";
+import PoliceFirModal from "./PoliceFirModal";
 import {
   getLatestOpticalBurst,
   generateSyntheticOpticalBurst,
@@ -53,6 +54,7 @@ export default function EvidenceVault({ refreshTrigger, onCapture }) {
   const [copiedId, setCopiedId] = useState(null);
   const [showMerkleModal, setShowMerkleModal] = useState(false);
   const [showBridgeKeyModal, setShowBridgeKeyModal] = useState(false);
+  const [showFirModal, setShowFirModal] = useState(false);
   const [inspectedProof, setInspectedProof] = useState(null);
 
   // Optical Burst State (BSA 2023 §63 / FRE 902)
@@ -516,6 +518,31 @@ ${
                 ? "Connecting…"
                 : "Connect BridgeKey"}
             </span>
+          </button>
+
+          {/* 1-Click Police FIR & Legal Dossier Generator */}
+          <button
+            id="fir-generator-launch-btn"
+            className="btn"
+            onClick={() => setShowFirModal(true)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 18px",
+              background: "linear-gradient(135deg, rgba(232, 196, 104, 0.2) 0%, rgba(184, 134, 11, 0.3) 100%)",
+              border: "1px solid var(--line-gold)",
+              color: "var(--ember)",
+              fontWeight: 700,
+              fontSize: 13,
+              borderRadius: "var(--radius-sm)",
+              boxShadow: "0 0 16px rgba(232, 196, 104, 0.25)",
+              cursor: "pointer",
+            }}
+            title="Generate Formal Police FIR & Judicial Dossier under BNSS §173 / BSA 2023 §63"
+          >
+            <span>⚖️</span>
+            <span>1-Click Police FIR Dossier</span>
           </button>
 
           <button
@@ -1757,6 +1784,16 @@ ${
           setOpticalBurst(record);
           setSelectedBurstFrame(0);
         }}
+      />
+
+      {/* 1-Click Police FIR & Forensic Legal Dossier Generator (BNSS §173 / BSA §63) */}
+      <PoliceFirModal
+        isOpen={showFirModal}
+        onClose={() => setShowFirModal(false)}
+        incident={records[0] || null}
+        opticalBurst={opticalBurst}
+        mstTxHash={mstTxHash}
+        mstExplorerUrl={mstExplorerUrl}
       />
     </div>
   );

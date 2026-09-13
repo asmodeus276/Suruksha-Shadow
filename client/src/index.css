@@ -1957,3 +1957,50 @@ textarea::placeholder {
   border-top: 1px solid var(--line);
 }
 
+/* ============================================================
+   POLICE FIR & JUDICIAL DOSSIER GENERATOR PRINT STYLES (A4)
+   ============================================================ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .fir-modal-backdrop,
+  .fir-modal-backdrop * {
+    visibility: visible;
+  }
+  .fir-modal-backdrop {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .fir-modal-container {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+  }
+  .fir-modal-header,
+  .fir-modal-tabs,
+  .no-print {
+    display: none !important;
+  }
+  .fir-modal-body {
+    background: #ffffff !important;
+    padding: 0 !important;
+  }
+  .fir-print-document {
+    padding: 0 !important;
+    box-shadow: none !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+}
+
+
