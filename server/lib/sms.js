@@ -102,14 +102,10 @@ async function sendViaTwilio(toNumber, message) {
     "base64"
   )}`;
 
-  // If on trial account, Twilio requires trial templates for international sends
-  const isTrial = accountSid.startsWith("AC");
-  const payloadBody = process.env.TWILIO_USE_RAW_BODY === "true" ? message : "sms_appointment_reminders";
-
   const bodyParams = new URLSearchParams({
     To: e164Number,
     From: fromNumber,
-    Body: payloadBody,
+    Body: message,
   });
 
   const response = await fetch(endpoint, {
@@ -215,8 +211,8 @@ export async function sendSms(numbers, message) {
     return { ok: true, demo: true, recipients: numberList.length };
   }
 
-  // --- 1. Textbee Dispatch (Default / Preferred if configured or SMS_PROVIDER=textbee) ---
-  if ((providerPreference === "textbee" || !providerPreference) && isTextbeeConfigured) {
+  // --- 1. Textbee Dispatch (Default / Preferred if configured) ---
+  if (isTextbeeConfigured) {
     try {
       console.log(
         `[Textbee] Dispatching alert to ${numberList.length} contact(s)...`
@@ -225,17 +221,12 @@ export async function sendSms(numbers, message) {
       console.log(`[Textbee] Alert successfully dispatched:`, res);
       return res;
     } catch (err) {
-      console.error("[Textbee] Dispatch failed:", err.message);
-      // If Textbee was specifically requested, don't silently fallback unless others exist
-      if (providerPreference === "textbee") {
-        return { ok: false, error: err.message };
-      }
-      console.warn("[Textbee] Falling back to secondary SMS providers...");
+      console.warn("[Textbee] Dispatch failed, falling back to secondary SMS provider:", err.message);
     }
   }
 
-  // --- 2. Twilio Dispatch ---
-  if ((providerPreference === "twilio" || !providerPreference) && isTwilioConfigured) {
+  // --- 2. Twilio Dispatch Fallback ---
+  if (isTwilioConfigured) {
     try {
       console.log(
         `[Twilio] Dispatching alert to ${numberList.length} contact(s)...`
@@ -254,17 +245,16 @@ export async function sendSms(numbers, message) {
         );
       }
 
-      return {
-        ok: successful.length > 0,
-        provider: "twilio",
-        sentCount: successful.length,
-        failedCount: failed.length,
-      };
-    } catch (err) {
-      console.error("[Twilio] Unexpected error during dispatch:", err.message);
-      if (providerPreference === "twilio") {
-        return { ok: false, error: err.message };
+      if (successful.length > 0) {
+        return {
+          ok: true,
+          provider: "twilio",
+          sentCount: successful.length,
+          failedCount: failed.length,
+        };
       }
+    } catch (err) {
+      console.warn("[Twilio] Unexpected error during dispatch:", err.message);
     }
   }
 

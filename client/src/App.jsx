@@ -963,7 +963,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Real-Time SMS Dispatch Notification Banner */}
+          {/* Real-Time Automated SMS Dispatch Notification Banner */}
           <div
             className="card rise-fade"
             style={{
@@ -982,51 +982,27 @@ export default function App() {
               <span style={{ fontSize: 20 }}>📲</span>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--safe)" }}>
-                  Emergency SMS Dispatched to 8800948288 &amp; Trusted Guardians
+                  Emergency SMS Automatically Dispatched to 8800948288 &amp; Trusted Guardians
                 </div>
                 <div style={{ fontSize: 11.5, color: "var(--paper)", marginTop: 2 }}>
-                  Live tracking beacon &amp; GPS coordinates transmitted via Direct Carrier Dispatch.
+                  Live tracking beacon &amp; GPS coordinates transmitted autonomously via GSM Gateway.
                 </div>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <button
-                className="btn-primary"
-                onClick={() =>
-                  emergencySms.openCarrierSms(
-                    contacts.map((c) => c.phone),
-                    activeShareToken,
-                    currentCoords || liveLocations[liveLocations.length - 1]
-                  )
-                }
-                style={{
-                  fontSize: 11.5,
-                  padding: "6px 12px",
-                  background: "#2563eb",
-                  borderColor: "#3b82f6",
-                }}
-              >
-                💬 1-Tap SIM SMS
-              </button>
-              <button
-                className="btn-primary"
-                onClick={() =>
-                  emergencySms.openWhatsAppSos(
-                    contacts.map((c) => c.phone),
-                    activeShareToken,
-                    currentCoords || liveLocations[liveLocations.length - 1]
-                  )
-                }
-                style={{
-                  fontSize: 11.5,
-                  padding: "6px 12px",
-                  background: "#16a34a",
-                  borderColor: "#22c55e",
-                }}
-              >
-                🟢 WhatsApp
-              </button>
-            </div>
+            <span
+              className="tag tag-safe"
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                background: "rgba(0, 230, 118, 0.2)",
+                border: "1px solid rgba(0, 230, 118, 0.5)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              ⚡ AUTO-DISPATCHED
+            </span>
           </div>
 
           {/* Quick Action Matrix for High Distress */}
