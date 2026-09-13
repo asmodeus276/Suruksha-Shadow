@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   ShieldIcon,
   ShieldAlertIcon,
@@ -6,7 +7,7 @@ import {
   FolderIcon,
 } from "./icons";
 
-export default function TacticalOverview({ onArm, armed, onSelectTab, onOpenDecoy, onOpenFakeCall, onOpenBlackout }) {
+function TacticalOverviewComponent({ onArm, armed, onSelectTab, onOpenDecoy, onOpenFakeCall, onOpenBlackout }) {
 
   return (
     <div className="tactical-overview-container rise-fade" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -381,3 +382,5 @@ export default function TacticalOverview({ onArm, armed, onSelectTab, onOpenDeco
     </div>
   );
 }
+
+export default memo(TacticalOverviewComponent);

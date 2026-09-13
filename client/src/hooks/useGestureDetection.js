@@ -198,6 +198,8 @@ export function useGestureDetection({
   const lastMatchTimeRef = useRef(0);
   const holdStartTimeRef = useRef(null);
   const triggeredRef = useRef(false);
+  const prevProgRef = useRef(0);
+  const prevDiagRef = useRef("");
 
   const fire = useCallback(
     (type = "gesture") => {
@@ -369,10 +371,15 @@ export function useGestureDetection({
                   }
                   const elapsed = wallNow - holdStartTimeRef.current;
                   const prog = Math.min(1, elapsed / holdDurationMs);
-                  setGestureProgress(prog);
-                  setDiagnosticInfo(
-                    `Holding distress signal: ${Math.round(prog * 100)}%`
-                  );
+                  if (Math.abs(prog - prevProgRef.current) >= 0.05 || prog >= 1 || prog === 0) {
+                    prevProgRef.current = prog;
+                    setGestureProgress(prog);
+                    const diag = `Holding distress signal: ${Math.round(prog * 100)}%`;
+                    if (diag !== prevDiagRef.current) {
+                      prevDiagRef.current = diag;
+                      setDiagnosticInfo(diag);
+                    }
+                  }
 
                   if (elapsed >= holdDurationMs) {
                     fire("gesture");
@@ -383,12 +390,14 @@ export function useGestureDetection({
 
                 // Real-time helpful guidance if not yet full match
                 if (!matched && !triggeredRef.current && !holdStartTimeRef.current) {
-                  if (!thumbTucked) {
-                    setDiagnosticInfo("Hand tracked — tuck thumb into palm");
-                  } else if (curledCount < 3) {
-                    setDiagnosticInfo("Thumb tucked — fold 4 fingers over thumb");
-                  } else {
-                    setDiagnosticInfo("Fold fingers over thumb to trigger signal");
+                  const diag = !thumbTucked
+                    ? "Hand tracked — tuck thumb into palm"
+                    : curledCount < 3
+                    ? "Thumb tucked — fold 4 fingers over thumb"
+                    : "Fold fingers over thumb to trigger signal";
+                  if (diag !== prevDiagRef.current) {
+                    prevDiagRef.current = diag;
+                    setDiagnosticInfo(diag);
                   }
                 }
               } else {
@@ -406,9 +415,16 @@ export function useGestureDetection({
                 } else {
                   // Sustained loss of gesture — reset hold progress
                   holdStartTimeRef.current = null;
-                  setGestureProgress(0);
+                  if (prevProgRef.current !== 0) {
+                    prevProgRef.current = 0;
+                    setGestureProgress(0);
+                  }
                   if (!results.landmarks || results.landmarks.length === 0) {
-                    setDiagnosticInfo("Watching for hand in camera view...");
+                    const diag = "Watching for hand in camera view...";
+                    if (diag !== prevDiagRef.current) {
+                      prevDiagRef.current = diag;
+                      setDiagnosticInfo(diag);
+                    }
                   }
                 }
               }

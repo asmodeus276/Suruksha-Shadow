@@ -372,6 +372,9 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
   const isTranscribingRef = useRef(false);
   const pendingWavRef = useRef(null);
   const lastTranscribeTimeRef = useRef(0);
+  const prevLevelRef = useRef(0);
+  const prevDbRef = useRef(30);
+  const prevMotionRef = useRef(0);
   const pcmRollingRingRef = useRef([]); // rolling pre-roll buffer (last 1.5s)
   const activeUtterancePcmRef = useRef([]); // current active utterance samples
 
@@ -828,9 +831,16 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
           }
 
           const now = Date.now();
-          if (now - lastUiUpdate > 60) {
-            setAudioLevel(normalized);
-            setAudioDb(estimatedDb);
+          if (now - lastUiUpdate > 120) {
+            if (
+              Math.abs(normalized - prevLevelRef.current) >= 2 ||
+              Math.abs(estimatedDb - prevDbRef.current) >= 1
+            ) {
+              prevLevelRef.current = normalized;
+              prevDbRef.current = estimatedDb;
+              setAudioLevel(normalized);
+              setAudioDb(estimatedDb);
+            }
             lastUiUpdate = now;
           }
 
@@ -1029,7 +1039,11 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
       const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
 
       if (now - lastUiUpdate > UI_UPDATE_INTERVAL_MS) {
-        setMotionMagnitude(Math.round(avg));
+        const roundedAvg = Math.round(avg);
+        if (Math.abs(roundedAvg - prevMotionRef.current) >= 1) {
+          prevMotionRef.current = roundedAvg;
+          setMotionMagnitude(roundedAvg);
+        }
         lastUiUpdate = now;
       }
 

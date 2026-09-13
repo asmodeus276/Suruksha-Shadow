@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, memo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { reverseGeocode, formatCoords } from "../lib/geo";
@@ -7,7 +7,7 @@ import {
   EMERGENCY_HELPLINES,
 } from "../lib/safeHavensData";
 
-export default function LiveSafetyMapView({ onBack, defaultFilter = "all" }) {
+function LiveSafetyMapViewComponent({ onBack, defaultFilter = "all" }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
@@ -716,6 +716,8 @@ export default function LiveSafetyMapView({ onBack, defaultFilter = "all" }) {
     </div>
   );
 }
+
+export default memo(LiveSafetyMapViewComponent);
 
 function containerHasStaleLeaflet(el) {
   return el && Boolean(el._leaflet_id);

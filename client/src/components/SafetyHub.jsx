@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import TrustedContacts from "./TrustedContacts";
 import ConsentToggle from "./ConsentToggle";
 import PinSetup from "./PinSetup";
@@ -20,6 +20,18 @@ const HELPLINES = [
     tag: "Women Safety",
   },
   {
+    number: "181",
+    title: "National Commission for Women",
+    desc: "Domestic abuse & violence 24/7 helpline",
+    tag: "Support",
+  },
+  {
+    number: "1090",
+    title: "Women Power Line (UP)",
+    desc: "Harassment, cyber stalking & distress response",
+    tag: "Harassment",
+  },
+  {
     number: "1098",
     title: "Childline Emergency",
     desc: "National 24-hour emergency phone service for children",
@@ -33,7 +45,7 @@ const HELPLINES = [
   },
 ];
 
-export default function SafetyHub({
+function SafetyHub({
   apiBaseUrl,
   userId,
   onContactsChange,
@@ -301,3 +313,5 @@ export default function SafetyHub({
     </div>
   );
 }
+
+export default memo(SafetyHub);

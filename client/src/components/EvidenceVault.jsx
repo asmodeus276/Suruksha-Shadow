@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import { getVaultRecords } from "../hooks/useEvidenceVault";
 import {
   anchorEvidenceToMST,
@@ -44,7 +44,7 @@ import {
  * MST Blockchain on-chain notarization anchors, BridgeKey wallet connection,
  * biometric sparklines, and certified court-ready legal dossier exports.
  */
-export default function EvidenceVault({ refreshTrigger, onCapture }) {
+function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1798,3 +1798,5 @@ ${
     </div>
   );
 }
+
+export default memo(EvidenceVaultComponent);
