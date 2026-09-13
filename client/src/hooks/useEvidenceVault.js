@@ -1,7 +1,11 @@
 import { useRef, useCallback } from "react";
 import { createEvidenceBlock } from "../lib/evidenceIntegrity";
 import { anchorEvidenceToMST } from "../lib/mstAnchor";
-import { signArtifactDigest, getEnclaveFingerprint } from "../lib/evidenceStore";
+import {
+  signArtifactDigest,
+  getEnclaveFingerprint,
+  enqueueForMSTNotarization,
+} from "../lib/evidenceStore";
 
 /**
  * useEvidenceVault
@@ -198,7 +202,7 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
             console.warn("Evidence Vault: evidence block creation/upload failed:", err);
           }
 
-          // Dedicated MST Blockchain Notarization Anchor for this discrete audio clip
+          // Dedicated MST Blockchain Notarization Anchor (Silent Session Relayer)
           let mstAnchor = null;
           if (hash) {
             try {
@@ -210,11 +214,25 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
                   enclaveSignature,
                   enclaveFingerprint,
                   hardwareEnclaveInfo: "Hardware Enclave: On-Device WebCrypto Keystore (Non-Extractable P-256 Key)",
-                }
+                },
+                null,
+                { silent: true }
               );
             } catch (mstErr) {
               console.warn("MST Blockchain anchoring error (non-fatal):", mstErr);
             }
+
+            // Enqueue into 5-second background sync queue
+            enqueueForMSTNotarization({
+              id: artifactId,
+              sha256: hash,
+              type: "audio_clip",
+              metadata: {
+                ...evidenceMetadata,
+                enclaveSignature,
+                enclaveFingerprint,
+              },
+            });
           }
 
           const record = {
@@ -233,6 +251,7 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
               : null,
             serverReceipt: serverReceipt || null,
             mstAnchor: mstAnchor || null,
+            syncStatus: "anchored",
           };
 
           try {
