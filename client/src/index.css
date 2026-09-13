@@ -271,13 +271,15 @@ textarea::placeholder {
 
 /* Cards & Surface Containers */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: rgba(26, 29, 39, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius);
   padding: 16px 14px;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   position: relative;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 @media (min-width: 640px) {
@@ -287,7 +289,8 @@ textarea::placeholder {
 }
 
 .card:hover {
-  border-color: rgba(232, 196, 104, 0.2);
+  border-color: rgba(232, 196, 104, 0.35);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 20px rgba(232, 196, 104, 0.08);
 }
 
 /* Status Badges & Pills */
@@ -479,43 +482,47 @@ textarea::placeholder {
   .tactical-nav-tabs {
     display: flex;
     align-items: center;
-    gap: 4px;
-    background: var(--surface-lowest);
-    border: 1px solid var(--line);
-    padding: 4px;
+    gap: 6px;
+    background: rgba(14, 16, 24, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 6px;
     border-radius: var(--radius);
     overflow-x: auto;
     scrollbar-width: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 }
 
 .tactical-tab-btn {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 10px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--mist);
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
-  transition: all 0.18s ease;
-  min-height: 38px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 40px;
 }
 
 .tactical-tab-btn:hover {
   color: var(--paper);
-  background: var(--surface-high);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .tactical-tab-btn.is-active {
   color: var(--ember);
-  background: var(--surface-high);
-  border-color: var(--line-gold);
+  background: linear-gradient(180deg, rgba(232, 196, 104, 0.16) 0%, rgba(232, 196, 104, 0.06) 100%);
+  border-color: rgba(232, 196, 104, 0.45);
   font-weight: 600;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 14px rgba(232, 196, 104, 0.2), inset 0 1px 0 rgba(232, 196, 104, 0.25);
 }
 
 /* Bottom Nav Bar for Mobile Devices */
@@ -625,19 +632,25 @@ textarea::placeholder {
   width: 178px;
   height: 178px;
   border-radius: 50%;
-  border: 2px solid var(--line-highlight);
-  background: radial-gradient(circle at 35% 35%, var(--surface-high) 0%, var(--surface-lowest) 100%);
+  border: 2px solid rgba(232, 196, 104, 0.4);
+  background: radial-gradient(circle at 35% 35%, #242734 0%, #0d0e14 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   gap: 6px;
   cursor: pointer;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.1);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 24px rgba(232, 196, 104, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   z-index: 5;
   touch-action: manipulation;
+}
+
+.guardian-circle:hover:not(:disabled) {
+  transform: scale(1.03);
+  border-color: rgba(232, 196, 104, 0.75);
+  box-shadow: 0 14px 48px rgba(0, 0, 0, 0.8), 0 0 32px rgba(232, 196, 104, 0.35);
 }
 
 .guardian-circle:active:not(:disabled) {
@@ -681,15 +694,28 @@ textarea::placeholder {
   letter-spacing: 0.05em;
 }
 
+@keyframes pulse-concentric-waves {
+  0% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.6), 0 0 0 0 rgba(46, 204, 113, 0.3), 0 10px 40px rgba(0, 0, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 16px rgba(46, 204, 113, 0.15), 0 0 0 32px rgba(46, 204, 113, 0.05), 0 12px 48px rgba(46, 204, 113, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 30px rgba(46, 204, 113, 0), 0 0 0 50px rgba(46, 204, 113, 0), 0 10px 40px rgba(0, 0, 0, 0.7);
+  }
+}
+
 .guardian-circle.is-listening {
-  border-color: var(--ember-container);
-  box-shadow: 0 0 36px var(--ember-glow), inset 0 0 24px var(--ember-dim);
-  animation: breathe 3s infinite ease-in-out;
+  border-color: #2ecc71;
+  background: radial-gradient(circle at 35% 35%, #183324 0%, #0c1811 100%);
+  animation: pulse-concentric-waves 2.5s infinite ease-in-out;
 }
 
 .guardian-circle.is-active {
   border-color: var(--alarm);
-  box-shadow: 0 0 42px var(--alarm-glow), inset 0 0 24px var(--alarm-dim);
+  background: radial-gradient(circle at 35% 35%, #3d1418 0%, #150608 100%);
+  box-shadow: 0 0 48px var(--alarm-glow), inset 0 0 24px var(--alarm-dim);
   animation: pulse-alarm 1.2s infinite ease-in-out;
 }
 
@@ -1170,6 +1196,63 @@ textarea::placeholder {
   background: var(--ember-dim);
   border-color: var(--ember-container);
   color: var(--ember);
+}
+
+/* Tactical Quick Utilities Grid */
+.quick-utilities-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .quick-utilities-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (min-width: 860px) {
+  .quick-utilities-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+}
+
+.utility-card-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(26, 29, 39, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 82px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.utility-card-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(35, 39, 52, 0.85);
+  border-color: rgba(232, 196, 104, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(232, 196, 104, 0.12);
+}
+
+.utility-card-btn:active {
+  transform: scale(0.97);
+}
+
+.utility-card-btn.is-active {
+  background: rgba(232, 196, 104, 0.14);
+  border-color: rgba(232, 196, 104, 0.6);
+  box-shadow: 0 0 18px rgba(232, 196, 104, 0.25);
 }
 
 /* ============================================================

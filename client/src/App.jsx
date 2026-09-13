@@ -1573,165 +1573,232 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Quick Standout Feature Chips */}
+              {/* Quick Standout Feature Grid */}
               <div className="mt-5">
-                <p className="eyebrow text-center mb-3">Quick Safety Utilities</p>
-                <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-                  {/* Dedicated Safe Havens Radar & Live Safety Map Button */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <p className="eyebrow" style={{ margin: 0 }}>Tactical Safety Utilities</p>
+                  <span style={{ fontSize: 11, color: "var(--mist-dim)", fontFamily: "var(--mono)" }}>1-Tap Emergency Response</span>
+                </div>
+
+                <div className="quick-utilities-grid">
+                  {/* 1. Safe Havens Radar & Map */}
                   <button
                     id="live-safety-map-quick-btn"
-                    className={`demo-chip-btn ${activeTab === "map" ? "is-active" : ""}`}
+                    className={`utility-card-btn ${activeTab === "map" ? "is-active" : ""}`}
                     onClick={() => setActiveTab("map")}
-                    style={{
-                      padding: "10px 14px",
-                      borderColor: "var(--line-gold)",
-                      background: activeTab === "map" ? "rgba(232, 196, 104, 0.25)" : "rgba(232, 196, 104, 0.12)",
-                      color: "var(--ember)",
-                      fontWeight: 600,
-                    }}
                     title="Open Safe Havens Radar: 24/7 Police Stations, Hospitals, Lit Transit Hubs & 1-Tap Helplines"
                   >
-                    <span style={{ marginRight: 6 }}>🏥</span>
-                    Safe Havens Radar &amp; Map
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <span style={{ fontSize: 20 }}>🏥</span>
+                      <span className="tag tag-gold" style={{ fontSize: 9.5, padding: "1px 5px" }}>24/7 Radar</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Safe Havens Radar</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>Nearby Sanctuaries &amp; Map</div>
+                    </div>
                   </button>
 
-                  {/* 1-Tap WhatsApp SOS Direct Carrier/App Dispatch */}
+                  {/* 2. 1-Tap WhatsApp SOS */}
                   <button
                     id="whatsapp-sos-quick-btn"
-                    className="demo-chip-btn"
+                    className="utility-card-btn"
                     onClick={() => {
                       emergencySms.openWhatsAppSos(activeShareToken, currentCoords, "Emergency Distress Alert (1-Tap WhatsApp)");
                     }}
-                    style={{
-                      padding: "10px 14px",
-                      borderColor: "rgba(37, 211, 102, 0.4)",
-                      background: "rgba(37, 211, 102, 0.12)",
-                      color: "#25D366",
-                      fontWeight: 600,
-                    }}
+                    style={{ borderColor: "rgba(37, 211, 102, 0.25)" }}
                     title="1-Tap WhatsApp SOS: Direct instant emergency dispatch with live GPS & beacon link"
                   >
-                    <WhatsAppIcon size={14} style={{ marginRight: 6, color: "#25D366" }} />
-                    WhatsApp SOS
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <WhatsAppIcon size={20} style={{ color: "#25D366" }} />
+                      <span style={{ fontSize: 9.5, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: "rgba(37, 211, 102, 0.15)", color: "#25D366" }}>1-TAP</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>WhatsApp SOS</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>Beacon Link &amp; GPS Dispatch</div>
+                    </div>
                   </button>
 
-                  {/* 1-Tap Carrier Native SIM SMS (Zero Gateway Cost / Cellular Direct) */}
+                  {/* 3. 1-Tap Carrier Native SIM SMS */}
                   <button
                     id="carrier-sms-quick-btn"
-                    className="demo-chip-btn"
+                    className="utility-card-btn"
                     onClick={() => {
                       emergencySms.openCarrierSms(activeShareToken, currentCoords, "Emergency Distress Alert (1-Tap SIM SMS)");
                     }}
-                    style={{
-                      padding: "10px 14px",
-                      borderColor: "rgba(56, 189, 248, 0.4)",
-                      background: "rgba(56, 189, 248, 0.12)",
-                      color: "#38bdf8",
-                      fontWeight: 600,
-                    }}
+                    style={{ borderColor: "rgba(56, 189, 248, 0.25)" }}
                     title="1-Tap Carrier SMS: Direct device SIM messaging to guardians with GPS coordinates (Zero gateway cost / Works offline)"
                   >
-                    <MessageSquareIcon size={14} style={{ marginRight: 6, color: "#38bdf8" }} />
-                    Carrier SMS (SIM)
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <MessageSquareIcon size={20} style={{ color: "#38bdf8" }} />
+                      <span style={{ fontSize: 9.5, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8" }}>OFFLINE</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Carrier SMS (SIM)</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>Direct Cellular Emergency</div>
+                    </div>
                   </button>
 
-                  {/* Optical Burst Trigger Button (BSA 2023 §63) */}
+                  {/* 4. Optical Burst (BSA 2023 §63) */}
                   <button
                     id="optical-burst-quick-btn"
-                    className="demo-chip-btn"
+                    className="utility-card-btn"
                     onClick={() => setShowOpticalBurstModal(true)}
-                    style={{
-                      padding: "10px 14px",
-                      borderColor: "rgba(232, 196, 104, 0.45)",
-                      background: "rgba(232, 196, 104, 0.12)",
-                      color: "var(--ember)",
-                      fontWeight: 600,
-                    }}
+                    style={{ borderColor: "rgba(232, 196, 104, 0.3)" }}
                     title="Optical Burst: Rapid 5-frame forensic optical stream with SHA-256 digests (BSA 2023 §63 / FRE 902)"
                   >
-                    <CameraIcon size={14} style={{ marginRight: 6, color: "var(--ember)" }} />
-                    Optical Burst (5-Frame)
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <CameraIcon size={20} style={{ color: "var(--ember)" }} />
+                      <span className="tag tag-gold" style={{ fontSize: 9.5, padding: "1px 5px" }}>BSA §63</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Optical Burst</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>5-Frame Forensic Capture</div>
+                    </div>
                   </button>
 
+                  {/* 5. Camera Watch */}
                   <button
-                    className={`demo-chip-btn ${isCameraActive ? "is-active" : ""}`}
+                    className={`utility-card-btn ${isCameraActive ? "is-active" : ""}`}
                     onClick={handleToggleCamera}
                     style={{
-                      padding: "10px 14px",
                       borderColor: isCameraActive ? (gestureProgress > 0 ? "var(--alarm)" : "var(--ember)") : undefined,
-                      background: isCameraActive ? (gestureProgress > 0 ? "rgba(224, 90, 71, 0.25)" : "rgba(224, 90, 71, 0.15)") : undefined,
-                      color: isCameraActive ? (gestureProgress > 0 ? "var(--alarm)" : "var(--ember)") : undefined,
                     }}
                     title="Toggle silent Camera Watch for Canadian Women's Foundation Signal for Help gesture"
                   >
-                    {isCameraActive ? (
-                      <CameraIcon size={14} style={{ marginRight: 6, color: gestureProgress > 0 ? "var(--alarm)" : "var(--ember)" }} />
-                    ) : (
-                      <CameraOffIcon size={14} style={{ marginRight: 6 }} />
-                    )}
-                    Camera Watch ({isCameraActive ? (gestureProgress > 0 ? `HOLDING (${Math.round(gestureProgress * 100)}%)` : handDetected ? "Hand Tracked" : "Active") : "Off"})
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      {isCameraActive ? (
+                        <CameraIcon size={20} style={{ color: gestureProgress > 0 ? "var(--alarm)" : "var(--ember)" }} />
+                      ) : (
+                        <CameraOffIcon size={20} style={{ color: "var(--mist)" }} />
+                      )}
+                      <span
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: 700,
+                          padding: "1px 5px",
+                          borderRadius: 4,
+                          background: isCameraActive ? "rgba(46, 204, 113, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                          color: isCameraActive ? "#2ecc71" : "var(--mist-dim)",
+                        }}
+                      >
+                        {isCameraActive ? (handDetected ? "TRACKING" : "ACTIVE") : "OFF"}
+                      </span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Camera Watch</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>Signal for Help Gesture</div>
+                    </div>
                   </button>
 
+                  {/* 6. Route Guard */}
                   <button
-                    className={`demo-chip-btn ${routeGuard.isActive ? "is-active" : ""}`}
+                    className={`utility-card-btn ${routeGuard.isActive ? "is-active" : ""}`}
                     onClick={() => setShowRouteGuardModal((prev) => !prev)}
                     style={{
-                      padding: "10px 14px",
                       borderColor: routeGuard.isActive ? (routeGuard.alertType ? "var(--alarm)" : "#2ecc71") : undefined,
-                      background: routeGuard.isActive ? (routeGuard.alertType ? "rgba(224, 90, 71, 0.2)" : "rgba(46, 204, 113, 0.15)") : undefined,
-                      color: routeGuard.isActive ? (routeGuard.alertType ? "var(--alarm)" : "#2ecc71") : undefined,
                     }}
                     title="Route Guard — Auto-detects route deviation & vehicle kidnapping"
                   >
-                    <NavigationIcon size={14} style={{ marginRight: 6 }} />
-                    Route Guard ({routeGuard.isActive ? (routeGuard.alertType ? "ALERT" : "On Track") : "Setup"})
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <NavigationIcon size={20} style={{ color: routeGuard.isActive ? "#2ecc71" : "var(--mist)" }} />
+                      <span
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: 700,
+                          padding: "1px 5px",
+                          borderRadius: 4,
+                          background: routeGuard.isActive ? "rgba(46, 204, 113, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                          color: routeGuard.isActive ? "#2ecc71" : "var(--mist-dim)",
+                        }}
+                      >
+                        {routeGuard.isActive ? "ON TRACK" : "SETUP"}
+                      </span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Route Guard</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>Anti-Detour Protection</div>
+                    </div>
                   </button>
 
+                  {/* 7. Fake Call Escape */}
                   <button
-                    className="demo-chip-btn"
+                    className="utility-card-btn"
                     onClick={() => setIsFakeCallOpen(true)}
-                    style={{ padding: "10px 14px" }}
+                    title="Simulate an incoming phone call to discreetly leave an uncomfortable situation"
                   >
-                    <PhoneIcon size={14} style={{ marginRight: 6 }} />
-                    Fake Call (Escape)
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <PhoneIcon size={20} style={{ color: "var(--ember)" }} />
+                      <span className="tag tag-gold" style={{ fontSize: 9.5, padding: "1px 5px" }}>ESCAPE</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Fake Call</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>Realistic Escape Simulator</div>
+                    </div>
                   </button>
 
+                  {/* 8. Strobe Siren */}
                   <button
-                    className="demo-chip-btn"
+                    className="utility-card-btn"
                     onClick={() => setIsAlarmOpen(true)}
-                    style={{ padding: "10px 14px", borderColor: "rgba(232, 84, 107, 0.4)" }}
+                    style={{ borderColor: "rgba(232, 84, 107, 0.3)" }}
+                    title="High-decibel audible acoustic siren with flashing strobe"
                   >
-                    <SirenIcon size={14} style={{ marginRight: 6, color: "var(--alarm)" }} />
-                    Strobe Siren
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <SirenIcon size={20} style={{ color: "var(--alarm)" }} />
+                      <span style={{ fontSize: 9.5, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: "rgba(232, 84, 107, 0.15)", color: "var(--alarm)" }}>STROBE</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Strobe Siren</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>Acoustic Flash Alarm</div>
+                    </div>
                   </button>
 
+                  {/* 9. Blackout Screen */}
                   <button
-                    className="demo-chip-btn"
+                    className="utility-card-btn"
                     onClick={() => setIsBlackoutOpen(true)}
-                    style={{ padding: "10px 14px", borderColor: "rgba(255,255,255,0.25)" }}
                     title="Disguise phone as turned off while background protection stays 100% active"
                   >
-                    <EyeOffIcon size={14} style={{ marginRight: 6 }} />
-                    Blackout Screen
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <EyeOffIcon size={20} style={{ color: "var(--mist)" }} />
+                      <span className="tag" style={{ fontSize: 9.5, padding: "1px 5px" }}>STEALTH</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Blackout Screen</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>AMOLED Screen-Off Mode</div>
+                    </div>
                   </button>
 
+                  {/* 10. Decoy Calculator */}
                   <button
-                    className="demo-chip-btn"
+                    className="utility-card-btn"
                     onClick={() => setDecoyMode(true)}
-                    style={{ padding: "10px 14px", borderColor: "rgba(232, 196, 104, 0.45)" }}
-                    title="Launch Decoy Calculator Disguise"
+                    title="Launch Decoy Calculator Disguise (3x Tap on Brand Header also triggers this)"
                   >
-                    <span style={{ marginRight: 6 }}>🧮</span>
-                    Decoy Calculator
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <span style={{ fontSize: 20 }}>🧮</span>
+                      <span className="tag tag-gold" style={{ fontSize: 9.5, padding: "1px 5px" }}>DISGUISE</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Decoy Calculator</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>Functional Disguise Vault</div>
+                    </div>
                   </button>
 
+                  {/* 11. Safety Settings */}
                   <button
-                    className="demo-chip-btn"
+                    className="utility-card-btn"
                     onClick={() => setShowSettings(!showSettings)}
-                    style={{ padding: "10px 14px" }}
+                    title="Configure voice code words, motion sensitivity, and safe zones"
                   >
-                    <SettingsIcon size={14} style={{ marginRight: 6 }} />
-                    Triggers &amp; Safe Zones
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <SettingsIcon size={20} style={{ color: "var(--mist)" }} />
+                      <span className="tag" style={{ fontSize: 9.5, padding: "1px 5px" }}>CONFIG</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Triggers &amp; Geofence</div>
+                      <div style={{ fontSize: 10.5, color: "var(--mist-dim)" }}>Sensors &amp; Safe Zones</div>
+                    </div>
                   </button>
                 </div>
               </div>
