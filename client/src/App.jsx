@@ -36,7 +36,6 @@ import LiveSafetyMapView from "./components/LiveSafetyMapView";
 import SafeZoneManager from "./components/SafeZoneManager";
 import RouteGuardSetup from "./components/RouteGuardSetup";
 import BlackoutStealth from "./components/BlackoutStealth";
-import DemoStudioBar from "./components/DemoStudioBar";
 import CameraWatch from "./components/CameraWatch";
 import {
   ShieldIcon,
@@ -2520,21 +2519,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* Demo Presentation & Simulation Control Dock */}
-      <DemoStudioBar
-        apiBaseUrl={API_BASE_URL}
-        activeEventId={activeEventId}
-        activeShareToken={activeShareToken}
-        onTriggerSOS={fireSOS}
-        onTriggerFakeCall={fakeCall.trigger}
-        onTriggerAlarm={() => setIsAlarmOpen(true)}
-        onToggleDecoy={() => setDecoyMode((prev) => !prev)}
-        onTriggerOpticalBurst={() => setShowOpticalBurstModal(true)}
-        armed={armed}
-        onArm={arm}
-        onGpsUpdate={handleLocationUpdateFromPing}
-      />
 
       {/* Blackout Stealth AMOLED Screen-Off Disguise */}
       <BlackoutStealth
