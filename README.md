@@ -42,6 +42,8 @@
 | **RPC Endpoint** | `https://rpc.mstblockchain.com` (Chain ID: `91562037`) |
 | **Wallet Support** | **BridgeKey Wallet Integration** (Chrome Extension / Mobile Web3) + EIP-1193 |
 | **Legal Admissibility Protocol** | Bharatiya Sakshya Adhiniyam (BSA) 2023 §63 & Federal Rules of Evidence (FRE) 902(13)/(14) |
+| **Functional Requirements (FRD)** | [**FRD.md**](file:///c:/Dev/Suraksha%20Shadow/FRD.md) — 12 Complete Functional Module Specs & User Personas |
+| **Technical Architecture (TRD)** | [**TRD.md**](file:///c:/Dev/Suraksha%20Shadow/TRD.md) — Hardware Pipelines, Web3 Notary, REST Contracts & Schemas |
 
 ---
 
