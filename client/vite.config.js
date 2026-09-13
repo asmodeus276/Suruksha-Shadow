@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "pwa-192x192.svg", "pwa-512x512.svg"],
+      includeAssets: ["favicon.svg", "pwa-192x192.svg", "pwa-512x512.svg", "logo.png", "logo.jpg"],
       workbox: {
         skipWaiting: true,
         clientsClaim: true,

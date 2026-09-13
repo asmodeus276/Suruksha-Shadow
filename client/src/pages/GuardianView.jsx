@@ -14,6 +14,7 @@ import {
   WhatsAppIcon,
   ShieldAlertIcon,
 } from "../components/icons";
+import logoImg from "../assets/logo.jpg";
 import LiveMap from "../components/LiveMap";
 import {
   reverseGeocode,
@@ -325,7 +326,7 @@ export default function GuardianView() {
         <div className="header-top-bar">
           <div className="brand-badge">
             <div className="brand-icon-shield">
-              <img src="/logo.png" alt="Suraksha Shadow Logo" className="brand-logo-img" />
+              <img src={logoImg} alt="Suraksha Shadow Logo" className="brand-logo-img" />
               <span className="pulse-dot" style={{ background: "var(--alarm)", boxShadow: "0 0 10px var(--alarm)" }} />
             </div>
             <div className="brand-title-group">

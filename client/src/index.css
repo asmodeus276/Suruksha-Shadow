@@ -643,6 +643,21 @@ textarea::placeholder {
   transition: color 0.3s ease;
 }
 
+.guardian-circle-logo {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 10px rgba(232, 196, 104, 0.5));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+  display: block;
+}
+
+.guardian-circle:hover .guardian-circle-logo {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 16px rgba(232, 196, 104, 0.85));
+}
+
 .guardian-circle .label {
   font-family: var(--display);
   font-size: 18px;

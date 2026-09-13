@@ -63,6 +63,7 @@ import {
   NavigationIcon,
   MapPinIcon,
 } from "./components/icons";
+import logoImg from "./assets/logo.jpg";
 import { getUserId } from "./lib/user";
 import {
   getWhatsAppAlertUrl,
@@ -757,7 +758,7 @@ export default function App() {
               title="Secret stealth zone (tap 3x to launch Decoy Calculator)"
             >
               <img
-                src="/logo.png"
+                src={logoImg}
                 alt="Suraksha Shadow Logo"
                 className="brand-logo-img"
               />
@@ -1199,7 +1200,11 @@ export default function App() {
                   disabled={Boolean(activeEventId)}
                   aria-label={guardianState === "active" ? "Active Emergency" : armed ? "Shield is armed. Tap to pause." : "Arm Shield Protection"}
                 >
-                  <GuardianGlyph className="icon" />
+                  {guardianState === "active" ? (
+                    <GuardianGlyph className="icon" />
+                  ) : (
+                    <img src={logoImg} alt="Suraksha Shield" className="guardian-circle-logo" />
+                  )}
                   <span className="label">
                     {guardianState === "active"
                       ? "Active"
