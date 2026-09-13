@@ -124,7 +124,13 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
       const targetSosId = sosIdOverride || activeSosId;
       let stream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: false,
+            autoGainControl: true,
+          },
+        });
       } catch (err) {
         console.error("Evidence Vault: microphone access unavailable:", err);
         return null;
@@ -132,17 +138,33 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
 
       return new Promise((resolve) => {
         audioChunksRef.current = [];
-        const recorder = new MediaRecorder(stream);
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : MediaRecorder.isTypeSupported("audio/mp4")
+          ? "audio/mp4"
+          : "";
+
+        let recorder;
+        try {
+          recorder = mimeType
+            ? new MediaRecorder(stream, { mimeType })
+            : new MediaRecorder(stream);
+        } catch {
+          recorder = new MediaRecorder(stream);
+        }
         mediaRecorderRef.current = recorder;
 
         recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) audioChunksRef.current.push(event.data);
+          if (event.data && event.data.size > 0) audioChunksRef.current.push(event.data);
         };
 
         recorder.onstop = async () => {
           stream.getTracks().forEach((track) => track.stop());
 
-          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const finalMime = recorder.mimeType || mimeType || "audio/webm";
+          const audioBlob = new Blob(audioChunksRef.current, { type: finalMime });
           const capturedAt = Date.now();
           const artifactId = `EVID-${capturedAt}`;
           let rawHash = null;

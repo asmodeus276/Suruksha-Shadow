@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, memo } from "react";
+import { useEffect, useState, useCallback, useRef, memo } from "react";
 import { getVaultRecords } from "../hooks/useEvidenceVault";
 import {
   anchorEvidenceToMST,
@@ -58,6 +58,7 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
   const [error, setError] = useState(null);
   const [playingId, setPlayingId] = useState(null);
   const [playingAudioUrl, setPlayingAudioUrl] = useState(null);
+  const audioPlayerRef = useRef(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [showMerkleModal, setShowMerkleModal] = useState(false);
@@ -190,15 +191,41 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
 
   const togglePlay = (record) => {
     if (playingId === record.id) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.currentTime = 0;
+      }
       if (playingAudioUrl) URL.revokeObjectURL(playingAudioUrl);
       setPlayingAudioUrl(null);
       setPlayingId(null);
       return;
     }
+
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+    }
     if (playingAudioUrl) URL.revokeObjectURL(playingAudioUrl);
-    const url = URL.createObjectURL(record.blob);
-    setPlayingAudioUrl(url);
-    setPlayingId(record.id);
+
+    try {
+      const blob =
+        record.blob instanceof Blob
+          ? record.blob
+          : new Blob([record.blob], { type: record.mimeType || "audio/webm" });
+      const url = URL.createObjectURL(blob);
+      setPlayingAudioUrl(url);
+      setPlayingId(record.id);
+
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.src = url;
+        audioPlayerRef.current.play().catch((err) => {
+          console.warn("EvidenceVault audio playback error:", err);
+          setPlayingId(null);
+        });
+      }
+    } catch (err) {
+      console.error("Failed creating audio playback stream:", err);
+      setPlayingId(null);
+    }
   };
 
   /**
@@ -605,6 +632,23 @@ ${
       className="evidence-vault-container rise-fade"
       style={{ display: "flex", flexDirection: "column", gap: 20 }}
     >
+      {/* Hidden Audio Player for Recorded Evidence Playback */}
+      <audio
+        ref={audioPlayerRef}
+        style={{ display: "none" }}
+        onEnded={() => {
+          setPlayingId(null);
+          if (playingAudioUrl) URL.revokeObjectURL(playingAudioUrl);
+          setPlayingAudioUrl(null);
+        }}
+        onError={(err) => {
+          console.warn("EvidenceVault audio playback error event:", err);
+          setPlayingId(null);
+          if (playingAudioUrl) URL.revokeObjectURL(playingAudioUrl);
+          setPlayingAudioUrl(null);
+        }}
+      />
+
       {/* ============================================================
           SECTION 1: LEGAL HEADER & EXPORT ACTION
           ============================================================ */}
@@ -1619,9 +1663,28 @@ ${
                             fontSize: 13,
                             fontWeight: 600,
                             color: "var(--paper)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
                           }}
                         >
-                          {r.id}
+                          <span>{r.id}</span>
+                          {isPlaying && (
+                            <span
+                              className="tag tag-safe"
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                background: "rgba(0, 230, 118, 0.2)",
+                                border: "1px solid rgba(0, 230, 118, 0.5)",
+                              }}
+                            >
+                              🔊 Playing Audio...
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: 11, color: "var(--mist-dim)" }}>
                           {formatTime(r.createdAt || r.capturedAt)} ·{" "}

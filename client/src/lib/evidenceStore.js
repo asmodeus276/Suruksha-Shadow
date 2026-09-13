@@ -572,7 +572,7 @@ export async function saveEvidenceRecord(record) {
  */
 let continuousMediaStream = null;
 let continuousAudioRecorder = null;
-let continuousSliceInterval = null;
+let continuousSliceTimeout = null;
 let isContinuousRecordingActive = false;
 
 /**
@@ -612,7 +612,7 @@ export async function startContinuousAudioNotarization({
     continuousMediaStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
-        noiseSuppression: true,
+        noiseSuppression: false,
         autoGainControl: true,
       },
     });
@@ -620,26 +620,18 @@ export async function startContinuousAudioNotarization({
     isContinuousRecordingActive = true;
     console.log("[Continuous Audio Engine] Stream acquired. Slicing into continuous 10s notarized chunks...");
 
-    let recordedChunks = [];
     const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
       ? "audio/webm;codecs=opus"
       : MediaRecorder.isTypeSupported("audio/webm")
       ? "audio/webm"
-      : "audio/ogg";
-
-    const recorder = new MediaRecorder(continuousMediaStream, { mimeType });
-    continuousAudioRecorder = recorder;
-
-    recorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
-        recordedChunks.push(e.data);
-      }
-    };
+      : MediaRecorder.isTypeSupported("audio/mp4")
+      ? "audio/mp4"
+      : "";
 
     /**
      * Processes a 10-second slice asynchronously without blocking UI
      */
-    const processSlice = async (sliceBlob) => {
+    const processSlice = async (sliceBlob, recordedMime) => {
       try {
         const capturedAt = Date.now();
         const sliceId = `AUD-SLICE-${capturedAt}`;
@@ -670,7 +662,7 @@ export async function startContinuousAudioNotarization({
           hardwareEnclaveInfo: "Hardware Enclave: On-Device WebCrypto Keystore (Non-Extractable P-256 Key)",
           sizeBytes: sliceBlob.size,
           durationMs: 10000,
-          mimeType,
+          mimeType: recordedMime || mimeType || "audio/webm",
           blob: sliceBlob,
           mstAnchor: mstAnchorRes,
         };
@@ -686,20 +678,66 @@ export async function startContinuousAudioNotarization({
       }
     };
 
-    // Cycle every 10 seconds (10,000 ms)
-    recorder.start();
+    /**
+     * Records a single 10-second discrete audio slice with full container headers
+     */
+    const recordNextSlice = () => {
+      if (!isContinuousRecordingActive || !continuousMediaStream) return;
 
-    continuousSliceInterval = setInterval(() => {
-      if (recorder.state === "recording") {
-        recorder.requestData();
-        if (recordedChunks.length > 0) {
-          const sliceBlob = new Blob(recordedChunks, { type: mimeType });
-          recordedChunks = [];
-          // Execute in non-blocking async microtask
-          setTimeout(() => processSlice(sliceBlob), 0);
-        }
+      let recorder;
+      try {
+        recorder = mimeType
+          ? new MediaRecorder(continuousMediaStream, { mimeType })
+          : new MediaRecorder(continuousMediaStream);
+      } catch {
+        recorder = new MediaRecorder(continuousMediaStream);
       }
-    }, 10000);
+
+      continuousAudioRecorder = recorder;
+      const recordedChunks = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordedChunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        if (recordedChunks.length > 0) {
+          const finalMime = recorder.mimeType || mimeType || "audio/webm";
+          const sliceBlob = new Blob(recordedChunks, { type: finalMime });
+          setTimeout(() => processSlice(sliceBlob, finalMime), 0);
+        }
+
+        // Seamlessly continue recording the next 10s slice if continuous recording is active
+        if (isContinuousRecordingActive && continuousMediaStream) {
+          recordNextSlice();
+        }
+      };
+
+      recorder.onerror = (err) => {
+        console.warn("[Continuous Audio Engine] Recorder error:", err);
+        if (isContinuousRecordingActive && continuousMediaStream) {
+          setTimeout(recordNextSlice, 1000);
+        }
+      };
+
+      recorder.start();
+
+      // Finalize slice at 10 seconds to generate a complete standalone WebM file
+      continuousSliceTimeout = setTimeout(() => {
+        if (recorder && recorder.state === "recording") {
+          try {
+            recorder.stop();
+          } catch (stopErr) {
+            console.warn("[Continuous Audio Engine] Error stopping slice recorder:", stopErr);
+          }
+        }
+      }, 10000);
+    };
+
+    // Begin recording loop
+    recordNextSlice();
 
     return true;
   } catch (err) {
@@ -716,9 +754,9 @@ export async function startContinuousAudioNotarization({
 export function stopContinuousAudioNotarization() {
   isContinuousRecordingActive = false;
 
-  if (continuousSliceInterval) {
-    clearInterval(continuousSliceInterval);
-    continuousSliceInterval = null;
+  if (continuousSliceTimeout) {
+    clearTimeout(continuousSliceTimeout);
+    continuousSliceTimeout = null;
   }
 
   if (continuousAudioRecorder && continuousAudioRecorder.state !== "inactive") {
