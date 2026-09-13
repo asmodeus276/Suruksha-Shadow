@@ -311,6 +311,15 @@ export default function App() {
 
   const isFiringRef = useRef(false);
 
+  // Ensure isFiringRef is always cleared when emergency is not active
+  useEffect(() => {
+    if (!activeEventId) {
+      isFiringRef.current = false;
+      resetShieldRef.current?.();
+      resetGestureRef.current?.();
+    }
+  }, [activeEventId]);
+
   const fireSOS = useCallback(
     async (triggerInput) => {
       if (isFiringRef.current || activeEventId) return;
@@ -577,6 +586,8 @@ export default function App() {
       resetGesture();
     } else {
       await requestDevicePermissions();
+      resetShield();
+      resetGesture();
       setArmed(true);
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try {

@@ -375,6 +375,17 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
   const pcmRollingRingRef = useRef([]); // rolling pre-roll buffer (last 1.5s)
   const activeUtterancePcmRef = useRef([]); // current active utterance samples
 
+  // Self-healing auto-reset on disarmed -> armed transition
+  const prevEnabledRef = useRef(false);
+  useEffect(() => {
+    if (enabled && !prevEnabledRef.current) {
+      triggeredRef.current = false;
+      screamCounterRef.current = { count: 0, lastTime: 0 };
+      shakeCounterRef.current = { count: 0, lastSign: 0, lastTime: 0 };
+    }
+    prevEnabledRef.current = enabled;
+  }, [enabled]);
+
   const fire = useCallback(
     (type, confidence = 0.90, details = "") => {
       if (triggeredRef.current) return;
