@@ -118,6 +118,7 @@ router.post(["/", "/trigger"], async (req, res) => {
     const guardianUrl = `${clientUrl}/guardian/${event.share_token}`;
     const sendLat = lat || 28.474861;
     const sendLng = lng || 77.4765986;
+    const sendAddress = req.body?.address || req.body?.location?.address || "Knowledge Park III, Uttar Pradesh";
     const mapsUrl = `https://maps.google.com/?q=${sendLat},${sendLng}`;
     const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -127,7 +128,7 @@ router.post(["/", "/trigger"], async (req, res) => {
       `I am in danger and require immediate assistance!`,
       `⚡ Status: EMERGENCY ACTIVE`,
       `🕒 Time: ${timeStr}`,
-      `📍 Location: Knowledge Park III, Uttar Pradesh`,
+      `📍 Location: ${sendAddress}`,
       `🗺️ Google Maps: ${mapsUrl}`,
       `🛡️ Live Guardian Tracking Beacon: ${guardianUrl}`,
       ``,
@@ -184,6 +185,7 @@ router.post(["/", "/trigger"], async (req, res) => {
     const guardianUrl = `${clientUrl}/guardian/${shareToken}`;
     const sendLat = lat || 28.474861;
     const sendLng = lng || 77.4765986;
+    const sendAddress = req.body?.address || req.body?.location?.address || "Knowledge Park III, Uttar Pradesh";
     const mapsUrl = `https://maps.google.com/?q=${sendLat},${sendLng}`;
     const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -193,7 +195,7 @@ router.post(["/", "/trigger"], async (req, res) => {
       `I am in danger and require immediate assistance!`,
       `⚡ Status: EMERGENCY ACTIVE`,
       `🕒 Time: ${timeStr}`,
-      `📍 Location: Knowledge Park III, Uttar Pradesh`,
+      `📍 Location: ${sendAddress}`,
       `🗺️ Google Maps: ${mapsUrl}`,
       `🛡️ Live Guardian Tracking Beacon: ${guardianUrl}`,
       ``,

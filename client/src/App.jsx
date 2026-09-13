@@ -501,6 +501,7 @@ export default function App() {
             details: triggerDetails,
             lat: sendLat,
             lng: sendLng,
+            address: currentCoords?.address || "Knowledge Park III, Uttar Pradesh",
           }),
         });
         let data = {};
@@ -959,6 +960,72 @@ export default function App() {
             </div>
             <div className="emergency-banner-timer">
               Live for {formatElapsed(emergencyElapsedSecs)} · Contacts notified
+            </div>
+          </div>
+
+          {/* Real-Time SMS Dispatch Notification Banner */}
+          <div
+            className="card rise-fade"
+            style={{
+              background: "rgba(0, 230, 118, 0.12)",
+              border: "1px solid rgba(0, 230, 118, 0.45)",
+              padding: "12px 16px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 10,
+              borderRadius: "var(--radius-sm)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 20 }}>📲</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--safe)" }}>
+                  Emergency SMS Dispatched to 8800948288 &amp; Trusted Guardians
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--paper)", marginTop: 2 }}>
+                  Live tracking beacon &amp; GPS coordinates transmitted via Direct Carrier Dispatch.
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button
+                className="btn-primary"
+                onClick={() =>
+                  emergencySms.openCarrierSms(
+                    contacts.map((c) => c.phone),
+                    activeShareToken,
+                    currentCoords || liveLocations[liveLocations.length - 1]
+                  )
+                }
+                style={{
+                  fontSize: 11.5,
+                  padding: "6px 12px",
+                  background: "#2563eb",
+                  borderColor: "#3b82f6",
+                }}
+              >
+                💬 1-Tap SIM SMS
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() =>
+                  emergencySms.openWhatsAppSos(
+                    contacts.map((c) => c.phone),
+                    activeShareToken,
+                    currentCoords || liveLocations[liveLocations.length - 1]
+                  )
+                }
+                style={{
+                  fontSize: 11.5,
+                  padding: "6px 12px",
+                  background: "#16a34a",
+                  borderColor: "#22c55e",
+                }}
+              >
+                🟢 WhatsApp
+              </button>
             </div>
           </div>
 
