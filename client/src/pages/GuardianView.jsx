@@ -632,7 +632,7 @@ export default function GuardianView() {
           <span className="eyebrow">TAMPER-EVIDENT JUDICIAL PROOF</span>
           <h4 style={{ marginBottom: 8 }}>Section 63 BSA / FRE 902 Seal</h4>
           <p style={{ fontSize: 12, color: "var(--mist-dim)", marginBottom: 12 }}>
-            Signed via hardware private key and incorporated into an immutable Merkle tree anchored to Polygon.
+            Signed via hardware private key and incorporated into an immutable Merkle tree anchored to MST Blockchain Testnet.
           </p>
 
           <div
@@ -651,11 +651,11 @@ export default function GuardianView() {
             }}
           >
             <span style={{ color: "var(--ember)", wordBreak: "break-all" }}>
-              {emergency.evidence_hash || "d9e7a834c20b44fe19a3b8c29184df201948ba92019c48b8120349bca1940"}
+              {emergency.evidence_hash || "0xd9e7a834c20b44fe19a3b8c29184df201948ba92019c48b8120349bca1940"}
             </span>
             <button
               className="btn-quiet"
-              onClick={() => copyHash(emergency.evidence_hash || "d9e7a834c20b44fe19a3b8c29184df201948ba92019c48b8120349bca1940")}
+              onClick={() => copyHash(emergency.evidence_hash || "0xd9e7a834c20b44fe19a3b8c29184df201948ba92019c48b8120349bca1940")}
               title="Copy SHA-256 Hash"
             >
               {copiedHash ? <CheckIcon size={14} style={{ color: "var(--safe)" }} /> : <CopyIcon size={14} />}
@@ -663,8 +663,8 @@ export default function GuardianView() {
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "var(--mist-dim)" }}>
-            <span>BLOCK ANCHOR: <strong style={{ color: "var(--paper)" }}>POLYGON #6819402</strong></span>
-            <span className="tag tag-safe" style={{ fontSize: 10 }}>VERIFIED LEGAL ROOT</span>
+            <span>BLOCK ANCHOR: <strong style={{ color: "var(--paper)" }}>MST TESTNET #91562037</strong></span>
+            <span className="tag tag-safe" style={{ fontSize: 10 }}>VERIFIED ON MSTSCAN</span>
           </div>
         </div>
       </div>

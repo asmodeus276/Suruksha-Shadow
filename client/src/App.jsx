@@ -20,6 +20,10 @@ import {
   updateEmergencyServerId,
   STORES,
 } from "./lib/offlineDb";
+import {
+  startContinuousAudioNotarization,
+  stopContinuousAudioNotarization,
+} from "./lib/evidenceStore";
 import EvidenceVault from "./components/EvidenceVault";
 import SaharaChat from "./components/SaharaChat";
 import GuidedNextSteps from "./components/GuidedNextSteps";
@@ -319,6 +323,29 @@ export default function App() {
       resetGestureRef.current?.();
     }
   }, [activeEventId]);
+
+  // Continuous 10-Second Audio Chunk Slicer & MST On-Chain Auto-Notarizer (Armed or SOS Mode)
+  useEffect(() => {
+    let isMounted = true;
+    if (armed || activeEventId) {
+      startContinuousAudioNotarization({
+        sosId: activeEventId,
+        onChunkNotarized: () => {
+          if (isMounted) {
+            setEvidenceRefreshTick((n) => n + 1);
+          }
+        },
+      }).catch((err) => {
+        console.warn("[App] Continuous audio notarization startup notice:", err.message);
+      });
+    } else {
+      stopContinuousAudioNotarization();
+    }
+    return () => {
+      isMounted = false;
+      stopContinuousAudioNotarization();
+    };
+  }, [armed, activeEventId]);
 
   const fireSOS = useCallback(
     async (triggerInput) => {

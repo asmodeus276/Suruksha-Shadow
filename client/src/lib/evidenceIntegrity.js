@@ -1,35 +1,28 @@
 /**
- * BSA 2023 Section 63 & On-Chain Evidence Integrity Block Builder
- * -----------------------------------------------------------
+ * BSA 2023 Section 63 & MST On-Chain Evidence Integrity Block Builder
+ * ---------------------------------------------------------------------
  * Creates composite evidence blocks that cryptographically bind
  * audio capture data to GPS metadata and timestamps, and anchors
- * the resulting digest onto the Polygon blockchain.
+ * the resulting digest onto the MST Blockchain Testnet.
  *
  * The composite hash format is:
  *   SHA-256( [metadata_length: 4 bytes BE] + [metadata JSON] + [audio bytes] )
  *
  * This exact binary format is replicated server-side during
- * verification, so both sides must agree on the byte layout.
+ * verification, so both sides agree on the byte layout.
  *
  * The resulting `clientHash` is the capture-time integrity marker.
  * To eliminate reliance on central server trust, this hash is anchored
- * onto Polygon (Amoy Testnet / Polygon PoS), making evidence timestamps
+ * onto the MST Blockchain (Chain ID 91562037), making evidence timestamps
  * and authenticity mathematically provable in a court of law.
  */
 
-export const POLYGON_NETWORKS = {
-  AMOY_TESTNET: {
-    chainId: 80002,
-    name: "Polygon Amoy Testnet",
-    explorerBase: "https://amoy.polygonscan.com/tx/",
-    notaryContract: "0x71C840A831a28C3A48bB1b1F369c0d24cCE3683C",
-  },
-  POLYGON_MAINNET: {
-    chainId: 137,
-    name: "Polygon PoS Mainnet",
-    explorerBase: "https://polygonscan.com/tx/",
-    notaryContract: "0x39a3Bf822De189e47265A4F79F12b059F3Dea2B9",
-  },
+export const MST_TESTNET_CONFIG = {
+  chainId: 91562037,
+  name: "MST Blockchain Testnet",
+  explorerBase: "https://testnet.mstscan.com/tx/",
+  notaryContract: "0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5",
+  rpcEndpoint: "https://rpc.mstblockchain.com",
 };
 
 /**
@@ -78,11 +71,10 @@ export async function createEvidenceBlock(audioBlob, coords) {
 }
 
 /**
- * Derives a deterministic pseudo-txHash for testnet anchoring or simulation
- * if live Web3 signer RPC is in offline fallback mode.
+ * Derives a deterministic pseudo-txHash for MST testnet anchoring simulation.
  */
-export function derivePolygonTxHash(clientHash, timestampISO) {
-  const seed = `${clientHash}|${timestampISO}|POLYGON_AMOY`;
+export function deriveMSTEvidenceTxHash(clientHash, timestampISO) {
+  const seed = `${clientHash}|${timestampISO}|MST_CHAIN_91562037`;
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash << 5) - hash + seed.charCodeAt(i);
@@ -92,4 +84,3 @@ export function derivePolygonTxHash(clientHash, timestampISO) {
   const base = (clientHash || "").padEnd(56, "0").slice(0, 56);
   return `0x${base}${hexPart}`;
 }
-
