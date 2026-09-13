@@ -756,7 +756,11 @@ export default function App() {
               className="brand-icon-shield"
               title="Secret stealth zone (tap 3x to launch Decoy Calculator)"
             >
-              <GuardianGlyph size={22} style={{ color: activeEventId ? "var(--alarm)" : armed ? "var(--safe)" : "var(--ember)" }} />
+              <img
+                src="/logo.png"
+                alt="Suraksha Shadow Logo"
+                className="brand-logo-img"
+              />
               <span className="pulse-dot" style={{ background: activeEventId ? "var(--alarm)" : armed ? "var(--safe)" : "var(--ember-container)" }} />
             </div>
             <div className="brand-title-group">
