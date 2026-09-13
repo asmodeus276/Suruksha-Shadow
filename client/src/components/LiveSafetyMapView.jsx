@@ -2,12 +2,17 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { reverseGeocode, formatCoords } from "../lib/geo";
+import {
+  getNearbySanctuaries,
+  EMERGENCY_HELPLINES,
+} from "../lib/safeHavensData";
 
-export default function LiveSafetyMapView({ onBack }) {
+export default function LiveSafetyMapView({ onBack, defaultFilter = "all" }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
   const circleRef = useRef(null);
+  const sanctuaryMarkersRef = useRef([]);
   const watchIdRef = useRef(null);
   const initialCenterSetRef = useRef(false);
 
@@ -17,6 +22,89 @@ export default function LiveSafetyMapView({ onBack }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLocating, setIsLocating] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(defaultFilter); // 'all' | 'police' | 'hospital' | 'transit' | 'helpline'
+  const [focusedSanctuaryId, setFocusedSanctuaryId] = useState(null);
+
+  // Compute live sanctuaries based on coords or fallback
+  const userLat = coords?.lat || 28.4744;
+  const userLng = coords?.lng || 77.4916;
+  const sanctuaries = getNearbySanctuaries(userLat, userLng);
+
+  // Filtered sanctuaries
+  const filteredSanctuaries =
+    activeCategory === "all"
+      ? sanctuaries
+      : sanctuaries.filter((s) => s.category === activeCategory);
+
+  // Helper to get category icon/color for map markers
+  const getCategoryMarkerHtml = (category) => {
+    if (category === "police") {
+      return `
+        <div class="sanctuary-map-pin police-pin" style="background: #1e3a8a; border: 2px solid #3b82f6; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 14px rgba(59, 130, 246, 0.6);">
+          <span style="font-size: 16px;">🚓</span>
+        </div>
+      `;
+    }
+    if (category === "hospital") {
+      return `
+        <div class="sanctuary-map-pin hospital-pin" style="background: #064e3b; border: 2px solid #10b981; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 14px rgba(16, 185, 129, 0.6);">
+          <span style="font-size: 16px;">🏥</span>
+        </div>
+      `;
+    }
+    return `
+      <div class="sanctuary-map-pin transit-pin" style="background: #78350f; border: 2px solid #f59e0b; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 14px rgba(245, 158, 11, 0.6);">
+        <span style="font-size: 16px;">⛽</span>
+      </div>
+    `;
+  };
+
+  // Render/Update Sanctuary Markers on Leaflet Map
+  const renderSanctuaryMarkers = useCallback((map, sanctuaryList) => {
+    // Clear old markers
+    sanctuaryMarkersRef.current.forEach((m) => m.remove());
+    sanctuaryMarkersRef.current = [];
+
+    sanctuaryList.forEach((s) => {
+      const pinIcon = L.divIcon({
+        className: "sanctuary-leaflet-marker",
+        html: getCategoryMarkerHtml(s.category),
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -18],
+      });
+
+      const marker = L.marker([s.lat, s.lng], {
+        icon: pinIcon,
+        title: s.name,
+      }).addTo(map);
+
+      marker.bindPopup(`
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12.5px; line-height: 1.4; color: #111; padding: 4px; min-width: 220px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <strong style="color: ${s.category === 'police' ? '#1e3a8a' : s.category === 'hospital' ? '#065f46' : '#92400e'}; font-size: 13px;">
+              ${s.name}
+            </strong>
+          </div>
+          <div style="font-size: 11px; color: #4b5563; margin-bottom: 6px;">${s.address}</div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11.5px;">
+            <span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: 600;">📍 ${s.distanceFormatted}</span>
+            <span style="color: #6b7280;">🚶 ${s.transitTimes.walking}</span>
+          </div>
+          <div style="display: flex; gap: 6px; margin-top: 6px;">
+            <a href="${s.navigationUrl}" target="_blank" rel="noopener noreferrer" style="flex: 1; text-align: center; background: #2563eb; color: #fff; padding: 5px 8px; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: 600;">
+              🧭 Directions
+            </a>
+            <a href="tel:${s.phone}" style="flex: 1; text-align: center; background: #059669; color: #fff; padding: 5px 8px; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: 600;">
+              📞 Call
+            </a>
+          </div>
+        </div>
+      `);
+
+      sanctuaryMarkersRef.current.push(marker);
+    });
+  }, []);
 
   // Update map marker and accuracy circle
   const updateMapPosition = useCallback((lat, lng, accuracy, recenter = false) => {
@@ -64,17 +152,6 @@ export default function LiveSafetyMapView({ onBack }) {
       markerRef.current = marker;
     } else {
       markerRef.current.setLatLng(latLng);
-      markerRef.current.setPopupContent(`
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.4; color: #111; padding: 2px;">
-          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-            <span style="font-size: 16px;">📍</span>
-            <strong style="color: #b91c1c; font-size: 13.5px;">Current Live Location</strong>
-          </div>
-          <div><strong>Latitude:</strong> ${lat.toFixed(6)}</div>
-          <div><strong>Longitude:</strong> ${lng.toFixed(6)}</div>
-          <div style="margin-top: 3px; font-size: 11.5px; color: #4b5563;">Accuracy: ±${Math.round(accuracy || 15)} meters</div>
-        </div>
-      `);
     }
 
     // Create or update accuracy circle
@@ -97,14 +174,13 @@ export default function LiveSafetyMapView({ onBack }) {
     // Center map if requested or initial fix
     if (recenter || !initialCenterSetRef.current) {
       initialCenterSetRef.current = true;
-      map.setView(latLng, Math.max(map.getZoom(), 16), {
+      map.setView(latLng, Math.max(map.getZoom(), 15), {
         animate: true,
         duration: 0.6,
       });
     }
   }, []);
 
-  // Recenter map on user's current location
   // Request location permission & continuous tracking via Geolocation API
   const requestLiveLocation = useCallback(() => {
     if (!("geolocation" in navigator)) {
@@ -180,6 +256,27 @@ export default function LiveSafetyMapView({ onBack }) {
     }
   }, [updateMapPosition]);
 
+  // Focus and zoom to a specific sanctuary
+  const handleFocusSanctuary = (sanctuary) => {
+    setFocusedSanctuaryId(sanctuary.id);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setView([sanctuary.lat, sanctuary.lng], 16, {
+        animate: true,
+        duration: 0.5,
+      });
+
+      // Find marker and open popup
+      const targetMarker = sanctuaryMarkersRef.current.find(
+        (m) =>
+          Math.abs(m.getLatLng().lat - sanctuary.lat) < 0.0001 &&
+          Math.abs(m.getLatLng().lng - sanctuary.lng) < 0.0001
+      );
+      if (targetMarker) {
+        targetMarker.openPopup();
+      }
+    }
+  };
+
   // Recenter map on user's current location
   const handleRecenter = useCallback(() => {
     if (coords) {
@@ -200,15 +297,15 @@ export default function LiveSafetyMapView({ onBack }) {
       delete mapContainerRef.current._leaflet_id;
     }
 
-    const initialPos = coords ? [coords.lat, coords.lng] : [28.6139, 77.2090];
-    const initialZoom = coords ? 16 : 12;
+    const initialPos = coords ? [coords.lat, coords.lng] : [28.4744, 77.4916];
+    const initialZoom = coords ? 15 : 14;
 
     const map = L.map(mapContainerRef.current, {
       zoomControl: true,
       attributionControl: true,
     }).setView(initialPos, initialZoom);
 
-    // OpenStreetMap tile layer as explicitly requested
+    // OpenStreetMap tile layer
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution:
@@ -216,6 +313,9 @@ export default function LiveSafetyMapView({ onBack }) {
     }).addTo(map);
 
     mapInstanceRef.current = map;
+
+    // Render sanctuary markers
+    renderSanctuaryMarkers(map, sanctuaries);
 
     const timer1 = setTimeout(() => {
       map.invalidateSize();
@@ -241,8 +341,16 @@ export default function LiveSafetyMapView({ onBack }) {
       }
       markerRef.current = null;
       circleRef.current = null;
+      sanctuaryMarkersRef.current = [];
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-render markers when filtered sanctuaries change
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      renderSanctuaryMarkers(mapInstanceRef.current, filteredSanctuaries);
+    }
+  }, [filteredSanctuaries, renderSanctuaryMarkers]);
 
   return (
     <div id="live-safety-map-view" className="live-safety-map-container-card rise-fade">
@@ -263,7 +371,7 @@ export default function LiveSafetyMapView({ onBack }) {
           <div className="live-safety-map-badge">
             <span className="live-safety-map-badge-dot" />
             <h2 className="live-safety-map-title" style={{ fontSize: 18 }}>
-              📍 Live Safety Map
+              🛡️ Safe Havens Radar &amp; Live Map
             </h2>
           </div>
         </div>
@@ -274,7 +382,7 @@ export default function LiveSafetyMapView({ onBack }) {
               ? `Live GPS: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)} (±${coords.accuracy}m)`
               : isLocating
               ? "Acquiring live GPS fix…"
-              : "OpenStreetMap Real-Time Radar"}
+              : "24/7 Sanctuaries & Helplines Active"}
           </span>
         </div>
       </div>
@@ -297,7 +405,7 @@ export default function LiveSafetyMapView({ onBack }) {
       )}
 
       {/* Interactive Map Viewport */}
-      <div className="live-safety-map-view-viewport">
+      <div className="live-safety-map-view-viewport" style={{ position: "relative" }}>
         <div
           ref={mapContainerRef}
           className="leaflet-safety-canvas"
@@ -335,7 +443,7 @@ export default function LiveSafetyMapView({ onBack }) {
           />
           <span>
             {permissionStatus === "granted" && coords
-              ? `Tracking Live · ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
+              ? `Radar Tracking · ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
               : isLocating
               ? "Requesting GPS signal…"
               : permissionStatus === "denied"
@@ -358,7 +466,7 @@ export default function LiveSafetyMapView({ onBack }) {
             )}
           </div>
           <div style={{ fontSize: 11, color: "var(--mist-dim)", fontFamily: "var(--mono)" }}>
-            {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()} · Continuous Watch Active` : "Awaiting browser location grant"}
+            {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()} · Safe Havens Radar Active` : "Awaiting browser location grant"}
           </div>
         </div>
 
@@ -373,6 +481,237 @@ export default function LiveSafetyMapView({ onBack }) {
             📍 Recenter Pin
           </button>
         </div>
+      </div>
+
+      {/* ============================================================
+          SECTION 2: SAFE HAVENS RADAR DIRECTORY & HELPLINES
+          ============================================================ */}
+      <div className="safe-havens-radar-section mt-4">
+        {/* Radar Header & Filter Chips */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 10,
+            marginBottom: 14,
+          }}
+        >
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--paper)" }}>
+              🏥 Safe Havens Radar Directory
+            </h3>
+            <p style={{ margin: 0, fontSize: 11, color: "var(--mist-dim)" }}>
+              Verified 24/7 Sanctuaries &amp; Immediate Emergency Help within 1–3 km
+            </p>
+          </div>
+
+          {/* Filter Chips */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button
+              className={`demo-chip-btn ${activeCategory === "all" ? "is-active" : ""}`}
+              onClick={() => setActiveCategory("all")}
+              style={{ fontSize: 11.5, padding: "5px 10px", minHeight: 28 }}
+            >
+              All ({sanctuaries.length})
+            </button>
+            <button
+              className={`demo-chip-btn ${activeCategory === "police" ? "is-active" : ""}`}
+              onClick={() => setActiveCategory("police")}
+              style={{ fontSize: 11.5, padding: "5px 10px", minHeight: 28 }}
+            >
+              🚓 Police
+            </button>
+            <button
+              className={`demo-chip-btn ${activeCategory === "hospital" ? "is-active" : ""}`}
+              onClick={() => setActiveCategory("hospital")}
+              style={{ fontSize: 11.5, padding: "5px 10px", minHeight: 28 }}
+            >
+              🏥 24/7 Medical
+            </button>
+            <button
+              className={`demo-chip-btn ${activeCategory === "transit" ? "is-active" : ""}`}
+              onClick={() => setActiveCategory("transit")}
+              style={{ fontSize: 11.5, padding: "5px 10px", minHeight: 28 }}
+            >
+              ⛽ Lit Hubs
+            </button>
+            <button
+              className={`demo-chip-btn ${activeCategory === "helpline" ? "is-active" : ""}`}
+              onClick={() => setActiveCategory("helpline")}
+              style={{ fontSize: 11.5, padding: "5px 10px", minHeight: 28 }}
+            >
+              📞 1-Tap Helplines
+            </button>
+          </div>
+        </div>
+
+        {/* Category: 1-Tap Helplines */}
+        {activeCategory === "helpline" ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+            {EMERGENCY_HELPLINES.map((hl) => (
+              <div
+                key={hl.number}
+                className="card"
+                style={{
+                  background: "var(--surface)",
+                  border: `1px solid ${hl.color}40`,
+                  padding: 16,
+                  borderRadius: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: `${hl.color}20`, color: hl.color }}>
+                      {hl.tag}
+                    </span>
+                    <strong style={{ fontSize: 18, color: hl.color, fontFamily: "var(--mono)" }}>{hl.number}</strong>
+                  </div>
+                  <h4 style={{ margin: "4px 0 6px 0", fontSize: 14, color: "var(--paper)" }}>{hl.name}</h4>
+                  <p style={{ margin: 0, fontSize: 11.5, color: "var(--mist)", lineHeight: 1.4 }}>{hl.description}</p>
+                </div>
+
+                <a
+                  href={`tel:${hl.number}`}
+                  className="btn btn-primary mt-3"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    textDecoration: "none",
+                    background: hl.color,
+                    color: "#fff",
+                    fontSize: 12,
+                    padding: "8px",
+                  }}
+                >
+                  📞 Direct Call {hl.number}
+                </a>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Sanctuary Grid */
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+            {filteredSanctuaries.map((sanctuary) => {
+              const isFocused = focusedSanctuaryId === sanctuary.id;
+              const isPolice = sanctuary.category === "police";
+              const isHospital = sanctuary.category === "hospital";
+              const badgeColor = isPolice ? "#3b82f6" : isHospital ? "#10b981" : "#f59e0b";
+
+              return (
+                <div
+                  key={sanctuary.id}
+                  className="card sanctuary-card rise-fade"
+                  style={{
+                    background: isFocused ? "var(--surface-high)" : "var(--surface)",
+                    border: isFocused ? `1.5px solid ${badgeColor}` : "1px solid var(--line)",
+                    padding: 16,
+                    borderRadius: 12,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    transition: "all 0.2s ease",
+                    boxShadow: isFocused ? `0 0 16px ${badgeColor}30` : "none",
+                  }}
+                >
+                  <div>
+                    {/* Header Pill */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          background: `${badgeColor}20`,
+                          color: badgeColor,
+                          border: `1px solid ${badgeColor}40`,
+                        }}
+                      >
+                        {sanctuary.categoryLabel}
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ember)", fontFamily: "var(--mono)" }}>
+                        📍 {sanctuary.distanceFormatted}
+                      </span>
+                    </div>
+
+                    {/* Sanctuary Name & Address */}
+                    <h4 style={{ margin: "0 0 4px 0", fontSize: 14, color: "var(--paper)", lineHeight: 1.3 }}>
+                      {sanctuary.name}
+                    </h4>
+                    <p style={{ margin: "0 0 8px 0", fontSize: 11.5, color: "var(--mist)", lineHeight: 1.35 }}>
+                      {sanctuary.address}
+                    </p>
+
+                    {/* Transit ETA Pill */}
+                    <div style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--mist-dim)", marginBottom: 12 }}>
+                      <span>🚶 {sanctuary.transitTimes.walking}</span>
+                      <span>•</span>
+                      <span>🚗 {sanctuary.transitTimes.driving}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <a
+                      href={sanctuary.navigationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="demo-chip-btn"
+                      style={{
+                        flex: 1,
+                        textAlign: "center",
+                        borderColor: "var(--line-gold)",
+                        color: "var(--ember)",
+                        fontWeight: 600,
+                        fontSize: 11.5,
+                        textDecoration: "none",
+                      }}
+                      title="Open Google Maps Turn-by-Turn GPS Navigation"
+                    >
+                      🧭 Navigate ↗
+                    </a>
+
+                    <a
+                      href={`tel:${sanctuary.phone}`}
+                      className="demo-chip-btn"
+                      style={{
+                        padding: "6px 10px",
+                        borderColor: "rgba(16, 185, 129, 0.4)",
+                        color: "#10b981",
+                        fontWeight: 600,
+                        fontSize: 11.5,
+                        textDecoration: "none",
+                      }}
+                      title={`Call ${sanctuary.phone}`}
+                    >
+                      📞 Call
+                    </a>
+
+                    <button
+                      type="button"
+                      className="demo-chip-btn"
+                      onClick={() => handleFocusSanctuary(sanctuary)}
+                      style={{
+                        padding: "6px 10px",
+                        fontSize: 11.5,
+                      }}
+                      title="Center map on this sanctuary"
+                    >
+                      📍 Pin
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

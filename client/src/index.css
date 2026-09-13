@@ -2003,4 +2003,38 @@ textarea::placeholder {
   }
 }
 
+/* ============================================================
+   SAFE HAVENS RADAR DIRECTORY & SANCTUARY MARKERS
+   ============================================================ */
+.safe-havens-radar-section {
+  background: var(--surface-low);
+  border: 1px solid var(--line-gold);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.sanctuary-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.sanctuary-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-gold);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.sanctuary-leaflet-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.sanctuary-leaflet-marker:hover {
+  transform: scale(1.15);
+}
+
+
 

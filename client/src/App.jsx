@@ -1577,7 +1577,7 @@ export default function App() {
               <div className="mt-5">
                 <p className="eyebrow text-center mb-3">Quick Safety Utilities</p>
                 <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-                  {/* Dedicated Live Safety Map Option Button */}
+                  {/* Dedicated Safe Havens Radar & Live Safety Map Button */}
                   <button
                     id="live-safety-map-quick-btn"
                     className={`demo-chip-btn ${activeTab === "map" ? "is-active" : ""}`}
@@ -1589,10 +1589,10 @@ export default function App() {
                       color: "var(--ember)",
                       fontWeight: 600,
                     }}
-                    title="Open dedicated interactive Live Safety Map (Leaflet + OpenStreetMap)"
+                    title="Open Safe Havens Radar: 24/7 Police Stations, Hospitals, Lit Transit Hubs & 1-Tap Helplines"
                   >
-                    <span style={{ marginRight: 6 }}>📍</span>
-                    Live Safety Map
+                    <span style={{ marginRight: 6 }}>🏥</span>
+                    Safe Havens Radar &amp; Map
                   </button>
 
                   {/* 1-Tap WhatsApp SOS Direct Carrier/App Dispatch */}
