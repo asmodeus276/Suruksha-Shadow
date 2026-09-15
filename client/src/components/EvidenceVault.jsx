@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef, memo } from "react";
+import { createPortal } from "react-dom";
 import { getVaultRecords } from "../hooks/useEvidenceVault";
 import {
   anchorEvidenceToMST,
@@ -1696,14 +1697,14 @@ ${
       </div>
 
       {/* Merkle Proof Validation & MST Inspector Modal */}
-      {showMerkleModal && (
+      {showMerkleModal && typeof document !== "undefined" && createPortal(
         <div
           style={{
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.85)",
             backdropFilter: "blur(12px)",
-            zIndex: 1000,
+            zIndex: 9999,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1906,18 +1907,19 @@ ${
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* BridgeKey Web3 & Judge Keystore Connection Modal */}
-      {showBridgeKeyModal && (
+      {showBridgeKeyModal && typeof document !== "undefined" && createPortal(
         <div
           style={{
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.85)",
             backdropFilter: "blur(10px)",
-            zIndex: 1000,
+            zIndex: 9999,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -2077,7 +2079,8 @@ ${
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Optical Burst Capture (5-Frame) Modal */}

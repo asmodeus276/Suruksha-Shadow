@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   FileTextIcon,
   ShieldIcon,
@@ -179,7 +180,9 @@ Generated via Suraksha Shadow Judicial Enclave (Verifiable Blockchain Proof)`;
     URL.revokeObjectURL(url);
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div className="modal-backdrop fir-modal-backdrop" onClick={onClose} style={{ zIndex: 9999 }}>
       <div
         className="modal-content fir-modal-container rise-fade"
@@ -748,6 +751,7 @@ Generated via Suraksha Shadow Judicial Enclave (Verifiable Blockchain Proof)`;
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   computeSha256,
   computeCompositeBurstHash,
@@ -240,7 +241,9 @@ export default function CameraWatch({
   const activeFrame =
     burstData?.frames?.[selectedFrameIndex] || burstData?.frames?.[0];
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       style={{
         position: "fixed",
@@ -742,6 +745,7 @@ export default function CameraWatch({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
