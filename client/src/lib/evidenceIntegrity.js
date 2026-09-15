@@ -69,18 +69,3 @@ export async function createEvidenceBlock(audioBlob, coords) {
     clientHash,
   };
 }
-
-/**
- * Derives a deterministic pseudo-txHash for MST testnet anchoring simulation.
- */
-export function deriveMSTEvidenceTxHash(clientHash, timestampISO) {
-  const seed = `${clientHash}|${timestampISO}|MST_CHAIN_91562037`;
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash << 5) - hash + seed.charCodeAt(i);
-    hash |= 0;
-  }
-  const hexPart = Math.abs(hash).toString(16).padStart(8, "0");
-  const base = (clientHash || "").padEnd(56, "0").slice(0, 56);
-  return `0x${base}${hexPart}`;
-}

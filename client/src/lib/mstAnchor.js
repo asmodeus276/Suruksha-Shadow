@@ -15,6 +15,7 @@ import * as mstSdk from "@mstblockchain/mst-sdk";
  * - Zero-Friction Background Gas Relaying (No browser popup prompts on slices)
  * - Automatic Contract Calldata Packaging (BSA 2023 §63 / FRE 902 compliant)
  * - Dual-RPC High Availability (Primary + Fallback)
+ * - Honest status reporting: CONFIRMED | PENDING | SIMULATION
  */
 
 export const MST_CONTRACT_ADDRESS = "0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5";
@@ -27,7 +28,31 @@ export const MST_CONTRACT_EXPLORER_URL = `https://testnet.mstscan.com/address/${
 export const VERIFIED_MST_TX_HASH = "0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec";
 export const JUDGE_DEMO_WALLET_ACCOUNT = "0x71C934B8F2e8e7D5E891C802a45B73C8D003F9A1";
 
+/**
+ * Anchor statuses returned by the anchoring engine:
+ * - CONFIRMED:  A real on-chain transaction was mined and a receipt was obtained.
+ * - PENDING:    A transaction was broadcast but no receipt has been confirmed yet.
+ * - SIMULATION: No real transaction was sent (RPC offline, no gas, or tx failure).
+ *               The evidence is cryptographically signed locally and queued for retry.
+ */
+export const ANCHOR_STATUS = {
+  CONFIRMED: "CONFIRMED",
+  PENDING: "PENDING",
+  SIMULATION: "SIMULATION",
+};
+
 const SESSION_KEY_STORAGE_KEY = "suraksha_mst_session_relayer_pk_v1";
+
+/**
+ * Minimal ABI for the MST Blockchain Notary Contract.
+ * The contract exposes an `anchor(bytes32 hash)` method that stores
+ * the evidence hash immutably on-chain with the caller and timestamp.
+ */
+const NOTARY_CONTRACT_ABI = [
+  "function anchor(bytes32 hash) external",
+  "function anchors(bytes32 hash) external view returns (address notarizer, uint256 timestamp)",
+  "event Anchored(bytes32 indexed hash, address indexed notarizer, uint256 timestamp)",
+];
 
 /**
  * Retrieves or creates a persistent local session wallet for zero-friction background gas relaying.
@@ -94,16 +119,19 @@ export function isValidTxHash(hash) {
 }
 
 /**
- * Derives a distinct, deterministic 66-character EVM transaction hash for an artifact.
- * Guarantees that every audio snippet, photo burst, and telemetry stream receives
- * its own unique transaction hash without collisions.
+ * Derives a deterministic offline placeholder hash for an artifact.
+ *
+ * ⚠️ IMPORTANT: This is NOT a real blockchain transaction hash.
+ * It is a locally-derived placeholder used when the MST RPC is unreachable
+ * or the session wallet lacks gas. The placeholder is replaced with a real
+ * txHash once the evidence is successfully anchored on-chain.
  *
  * @param {string} sha256Hash
  * @param {string} artifactId
  * @param {number|string} timestamp
- * @returns {Promise<string>}
+ * @returns {Promise<string>} A 0x-prefixed 64-hex-char placeholder hash
  */
-export async function deriveMSTTxHash(sha256Hash, artifactId, timestamp) {
+export async function deriveOfflineTxPlaceholder(sha256Hash, artifactId, timestamp) {
   const cleanSha = (sha256Hash || "").startsWith("0x") ? sha256Hash.slice(2) : sha256Hash;
   const entropy = `${cleanSha}:${artifactId || "ARTIFACT"}:${timestamp || Date.now()}:MST_TESTNET_91562037`;
   const buf = new TextEncoder().encode(entropy);
@@ -113,6 +141,9 @@ export async function deriveMSTTxHash(sha256Hash, artifactId, timestamp) {
     .join("");
   return `0x${hex}`;
 }
+
+// Keep backward-compatible alias during migration
+export const deriveMSTTxHash = deriveOfflineTxPlaceholder;
 
 /**
  * Resolves a direct MSTScan transaction detail URL.
@@ -216,11 +247,76 @@ export async function connectBridgeKeyWallet() {
 }
 
 /**
+ * Attempts to connect to the MST RPC and returns a JsonRpcProvider + latest block number.
+ * Tries primary RPC first, then fallback, then MST SDK provider.
+ *
+ * @returns {Promise<{provider: ethers.JsonRpcProvider|null, blockNumber: number|null, isOnline: boolean}>}
+ */
+async function connectToMSTRpc() {
+  for (const rpcUrl of [MST_RPC_URL, MST_FALLBACK_RPC_URL]) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const pingRes = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "eth_blockNumber",
+          params: [],
+          id: 1,
+        }),
+        signal: controller.signal,
+      }).catch(() => null);
+      clearTimeout(timeoutId);
+
+      if (pingRes && pingRes.ok) {
+        const json = await pingRes.json().catch(() => null);
+        if (json?.result) {
+          const blockNumber = parseInt(json.result, 16);
+          const provider = new ethers.JsonRpcProvider(rpcUrl, {
+            chainId: MST_CHAIN_ID,
+            name: "MST Blockchain Testnet",
+          });
+          return { provider, blockNumber, isOnline: true };
+        }
+      }
+    } catch {
+      // Try next RPC
+    }
+  }
+
+  // Fallback: try MST SDK provider
+  try {
+    const ProviderClass = mstSdk.Provider || mstSdk.default?.Provider;
+    if (ProviderClass) {
+      const sdkProvider = new ProviderClass(MST_RPC_URL);
+      const block = await sdkProvider.getBlockNumber().catch(() => null);
+      if (block) {
+        // Wrap SDK provider in ethers for consistent interface
+        const ethersProvider = new ethers.JsonRpcProvider(MST_RPC_URL, {
+          chainId: MST_CHAIN_ID,
+          name: "MST Blockchain Testnet",
+        });
+        return { provider: ethersProvider, blockNumber: Number(block), isOnline: true };
+      }
+    }
+  } catch {
+    // non-fatal
+  }
+
+  return { provider: null, blockNumber: null, isOnline: false };
+}
+
+/**
  * Primary Autonomous Evidence Anchoring Function
  *
  * Implements the Zero-Popup Session Relayer flow:
- * Dispatches live on-chain notarization transactions autonomously in the background
- * without prompting modal approval windows on every 10-second slice.
+ * 1. Connects to MST RPC (primary + fallback)
+ * 2. Attempts to send a real on-chain `anchor(bytes32)` transaction
+ * 3. If the transaction succeeds → returns real txHash + receipt (simulated: false)
+ * 4. If the transaction fails (no gas, RPC offline, revert) → returns an offline
+ *    placeholder hash with simulated: true, so the UI can honestly show the status
  *
  * @param {string} victimId - Identifier for user / device / SOS incident
  * @param {string} sha256Hash - SHA-256 digest of captured evidence
@@ -234,12 +330,14 @@ export async function connectBridgeKeyWallet() {
  *   explorerUrl: string,
  *   contractAddress: string,
  *   timestamp: number,
- *   blockNumber: number,
+ *   blockNumber: number|null,
  *   gasUsed: string,
  *   costMST: string,
  *   simulated: boolean,
+ *   status: string,
  *   account: string,
- *   relayer: string
+ *   relayer: string,
+ *   failureReason: string|null
  * }>}
  */
 export async function anchorEvidenceToMST(
@@ -270,95 +368,172 @@ export async function anchorEvidenceToMST(
   if (onStatusUpdate) {
     onStatusUpdate({
       status: "BROADCASTING",
-      message: "Autonomous session relayer dispatching on-chain proof to MST Testnet...",
+      message: "Connecting to MST Blockchain RPC...",
       sessionAddress,
     });
   }
 
-  // 1. Check live RPC status and query latest block height
-  let latestBlock = 91562037;
-  let isRpcOnline = false;
+  // 1. Connect to MST RPC
+  const { provider, blockNumber: latestBlock, isOnline } = await connectToMSTRpc();
 
-  for (const rpcUrl of [MST_RPC_URL, MST_FALLBACK_RPC_URL]) {
+  // 2. Prepare the evidence hash as bytes32
+  const cleanHash = (sha256Hash || "").startsWith("0x") ? sha256Hash : `0x${sha256Hash}`;
+  // Ensure it's a valid bytes32 (pad or truncate to 32 bytes = 64 hex chars)
+  const hashForContract = cleanHash.length === 66
+    ? cleanHash
+    : `0x${cleanHash.replace("0x", "").padEnd(64, "0").slice(0, 64)}`;
+
+  // 3. Attempt real on-chain transaction
+  if (isOnline && provider) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1800);
-      const pingRes = await fetch(rpcUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "eth_blockNumber",
-          params: [],
-          id: 1,
-        }),
-        signal: controller.signal,
-      }).catch(() => null);
-      clearTimeout(timeoutId);
+      if (onStatusUpdate) {
+        onStatusUpdate({
+          status: "BROADCASTING",
+          message: "Dispatching on-chain anchor transaction to MST Testnet...",
+          sessionAddress,
+        });
+      }
 
-      if (pingRes && pingRes.ok) {
-        const json = await pingRes.json().catch(() => null);
-        if (json?.result) {
-          latestBlock = parseInt(json.result, 16);
-          isRpcOnline = true;
-          break;
+      // Connect session wallet to provider
+      const connectedWallet = sessionWallet.connect(provider);
+
+      // Check wallet balance first
+      const balance = await provider.getBalance(sessionAddress).catch(() => 0n);
+      if (balance === 0n) {
+        throw new Error("SESSION_WALLET_NO_GAS: Session relayer wallet has zero MST balance. Fund the wallet or use testnet faucet.");
+      }
+
+      // Create contract instance and send real anchor transaction
+      const contract = new ethers.Contract(MST_CONTRACT_ADDRESS, NOTARY_CONTRACT_ABI, connectedWallet);
+      const tx = await contract.anchor(hashForContract);
+
+      console.log("[MST Relayer] Transaction broadcast:", tx.hash);
+
+      if (onStatusUpdate) {
+        onStatusUpdate({
+          status: "PENDING",
+          message: `Transaction broadcast! Waiting for confirmation... (${tx.hash.slice(0, 12)}...)`,
+          txHash: tx.hash,
+        });
+      }
+
+      // Wait for confirmation (up to 60 seconds)
+      const receipt = await tx.wait(1, 60000);
+
+      if (receipt && receipt.status === 1) {
+        const explorerUrl = getMSTExplorerTxUrl(receipt.hash);
+
+        console.log("✅ Confirmed On-Chain!");
+        console.log("Tx Hash:", receipt.hash);
+        console.log("Block Number:", receipt.blockNumber);
+        console.log("Gas Used:", receipt.gasUsed.toString());
+        console.log("Explorer:", explorerUrl);
+        console.groupEnd();
+
+        if (onStatusUpdate) {
+          onStatusUpdate({
+            status: ANCHOR_STATUS.CONFIRMED,
+            message: `Anchored on MST Testnet! Block #${receipt.blockNumber} · Real On-Chain Proof`,
+            txHash: receipt.hash,
+            explorerUrl,
+            gasUsed: receipt.gasUsed.toString(),
+            blockNumber: Number(receipt.blockNumber),
+          });
         }
+
+        return {
+          success: true,
+          txHash: receipt.hash,
+          explorerUrl,
+          contractAddress: MST_CONTRACT_ADDRESS,
+          blockNumber: Number(receipt.blockNumber),
+          gasUsed: receipt.gasUsed.toString(),
+          costMST: ethers.formatEther(receipt.gasUsed * (receipt.gasPrice || 0n)),
+          timestamp,
+          simulated: false,
+          status: ANCHOR_STATUS.CONFIRMED,
+          account: sessionAddress,
+          relayer: "Autonomous Session Keypair — Real On-Chain Transaction",
+          failureReason: null,
+        };
+      } else {
+        throw new Error("Transaction reverted on-chain (receipt.status !== 1)");
       }
-    } catch {
-      // Try fallback
+    } catch (txError) {
+      console.warn("[MST Relayer] Real transaction failed, falling back to simulation:", txError.message);
+      // Fall through to simulation below
+      return buildSimulationResult({
+        sha256Hash,
+        victimId,
+        timestamp,
+        sessionAddress,
+        latestBlock,
+        failureReason: txError.message,
+        onStatusUpdate,
+      });
     }
   }
 
-  // 2. Derive unique, deterministic 66-character EVM transaction hash for this artifact
-  const uniqueTxHash = await deriveMSTTxHash(sha256Hash, victimId, timestamp);
-  const explorerUrl = getMSTExplorerTxUrl(uniqueTxHash);
-  const gasUsed = "21450";
-  const costMST = "0.00002145";
+  // 4. RPC offline — return honest simulation
+  console.warn("[MST Relayer] RPC unreachable. Returning locally-signed simulation.");
+  console.groupEnd();
 
-  // If MST SDK Provider is available, attempt SDK block query
-  if (isRpcOnline) {
-    try {
-      const ProviderClass = mstSdk.Provider || mstSdk.default?.Provider;
-      if (ProviderClass) {
-        const sdkProvider = new ProviderClass(MST_RPC_URL);
-        const block = await sdkProvider.getBlockNumber().catch(() => null);
-        if (block) latestBlock = Number(block);
-      }
-    } catch {
-      // non-fatal
-    }
-  }
+  return buildSimulationResult({
+    sha256Hash,
+    victimId,
+    timestamp,
+    sessionAddress,
+    latestBlock,
+    failureReason: "MST RPC unreachable — evidence signed locally, queued for on-chain anchoring when connectivity is restored.",
+    onStatusUpdate,
+  });
+}
 
-  console.log("Confirmed On-Chain!");
-  console.log("Tx Hash:", uniqueTxHash);
-  console.log("Block Number:", latestBlock);
-  console.log("Explorer:", explorerUrl);
+/**
+ * Builds an honest simulation result when real on-chain anchoring is not possible.
+ * Clearly marks the result as simulated so the UI can show appropriate status.
+ */
+async function buildSimulationResult({
+  sha256Hash,
+  victimId,
+  timestamp,
+  sessionAddress,
+  latestBlock,
+  failureReason,
+  onStatusUpdate,
+}) {
+  const placeholderTxHash = await deriveOfflineTxPlaceholder(sha256Hash, victimId, timestamp);
+  const explorerUrl = getMSTExplorerTxUrl(placeholderTxHash);
+
+  console.log("⚠️ Simulation Mode — No real on-chain transaction sent.");
+  console.log("Placeholder Hash:", placeholderTxHash);
+  console.log("Reason:", failureReason);
   console.groupEnd();
 
   if (onStatusUpdate) {
     onStatusUpdate({
-      status: "CONFIRMED",
-      message: `Anchored on MST Testnet! Block #${latestBlock} · Zero-Popup Session Relayed`,
-      txHash: uniqueTxHash,
+      status: ANCHOR_STATUS.SIMULATION,
+      message: `Evidence signed locally. Queued for on-chain anchoring. (${failureReason || "RPC offline"})`,
+      txHash: placeholderTxHash,
       explorerUrl,
-      gasUsed,
-      costMST,
       blockNumber: latestBlock,
     });
   }
 
   return {
     success: true,
-    txHash: uniqueTxHash,
+    txHash: placeholderTxHash,
     explorerUrl,
     contractAddress: MST_CONTRACT_ADDRESS,
     blockNumber: latestBlock,
-    gasUsed,
-    costMST,
+    gasUsed: "0",
+    costMST: "0",
     timestamp,
-    simulated: false,
+    simulated: true,
+    status: ANCHOR_STATUS.SIMULATION,
     account: sessionAddress,
-    relayer: "Autonomous Zero-Popup Session Keypair",
+    relayer: "Autonomous Session Keypair — Locally Signed (Pending On-Chain)",
+    failureReason: failureReason || null,
   };
 }
 

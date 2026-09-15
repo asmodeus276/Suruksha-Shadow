@@ -93,6 +93,13 @@ const PHONETIC_ALIASES = {
     "punana",
     "pyjama",
     "badana",
+    "banaa",
+    "manana",
+    "kela",
+    "kelaa",
+    "kayla",
+    "keela",
+    "kela khao",
     "बनाना",
     "केला",
     "बना",
@@ -485,214 +492,9 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
     [apiBaseUrl, codeWord, fire]
   );
 
-  // --- Engine 1: Web Speech API Real-Time Multi-Dialect Continuous STT (Primary Instant Detector) ---
-  useEffect(() => {
-    if (!enabled) {
-      setMicStatus("idle");
-      return;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      console.warn("[SURAKSHA SHIELD] Web Speech API not supported in this browser. Falling back to Cloud Acoustic VAD.");
-      return;
-    }
-
-    let isDestroyed = false;
-    let recognitionInstance = null;
-    let restartTimer = null;
-    let isCurrentlyListening = false;
-
-    // Detect user's browser language with intelligent defaults
-    const defaultLang =
-      typeof navigator !== "undefined" && navigator.language && navigator.language.startsWith("en")
-        ? navigator.language
-        : "en-IN";
-
-    function cleanupInstance() {
-      if (recognitionInstance) {
-        try {
-          recognitionInstance.onstart = null;
-          recognitionInstance.onaudiostart = null;
-          recognitionInstance.onspeechstart = null;
-          recognitionInstance.onresult = null;
-          recognitionInstance.onerror = null;
-          recognitionInstance.onend = null;
-          recognitionInstance.abort();
-        } catch {
-          /* ignore */
-        }
-        recognitionInstance = null;
-      }
-      speechRecognitionRef.current = null;
-      isCurrentlyListening = false;
-    }
-
-    function startRecognition() {
-      if (isDestroyed || !enabled || triggeredRef.current || isCurrentlyListening) return;
-
-      cleanupInstance();
-
-      try {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = defaultLang;
-        recognition.maxAlternatives = 8;
-
-        recognition.onstart = () => {
-          if (isDestroyed) return;
-          isCurrentlyListening = true;
-          setMicStatus("listening");
-          setLastError(null);
-        };
-
-        recognition.onresult = (event) => {
-          if (isDestroyed || triggeredRef.current) return;
-
-          let interimText = "";
-          let finalAccumulated = "";
-
-          for (let i = 0; i < event.results.length; i++) {
-            const res = event.results[i];
-            const transcriptText = res[0]?.transcript || "";
-            if (res.isFinal) {
-              finalAccumulated += transcriptText + " ";
-            } else {
-              interimText += transcriptText + " ";
-            }
-          }
-
-          const currentHearing = (interimText || finalAccumulated || "").trim();
-          if (currentHearing) {
-            setTranscript(`🗣️ Hearing: "${currentHearing}"`);
-            setMicStatus("hearing");
-          }
-
-          const target = (codeWord || "banana").toLowerCase().trim();
-          let matched = false;
-          let matchedWord = "";
-          let matchConfidence = 0.95;
-
-          // 1. Check all alternative transcripts
-          for (let i = 0; i < event.results.length; i++) {
-            const result = event.results[i];
-            for (let j = 0; j < result.length; j++) {
-              const alt = (result[j]?.transcript || "").toLowerCase().trim();
-              if (!alt) continue;
-
-              if (target && isFuzzyCodeWordMatch(alt, target)) {
-                matched = true;
-                matchedWord = target;
-                matchConfidence = 0.99;
-                break;
-              }
-
-              for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
-                if (isFuzzyCodeWordMatch(alt, universal)) {
-                  matched = true;
-                  matchedWord = universal;
-                  matchConfidence = 0.96;
-                  break;
-                }
-              }
-            }
-            if (matched) break;
-          }
-
-          // 2. Check individual token words in recent speech
-          if (!matched && currentHearing) {
-            const tokens = currentHearing.toLowerCase().split(/\s+/).filter(Boolean);
-            for (const token of tokens) {
-              if (isFuzzyCodeWordMatch(token, target)) {
-                matched = true;
-                matchedWord = target;
-                matchConfidence = 0.98;
-                break;
-              }
-              for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
-                if (isFuzzyCodeWordMatch(token, universal)) {
-                  matched = true;
-                  matchedWord = universal;
-                  matchConfidence = 0.95;
-                  break;
-                }
-              }
-              if (matched) break;
-            }
-          }
-
-          // 3. Overall full phrase fuzzy check
-          if (!matched && currentHearing && (isFuzzyCodeWordMatch(currentHearing, target) || isFuzzyCodeWordMatch(finalAccumulated, target))) {
-            matched = true;
-            matchedWord = target;
-            matchConfidence = 0.94;
-          }
-
-          if (matched) {
-            console.log(`[SURAKSHA SHIELD] Web Speech API matched codeword: "${matchedWord}"`);
-            setTranscript(`🚨 "${matchedWord.toUpperCase()}" (KEYWORD DETECTED)`);
-            setMicStatus("matched");
-            fire(
-              "voice",
-              matchConfidence,
-              `Live speech recognized distress codeword: "${matchedWord}" (Heard: "${currentHearing}")`
-            );
-          }
-        };
-
-        recognition.onerror = (e) => {
-          if (isDestroyed) return;
-          // 'no-speech' is a normal silence timeout in Chrome, not an error
-          if (e.error === "no-speech") {
-            setMicStatus("listening");
-            return;
-          }
-          if (e.error === "aborted") {
-            return;
-          }
-          if (e.error === "not-allowed") {
-            setMicStatus("error");
-            setLastError("Microphone permission denied. Please allow microphone access.");
-          } else {
-            console.warn("[SURAKSHA SHIELD] SpeechRecognition event notice:", e.error);
-          }
-        };
-
-        recognition.onend = () => {
-          isCurrentlyListening = false;
-          if (isDestroyed || !enabled || triggeredRef.current) return;
-          // Seamless auto-restart with debounced delay
-          if (restartTimer) clearTimeout(restartTimer);
-          restartTimer = setTimeout(() => {
-            setRestartCount((n) => n + 1);
-            startRecognition();
-          }, 150);
-        };
-
-        recognitionInstance = recognition;
-        speechRecognitionRef.current = recognition;
-        recognition.start();
-      } catch (err) {
-        isCurrentlyListening = false;
-        if (!isDestroyed && enabled && !triggeredRef.current) {
-          if (restartTimer) clearTimeout(restartTimer);
-          restartTimer = setTimeout(startRecognition, 400);
-        }
-      }
-    }
-
-    startRecognition();
-
-    return () => {
-      isDestroyed = true;
-      if (restartTimer) clearTimeout(restartTimer);
-      cleanupInstance();
-    };
-  }, [codeWord, enabled, fire]);
-
   // --- Engine 2: Web Audio Acoustic Level Meter & Silent VAD (With Muted Destination) ---
+  // IMPORTANT: This engine MUST run first because it acquires the shared microphone stream.
+  // Engine 1 (SpeechRecognition) will be started AFTER this stream is ready.
   useEffect(() => {
     if (!enabled) {
       if (audioStreamRef.current) {
@@ -737,7 +539,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
 
-        const ctx = new AudioCtx({ sampleRate: 16000 });
+        const ctx = new AudioCtx();
         if (ctx.state === "suspended") {
           await ctx.resume().catch(() => {});
         }
@@ -970,6 +772,256 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
       }
     };
   }, [enabled, sendWavToWhisper, fire]);
+
+  // --- Engine 1: Web Speech API Real-Time Multi-Dialect Continuous STT (Primary Instant Detector) ---
+  // This engine starts AFTER Engine 2 has acquired the shared mic stream, with a brief delay
+  // to avoid the race condition where two separate getUserMedia calls fight over the mic.
+  useEffect(() => {
+    if (!enabled) {
+      setMicStatus("idle");
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.warn("[SURAKSHA SHIELD] Web Speech API not supported in this browser. Falling back to Cloud Acoustic VAD.");
+      return;
+    }
+
+    let isDestroyed = false;
+    let recognitionInstance = null;
+    let restartTimer = null;
+    let isCurrentlyListening = false;
+    let consecutiveNoSpeechErrors = 0;
+
+    // Detect user's browser language with intelligent defaults
+    const defaultLang =
+      typeof navigator !== "undefined" && navigator.language && navigator.language.startsWith("en")
+        ? navigator.language
+        : "en-IN";
+
+    function cleanupInstance() {
+      if (recognitionInstance) {
+        try {
+          recognitionInstance.onstart = null;
+          recognitionInstance.onaudiostart = null;
+          recognitionInstance.onspeechstart = null;
+          recognitionInstance.onresult = null;
+          recognitionInstance.onerror = null;
+          recognitionInstance.onend = null;
+          recognitionInstance.abort();
+        } catch {
+          /* ignore */
+        }
+        recognitionInstance = null;
+      }
+      speechRecognitionRef.current = null;
+      isCurrentlyListening = false;
+    }
+
+    function scheduleRestart(delayMs = 300) {
+      if (isDestroyed || !enabled || triggeredRef.current) return;
+      if (restartTimer) clearTimeout(restartTimer);
+      restartTimer = setTimeout(() => {
+        setRestartCount((n) => n + 1);
+        startRecognition();
+      }, delayMs);
+    }
+
+    function startRecognition() {
+      if (isDestroyed || !enabled || triggeredRef.current || isCurrentlyListening) return;
+
+      cleanupInstance();
+
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = defaultLang;
+        recognition.maxAlternatives = 8;
+
+        recognition.onstart = () => {
+          if (isDestroyed) return;
+          isCurrentlyListening = true;
+          consecutiveNoSpeechErrors = 0;
+          setMicStatus("listening");
+          setLastError(null);
+          console.log("[SURAKSHA SHIELD] SpeechRecognition started successfully, listening for codeword...");
+        };
+
+        // Called when audio capture begins — confirms the mic is actually feeding audio
+        recognition.onaudiostart = () => {
+          if (isDestroyed) return;
+          console.log("[SURAKSHA SHIELD] SpeechRecognition audio capture active.");
+        };
+
+        recognition.onresult = (event) => {
+          if (isDestroyed || triggeredRef.current) return;
+          consecutiveNoSpeechErrors = 0;
+
+          let interimText = "";
+          let finalAccumulated = "";
+
+          for (let i = 0; i < event.results.length; i++) {
+            const res = event.results[i];
+            const transcriptText = res[0]?.transcript || "";
+            if (res.isFinal) {
+              finalAccumulated += transcriptText + " ";
+            } else {
+              interimText += transcriptText + " ";
+            }
+          }
+
+          const currentHearing = (interimText || finalAccumulated || "").trim();
+          if (currentHearing) {
+            setTranscript(`🗣️ Hearing: "${currentHearing}"`);
+            setMicStatus("hearing");
+          }
+
+          const target = (codeWord || "banana").toLowerCase().trim();
+          let matched = false;
+          let matchedWord = "";
+          let matchConfidence = 0.95;
+
+          // 1. Check all alternative transcripts
+          for (let i = 0; i < event.results.length; i++) {
+            const result = event.results[i];
+            for (let j = 0; j < result.length; j++) {
+              const alt = (result[j]?.transcript || "").toLowerCase().trim();
+              if (!alt) continue;
+
+              if (target && isFuzzyCodeWordMatch(alt, target)) {
+                matched = true;
+                matchedWord = target;
+                matchConfidence = 0.99;
+                break;
+              }
+
+              for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
+                if (isFuzzyCodeWordMatch(alt, universal)) {
+                  matched = true;
+                  matchedWord = universal;
+                  matchConfidence = 0.96;
+                  break;
+                }
+              }
+            }
+            if (matched) break;
+          }
+
+          // 2. Check individual token words in recent speech
+          if (!matched && currentHearing) {
+            const tokens = currentHearing.toLowerCase().split(/\s+/).filter(Boolean);
+            for (const token of tokens) {
+              if (isFuzzyCodeWordMatch(token, target)) {
+                matched = true;
+                matchedWord = target;
+                matchConfidence = 0.98;
+                break;
+              }
+              for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
+                if (isFuzzyCodeWordMatch(token, universal)) {
+                  matched = true;
+                  matchedWord = universal;
+                  matchConfidence = 0.95;
+                  break;
+                }
+              }
+              if (matched) break;
+            }
+          }
+
+          // 3. Overall full phrase fuzzy check
+          if (!matched && currentHearing && (isFuzzyCodeWordMatch(currentHearing, target) || isFuzzyCodeWordMatch(finalAccumulated, target))) {
+            matched = true;
+            matchedWord = target;
+            matchConfidence = 0.94;
+          }
+
+          if (matched) {
+            console.log(`[SURAKSHA SHIELD] Web Speech API matched codeword: "${matchedWord}"`);
+            setTranscript(`🚨 "${matchedWord.toUpperCase()}" (KEYWORD DETECTED)`);
+            setMicStatus("matched");
+            fire(
+              "voice",
+              matchConfidence,
+              `Live speech recognized distress codeword: "${matchedWord}" (Heard: "${currentHearing}")`
+            );
+          }
+        };
+
+        recognition.onerror = (e) => {
+          if (isDestroyed) return;
+
+          if (e.error === "aborted") {
+            return;
+          }
+
+          // 'no-speech' is normal background silence in Chrome.
+          // Chrome stops recognition after silence, so onend will trigger a smooth quick restart.
+          if (e.error === "no-speech") {
+            consecutiveNoSpeechErrors = (consecutiveNoSpeechErrors + 1) % 10;
+            setMicStatus("listening");
+            return;
+          }
+
+          if (e.error === "not-allowed") {
+            setMicStatus("error");
+            setLastError("Microphone permission denied. Please allow microphone access.");
+            return;
+          }
+
+          // 'network' error happens on mobile when connectivity is spotty
+          // 'audio-capture' error happens when mic is busy or re-negotiating
+          if (e.error === "network" || e.error === "audio-capture") {
+            console.warn(`[SURAKSHA SHIELD] SpeechRecognition ${e.error} notice, recovering...`);
+            setMicStatus("listening");
+            return;
+          }
+
+          console.warn("[SURAKSHA SHIELD] SpeechRecognition event notice:", e.error);
+        };
+
+        recognition.onend = () => {
+          isCurrentlyListening = false;
+          if (isDestroyed || !enabled || triggeredRef.current) return;
+          // Ultra-responsive restart with 180ms delay to avoid Chrome throttle while minimizing deaf gap
+          scheduleRestart(180);
+        };
+
+        recognitionInstance = recognition;
+        speechRecognitionRef.current = recognition;
+        try {
+          recognition.start();
+        } catch (startErr) {
+          if (startErr.name !== "InvalidStateError") {
+            console.warn("[SURAKSHA SHIELD] Recognition start notice:", startErr.message);
+          }
+        }
+      } catch (err) {
+        isCurrentlyListening = false;
+        console.warn("[SURAKSHA SHIELD] SpeechRecognition start failed:", err.message);
+        if (!isDestroyed && enabled && !triggeredRef.current) {
+          scheduleRestart(300);
+        }
+      }
+    }
+
+    // Delay SpeechRecognition start by 800ms to let Engine 2 (Web Audio) acquire
+    // the shared mic stream first. This prevents the dual-getUserMedia race condition
+    // where two competing streams cause one engine to be starved of audio.
+    const initialDelay = setTimeout(() => {
+      if (!isDestroyed) startRecognition();
+    }, 800);
+
+    return () => {
+      isDestroyed = true;
+      clearTimeout(initialDelay);
+      if (restartTimer) clearTimeout(restartTimer);
+      cleanupInstance();
+    };
+  }, [codeWord, enabled, fire]);
 
   // --- Engine 3: Motion Calibration ---
   useEffect(() => {

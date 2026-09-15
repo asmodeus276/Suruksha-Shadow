@@ -3,7 +3,7 @@ import { getVaultRecords } from "../hooks/useEvidenceVault";
 import {
   anchorEvidenceToMST,
   connectBridgeKeyWallet,
-  deriveMSTTxHash,
+  deriveOfflineTxPlaceholder,
   MST_CONTRACT_ADDRESS,
   MST_EXPLORER_BASE,
   MST_CONTRACT_EXPLORER_URL,
@@ -13,6 +13,7 @@ import {
   getMSTExplorerTxUrl,
   isValidTxHash,
   getSessionAddress,
+  ANCHOR_STATUS,
 } from "../lib/mstAnchor";
 import CameraWatch from "./CameraWatch";
 import PoliceFirModal from "./PoliceFirModal";
@@ -163,7 +164,7 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
       generateSyntheticOpticalBurst().then(async (frames) => {
         const compositeHash = "0x4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a";
         const signature = await signArtifactDigest(compositeHash);
-        const burstTx = await deriveMSTTxHash(compositeHash, "OPT-BURST-INIT", Date.now());
+        const burstTx = await deriveOfflineTxPlaceholder(compositeHash, "OPT-BURST-INIT", Date.now());
         const synthetic = {
           id: "OPT-BURST-INIT",
           timestamp: new Date().toISOString(),
@@ -181,15 +182,16 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
           hardwareEnclaveInfo: "Hardware Enclave: On-Device WebCrypto Keystore (Non-Extractable P-256 Key)",
           frames,
           bsaCompliance: "BSA 2023 §63 / FRE 902(13)&(14) Certified",
-          simulated: false,
+          simulated: true,
           mstAnchor: {
             success: true,
             txHash: burstTx,
             explorerUrl: getMSTExplorerTxUrl(burstTx),
             contractAddress: MST_CONTRACT_ADDRESS,
-            blockNumber: 91562037,
+            blockNumber: null,
             timestamp: Date.now(),
-            simulated: false,
+            simulated: true,
+            status: ANCHOR_STATUS.SIMULATION,
           },
         };
         saveOpticalBurst(synthetic);
@@ -247,19 +249,19 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
    * Open In-App Cryptographic Proof & MST Blockchain Inspector Modal
    */
   const handleOpenProofModal = (proof = null) => {
-    const targetTx =
-      proof?.txHash && !proof?.simulated
-        ? proof.txHash
-        : proof?.txHash || mstTxHash || VERIFIED_MST_TX_HASH;
+    const isRealTx = proof?.txHash && !proof?.simulated;
+    const targetTx = proof?.txHash || mstTxHash || VERIFIED_MST_TX_HASH;
     setInspectedProof({
       txHash: targetTx,
       contractAddress: MST_CONTRACT_ADDRESS,
-      blockNumber: proof?.blockNumber || 91562037,
-      gasUsed: proof?.gasUsed || "21,450",
-      costMST: proof?.costMST || "0.000021",
+      blockNumber: proof?.blockNumber || null,
+      gasUsed: proof?.gasUsed || "0",
+      costMST: proof?.costMST || "0",
       explorerUrl: `https://testnet.mstscan.com/tx/${targetTx}`,
       enclaveSignature: proof?.enclaveSignature || "0x78af31c902be17e452a819c4021948ba92019482019a84b029dfea45812903ab",
       enclaveFingerprint: proof?.enclaveFingerprint || enclaveFingerprint,
+      simulated: proof?.simulated !== false,
+      status: proof?.status || (isRealTx ? ANCHOR_STATUS.CONFIRMED : ANCHOR_STATUS.SIMULATION),
     });
     setShowMerkleModal(true);
   };
@@ -280,7 +282,7 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
       transactionAnchorHash: currentTx,
       transactionExplorerUrl: getMSTExplorerTxUrl(currentTx),
       status: "CONFIRMED_ON_CHAIN",
-      blockHeight: proof?.blockNumber || 91562037,
+      blockHeight: proof?.blockNumber || null,
       gasUsed: proof?.gasUsed || "21450",
       costMST: proof?.costMST || "0.000021",
       consensusTimestamp: new Date().toISOString(),
@@ -431,10 +433,11 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
    */
   const renderStateBadge = (recordMst, customHash = null, customProof = null) => {
     const isOnline = queueStatus?.isOnline !== false;
-    const isAnchored = recordMst?.success || customHash;
     const txHash = recordMst?.txHash || customHash;
+    const isSimulated = recordMst?.simulated !== false;
+    const isReallyAnchored = txHash && !isSimulated;
 
-    if (!isOnline && !isAnchored) {
+    if (!isOnline && !txHash) {
       return (
         <span
           className="tag"
@@ -458,7 +461,8 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
       );
     }
 
-    if (isAnchored && txHash) {
+    // Real confirmed on-chain transaction (receipt obtained)
+    if (isReallyAnchored && txHash) {
       return (
         <button
           onClick={() =>
@@ -466,9 +470,11 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
               customProof || {
                 txHash,
                 contractAddress: MST_CONTRACT_ADDRESS,
-                blockNumber: recordMst?.blockNumber || 91562037,
-                gasUsed: recordMst?.gasUsed || "21,450",
-                costMST: recordMst?.costMST || "0.000021",
+                blockNumber: recordMst?.blockNumber || null,
+                gasUsed: recordMst?.gasUsed || "0",
+                costMST: recordMst?.costMST || "0",
+                simulated: false,
+                status: ANCHOR_STATUS.CONFIRMED,
               }
             )
           }
@@ -487,10 +493,51 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
             color: "var(--safe)",
             transition: "all 0.2s ease",
           }}
-          title={`Click to inspect on-chain consensus proof: ${txHash}`}
+          title={`Confirmed on-chain proof: ${txHash}`}
         >
           <span style={{ fontSize: 10 }}>🟢</span>
           <span>On-Chain Proof ({txHash.slice(0, 8)}…{txHash.slice(-4)})</span>
+          <span style={{ fontSize: 10, opacity: 0.75 }}>↗</span>
+        </button>
+      );
+    }
+
+    // Simulated / pending verification — has a placeholder hash but no real tx receipt
+    if (txHash && isSimulated) {
+      return (
+        <button
+          onClick={() =>
+            handleOpenProofModal(
+              customProof || {
+                txHash,
+                contractAddress: MST_CONTRACT_ADDRESS,
+                blockNumber: null,
+                gasUsed: "0",
+                costMST: "0",
+                simulated: true,
+                status: ANCHOR_STATUS.SIMULATION,
+              }
+            )
+          }
+          className="tag"
+          style={{
+            cursor: "pointer",
+            fontSize: 11,
+            fontWeight: 600,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            borderRadius: "var(--radius-sm)",
+            padding: "4px 10px",
+            border: "1px solid rgba(255, 183, 77, 0.5)",
+            background: "rgba(255, 183, 77, 0.12)",
+            color: "#ffb74d",
+            transition: "all 0.2s ease",
+          }}
+          title={`Locally signed, pending on-chain verification. Hash: ${txHash}`}
+        >
+          <span style={{ fontSize: 10 }}>⏳</span>
+          <span>Pending Verification ({txHash.slice(0, 8)}…)</span>
           <span style={{ fontSize: 10, opacity: 0.75 }}>↗</span>
         </button>
       );
@@ -974,7 +1021,7 @@ ${
               {renderStateBadge(null, acousticTx.txHash, {
                 txHash: acousticTx.txHash,
                 contractAddress: MST_CONTRACT_ADDRESS,
-                blockNumber: 91562037,
+                blockNumber: null,
                 enclaveSignature: acousticTx.signature,
               })}
             </div>
@@ -1073,7 +1120,7 @@ ${
               {renderStateBadge(null, cardiacTx.txHash, {
                 txHash: cardiacTx.txHash,
                 contractAddress: MST_CONTRACT_ADDRESS,
-                blockNumber: 91562037,
+                blockNumber: null,
                 enclaveSignature: cardiacTx.signature,
               })}
             </div>
@@ -1176,7 +1223,7 @@ ${
                   {
                     txHash: opticalBurst?.mstAnchor?.txHash || "0x4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
                     contractAddress: MST_CONTRACT_ADDRESS,
-                    blockNumber: 91562037,
+                    blockNumber: opticalBurst?.mstAnchor?.blockNumber || null,
                     enclaveSignature: opticalBurst?.enclaveSignature,
                   }
                 )}
@@ -1594,7 +1641,7 @@ ${
                       {renderStateBadge(recordMst, itemTxHash, {
                         txHash: itemTxHash,
                         contractAddress: MST_CONTRACT_ADDRESS,
-                        blockNumber: recordMst?.blockNumber || 91562037,
+                        blockNumber: recordMst?.blockNumber || null,
                         gasUsed: recordMst?.gasUsed || "21,450",
                         costMST: recordMst?.costMST || "0.000021",
                         enclaveSignature: r.enclaveSignature,
@@ -1767,8 +1814,8 @@ ${
               </div>
               <div>
                 <span style={{ color: "var(--mist-dim)" }}>BLOCK HEIGHT: </span>
-                <span style={{ color: "var(--paper)" }}>
-                  #{inspectedProof?.blockNumber || 91562037} (Finalized)
+                <span style={{ color: inspectedProof?.blockNumber ? "var(--paper)" : "var(--ember)" }}>
+                  {inspectedProof?.blockNumber ? `#${inspectedProof.blockNumber} (Finalized)` : "Pending Confirmation"}
                 </span>
               </div>
               <div>

@@ -13,6 +13,17 @@ const upload = multer({
 const LEDGER_SIGNING_KEY = process.env.LEDGER_HMAC_SECRET || "dev-fallback-key-change-in-production";
 
 /**
+ * MST Blockchain Configuration (unified across client and server)
+ */
+const MST_CONFIG = {
+  chainId: 91562037,
+  network: "MST Blockchain Testnet (ChainID 91562037)",
+  contractAddress: "0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5",
+  explorerBase: "https://testnet.mstscan.com/tx/",
+  rpcEndpoint: "https://rpc.mstblockchain.com",
+};
+
+/**
  * POST /api/evidence/upload-block (also aliases /upload-chunk)
  */
 router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (req, res) => {
@@ -71,18 +82,19 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
       /* best effort */
     }
 
-    // Compute Polygon Blockchain Anchor (Amoy Testnet / Polygon PoS)
-    const txSeed = crypto.createHash("sha256").update(`${clientHash}|${serverTimestamp}|POLYGON_AMOY`).digest("hex");
-    const polygonTxHash = `0x${txSeed}`;
-    const polygonBlockNumber = 14285920 + (Date.now() % 50000);
-    const polygonAnchor = {
-      network: "Polygon Amoy Testnet (ChainID 80002)",
-      contractAddress: "0x71C840A831a28C3A48bB1b1F369c0d24cCE3683C",
-      txHash: polygonTxHash,
-      blockNumber: polygonBlockNumber,
+    // Compute MST Blockchain Anchor (Testnet)
+    const txSeed = crypto.createHash("sha256").update(`${clientHash}|${serverTimestamp}|MST_TESTNET_91562037`).digest("hex");
+    const mstTxHash = `0x${txSeed}`;
+    const mstBlockNumber = null; // No real tx sent server-side — honest placeholder
+    const mstAnchor = {
+      network: MST_CONFIG.network,
+      contractAddress: MST_CONFIG.contractAddress,
+      txHash: mstTxHash,
+      blockNumber: mstBlockNumber,
       anchoredAt: serverTimestamp,
-      explorerUrl: `https://amoy.polygonscan.com/tx/${polygonTxHash}`,
-      immutableProof: `SHA256(${clientHash}) anchored at Block #${polygonBlockNumber}`,
+      explorerUrl: `${MST_CONFIG.explorerBase}${mstTxHash}`,
+      immutableProof: `SHA256(${clientHash}) — pending on-chain anchoring`,
+      simulated: true,
     };
 
     const ledgerReceipt = {
@@ -97,9 +109,9 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
       client_timestamp: metadata.clientCapturedAt,
       server_timestamp: serverTimestamp,
       server_countersignature: serverCountersignature,
-      polygon_tx_hash: polygonTxHash,
-      polygon_block_number: polygonBlockNumber,
-      polygon_network: polygonAnchor.network,
+      mst_tx_hash: mstTxHash,
+      mst_block_number: mstBlockNumber,
+      mst_network: mstAnchor.network,
     };
 
     inMemoryLedger.push(ledgerReceipt);
@@ -117,7 +129,7 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
         serverCountersignature,
         serverTimestamp,
         storagePath: storageUploaded ? storagePath : null,
-        polygonAnchor,
+        mstAnchor,
       },
     });
   } catch (err) {
@@ -143,17 +155,18 @@ router.post("/countersign", (req, res) => {
     .update(countersignatureInput)
     .digest("hex");
 
-  const txSeed = crypto.createHash("sha256").update(`${clientSha256}|${serverTimestamp}|POLYGON_AMOY`).digest("hex");
-  const polygonTxHash = `0x${txSeed}`;
-  const polygonBlockNumber = 14285920 + (Date.now() % 50000);
+  const txSeed = crypto.createHash("sha256").update(`${clientSha256}|${serverTimestamp}|MST_TESTNET_91562037`).digest("hex");
+  const mstTxHash = `0x${txSeed}`;
+  const mstBlockNumber = null; // No real tx sent server-side — honest placeholder
 
-  const polygonAnchor = {
-    network: "Polygon Amoy Testnet (ChainID 80002)",
-    contractAddress: "0x71C840A831a28C3A48bB1b1F369c0d24cCE3683C",
-    txHash: polygonTxHash,
-    blockNumber: polygonBlockNumber,
+  const mstAnchor = {
+    network: MST_CONFIG.network,
+    contractAddress: MST_CONFIG.contractAddress,
+    txHash: mstTxHash,
+    blockNumber: mstBlockNumber,
     anchoredAt: serverTimestamp,
-    explorerUrl: `https://amoy.polygonscan.com/tx/${polygonTxHash}`,
+    explorerUrl: `${MST_CONFIG.explorerBase}${mstTxHash}`,
+    simulated: true,
   };
 
   res.json({
@@ -161,8 +174,8 @@ router.post("/countersign", (req, res) => {
     clientSha256,
     serverTimestamp,
     serverHmac,
-    polygonAnchor,
-    standard: "BSA Section 63 & Polygon On-Chain Anchored",
+    mstAnchor,
+    standard: "BSA Section 63 & MST Blockchain On-Chain Anchored",
   });
 });
 
@@ -184,11 +197,12 @@ router.get("/verify/:clientHash", (req, res) => {
     serverTimestamp: match.server_timestamp,
     serverCountersignature: match.server_countersignature,
     gpsCoordinates: match.gps_coordinates,
-    polygonAnchor: {
-      network: match.polygon_network || "Polygon Amoy Testnet (ChainID 80002)",
-      txHash: match.polygon_tx_hash,
-      blockNumber: match.polygon_block_number,
-      explorerUrl: `https://amoy.polygonscan.com/tx/${match.polygon_tx_hash}`,
+    mstAnchor: {
+      network: match.mst_network || MST_CONFIG.network,
+      txHash: match.mst_tx_hash,
+      blockNumber: match.mst_block_number,
+      explorerUrl: `${MST_CONFIG.explorerBase}${match.mst_tx_hash}`,
+      simulated: true,
     },
     legalStandard: "Bharatiya Sakshya Adhiniyam (BSA) 2023 Section 63 Compliant",
   });

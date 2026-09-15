@@ -86,6 +86,14 @@ const PHONETIC_ALIASES = {
     "punana",
     "pyjama",
     "badana",
+    "banaa",
+    "manana",
+    "kela",
+    "kelaa",
+    "kayla",
+    "keela",
+    "kelaa",
+    "kela khao",
     "बनाना",
     "केला",
     "बना",
@@ -368,9 +376,9 @@ async function transcribeWithOpenAI(audioBuffer, mimeType, apiKey, codeWord = "b
 async function transcribeWithGemini(audioBase64, mimeType, apiKey, codeWord = "banana") {
   const modelsToTry = [
     "gemini-3.6-flash",
-    "gemini-3.5-flash",
-    "gemini-3.5-flash-lite",
+    "gemini-flash-lite-latest",
     "gemini-flash-latest",
+    "gemini-3.1-flash-lite-preview",
   ];
   let lastError = null;
 
@@ -379,13 +387,13 @@ async function transcribeWithGemini(audioBase64, mimeType, apiKey, codeWord = "b
       {
         parts: [
           {
-            inline_data: {
-              mime_type: mimeType || "audio/wav",
+            inlineData: {
+              mimeType: mimeType || "audio/wav",
               data: audioBase64,
             },
           },
           {
-            text: `Transcribe human speech in this emergency audio clip. Spoken words may include "${codeWord}", "bachao", "help", "save me", or numbers. Return ONLY the transcribed words with no commentary or formatting. If there is no human speech or only silence/static, respond with SILENCE.`,
+            text: `Transcribe human speech in this emergency audio clip. Spoken words may include "${codeWord}", "banana", "kela", "bachao", "help", "save me", or numbers. Return ONLY the transcribed words with no commentary or formatting. If there is no human speech or only silence/static, respond with SILENCE.`,
           },
         ],
       },

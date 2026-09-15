@@ -15,9 +15,10 @@
 
 import {
   anchorEvidenceToMST,
-  deriveMSTTxHash,
+  deriveOfflineTxPlaceholder,
   getMSTExplorerTxUrl,
   MST_CONTRACT_ADDRESS,
+  ANCHOR_STATUS,
 } from "./mstAnchor";
 
 const OPTICAL_BURSTS_KEY = "suraksha_optical_bursts_v1";
@@ -666,7 +667,7 @@ export async function captureOpticalBurst({
   const enclaveFingerprint = await getEnclaveFingerprint();
 
   // Derive dedicated transaction anchor for this optical burst
-  const txHash = await deriveMSTTxHash(compositeHash, burstId, Date.now());
+  const txHash = await deriveOfflineTxPlaceholder(compositeHash, burstId, Date.now());
   const explorerUrl = getMSTExplorerTxUrl(txHash);
 
   const burstRecord = {
@@ -692,9 +693,10 @@ export async function captureOpticalBurst({
       txHash,
       explorerUrl,
       contractAddress: MST_CONTRACT_ADDRESS,
-      blockNumber: 91562037,
+      blockNumber: null,
       timestamp: Date.now(),
-      simulated: false,
+      simulated: true,
+      status: ANCHOR_STATUS.SIMULATION,
     },
   };
 
@@ -868,7 +870,7 @@ export async function startContinuousAudioNotarization({
         const enclaveFingerprint = await getEnclaveFingerprint();
 
         // Derive deterministic transaction anchor upfront so evidence record has immediate verified link
-        const tentativeTxHash = await deriveMSTTxHash(sha256, sliceId, capturedAt);
+        const tentativeTxHash = await deriveOfflineTxPlaceholder(sha256, sliceId, capturedAt);
         const tentativeExplorerUrl = getMSTExplorerTxUrl(tentativeTxHash);
 
         const initialAnchor = {
@@ -876,11 +878,12 @@ export async function startContinuousAudioNotarization({
           txHash: tentativeTxHash,
           explorerUrl: tentativeExplorerUrl,
           contractAddress: MST_CONTRACT_ADDRESS,
-          blockNumber: 91562037,
+          blockNumber: null,
           timestamp: capturedAt,
-          gasUsed: "21450",
-          costMST: "0.00002145",
-          simulated: false,
+          gasUsed: "0",
+          costMST: "0",
+          simulated: true,
+          status: ANCHOR_STATUS.SIMULATION,
         };
 
         const record = {
@@ -896,7 +899,7 @@ export async function startContinuousAudioNotarization({
           mimeType: recordedMime || mimeType || "audio/webm",
           blob: sliceBlob,
           mstAnchor: initialAnchor,
-          syncStatus: typeof navigator !== "undefined" && !navigator.onLine ? "offline_signed" : "syncing",
+          syncStatus: typeof navigator !== "undefined" && !navigator.onLine ? "offline_signed" : "pending_anchor",
         };
 
         await saveEvidenceRecord(record);
