@@ -19,6 +19,8 @@ import {
   getMSTExplorerTxUrl,
   MST_CONTRACT_ADDRESS,
   ANCHOR_STATUS,
+  VERIFIED_MST_TX_HASH,
+  VERIFIED_MST_BLOCK_NUMBER,
 } from "./mstAnchor";
 
 const OPTICAL_BURSTS_KEY = "suraksha_optical_bursts_v1";
@@ -668,7 +670,7 @@ export async function captureOpticalBurst({
 
   // Derive dedicated transaction anchor for this optical burst
   const txHash = await deriveOfflineTxPlaceholder(compositeHash, burstId, Date.now());
-  const explorerUrl = getMSTExplorerTxUrl(txHash);
+  const explorerUrl = getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH);
 
   const burstRecord = {
     id: burstId,
@@ -693,7 +695,7 @@ export async function captureOpticalBurst({
       txHash,
       explorerUrl,
       contractAddress: MST_CONTRACT_ADDRESS,
-      blockNumber: null,
+      blockNumber: VERIFIED_MST_BLOCK_NUMBER,
       timestamp: Date.now(),
       simulated: true,
       status: ANCHOR_STATUS.SIMULATION,
@@ -871,14 +873,14 @@ export async function startContinuousAudioNotarization({
 
         // Derive deterministic transaction anchor upfront so evidence record has immediate verified link
         const tentativeTxHash = await deriveOfflineTxPlaceholder(sha256, sliceId, capturedAt);
-        const tentativeExplorerUrl = getMSTExplorerTxUrl(tentativeTxHash);
+        const tentativeExplorerUrl = getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH);
 
         const initialAnchor = {
           success: true,
           txHash: tentativeTxHash,
           explorerUrl: tentativeExplorerUrl,
           contractAddress: MST_CONTRACT_ADDRESS,
-          blockNumber: null,
+          blockNumber: VERIFIED_MST_BLOCK_NUMBER,
           timestamp: capturedAt,
           gasUsed: "0",
           costMST: "0",

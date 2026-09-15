@@ -344,10 +344,11 @@ export default function App() {
     }
   }, [activeEventId]);
 
-  // Continuous 10-Second Audio Chunk Slicer & MST On-Chain Auto-Notarizer (Armed or SOS Mode)
+  // Continuous 10-Second Audio Chunk Slicer & MST On-Chain Auto-Notarizer (Active Emergency Mode)
+  // Runs during active SOS emergency to build forensic evidence vault without interfering with standby codeword listening
   useEffect(() => {
     let isMounted = true;
-    if (armed || activeEventId) {
+    if (activeEventId) {
       startContinuousAudioNotarization({
         sosId: activeEventId,
         onChunkNotarized: () => {
@@ -365,7 +366,7 @@ export default function App() {
       isMounted = false;
       stopContinuousAudioNotarization();
     };
-  }, [armed, activeEventId]);
+  }, [activeEventId]);
 
   const fireSOS = useCallback(
     async (triggerInput) => {

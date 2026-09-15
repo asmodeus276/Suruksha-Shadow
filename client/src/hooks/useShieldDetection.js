@@ -558,10 +558,11 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         const postRollCount = Math.round(actualSampleRate * 0.35);
         const minUtteranceSamples = Math.round(actualSampleRate * 0.25);
 
-        const isVoiceActiveRef = { current: false };
+        const isWebSpeechSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
-        // Continuous PCM Rolling Ring Buffer (Muted gain prevents feedback loop to speakers)
-        if (ctx.createScriptProcessor) {
+        // Only create ScriptProcessorNode if Web Speech API is NOT supported (for Cloud STT fallback)
+        // This prevents hardware echo cancellation from suppressing the mic when Web Speech API is listening natively
+        if (!isWebSpeechSupported && ctx.createScriptProcessor) {
           processorNode = ctx.createScriptProcessor(4096, 1, 1);
           silentGain = ctx.createGain();
           silentGain.gain.setValueAtTime(0, ctx.currentTime);
@@ -585,7 +586,6 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
               for (let i = 0; i < channel.length; i++) {
                 active.push(channel[i]);
               }
-              // Limit single utterance chunk to 3.0 seconds max
               if (active.length > maxUtteranceCapacity) {
                 active.splice(0, active.length - maxUtteranceCapacity);
               }
@@ -1008,12 +1008,10 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
       }
     }
 
-    // Delay SpeechRecognition start by 800ms to let Engine 2 (Web Audio) acquire
-    // the shared mic stream first. This prevents the dual-getUserMedia race condition
-    // where two competing streams cause one engine to be starved of audio.
+    // Start SpeechRecognition promptly upon arming for instant response
     const initialDelay = setTimeout(() => {
       if (!isDestroyed) startRecognition();
-    }, 800);
+    }, 100);
 
     return () => {
       isDestroyed = true;
