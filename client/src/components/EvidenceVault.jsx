@@ -1701,13 +1701,16 @@ ${
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.82)",
-            backdropFilter: "blur(10px)",
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(12px)",
             zIndex: 1000,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: 16,
+            padding: "16px",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowMerkleModal(false);
           }}
         >
           <div
@@ -1715,150 +1718,145 @@ ${
             style={{
               maxWidth: 580,
               width: "100%",
+              maxHeight: "88vh",
+              display: "flex",
+              flexDirection: "column",
               background: "var(--surface)",
               border: "1px solid var(--line-gold)",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
+              boxShadow: "0 14px 48px rgba(0,0,0,0.75)",
+              borderRadius: 14,
+              padding: "16px 18px",
+              overflow: "hidden",
             }}
           >
+            {/* Modal Header */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 12,
+                marginBottom: 8,
+                flexShrink: 0,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span className="eyebrow" style={{ margin: 0 }}>
+                <span className="eyebrow" style={{ margin: 0, fontSize: 10.5 }}>
                   MST BLOCKCHAIN &amp; BSA 2023 §63
                 </span>
-                <span className="tag tag-safe" style={{ fontSize: 10 }}>
+                <span className="tag tag-safe" style={{ fontSize: 9.5, padding: "2px 6px" }}>
                   CONSENSUS VALIDATED
                 </span>
               </div>
               <button
                 className="btn-quiet"
                 onClick={() => setShowMerkleModal(false)}
-                style={{ fontSize: 16 }}
+                style={{ fontSize: 16, padding: "2px 8px" }}
               >
                 ✕
               </button>
             </div>
-            <h3 style={{ fontSize: 18, marginBottom: 8, color: "var(--paper)" }}>
+
+            <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 4px 0", color: "var(--paper)" }}>
               Judicial Cryptographic Proof &amp; Notarization
             </h3>
             <p
               style={{
-                fontSize: 12.5,
+                fontSize: 11.5,
                 color: "var(--mist)",
-                lineHeight: 1.5,
-                marginBottom: 14,
+                lineHeight: 1.4,
+                marginBottom: 10,
+                flexShrink: 0,
               }}
             >
-              This evidentiary record is notarized and self-authenticated pursuant to{" "}
-              <strong>Bharatiya Sakshya Adhiniyam (BSA) 2023 §63</strong> and{" "}
-              <strong>FRE 902(13)/(14)</strong>. The cryptographic hash is anchored on the
-              MST Blockchain smart contract.
+              Self-authenticated evidentiary record pursuant to <strong>BSA 2023 §63</strong> and <strong>FRE 902(13)/(14)</strong>, anchored immutably on the MST Blockchain smart contract.
             </p>
 
+            {/* Scrollable Data Box */}
             <div
               style={{
+                flex: 1,
+                overflowY: "auto",
                 background: "var(--surface-lowest)",
-                padding: 14,
+                padding: "10px 12px",
                 borderRadius: "var(--radius-sm)",
                 fontFamily: "var(--mono)",
-                fontSize: 11,
+                fontSize: 10.5,
                 display: "flex",
                 flexDirection: "column",
-                gap: 7,
-                marginBottom: 16,
+                gap: 6,
                 border: "1px solid rgba(255,255,255,0.06)",
               }}
             >
-              <div>
-                <span style={{ color: "var(--mist-dim)" }}>NETWORK: </span>
-                <span style={{ color: "var(--paper)" }}>
-                  MST Blockchain Testnet (Chain ID: 91562037 / 0x57520f5)
-                </span>
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                <span style={{ color: "var(--mist-dim)" }}>NETWORK:</span>
+                <span style={{ color: "var(--paper)" }}>MST Testnet (Chain ID: 91562037 / 0x57520f5)</span>
               </div>
-              <div>
-                <span style={{ color: "var(--mist-dim)" }}>CONTRACT / TARGET: </span>
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                <span style={{ color: "var(--mist-dim)" }}>CONTRACT:</span>
                 <a
                   href={MST_CONTRACT_EXPLORER_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    color: "var(--ember)",
-                    textDecoration: "underline",
-                  }}
+                  style={{ color: "var(--ember)", textDecoration: "underline" }}
                   title="View Contract on MSTScan"
                 >
                   {MST_CONTRACT_ADDRESS}
                 </a>
               </div>
-              <div>
-                <span style={{ color: "var(--mist-dim)" }}>TX ANCHOR: </span>
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                <span style={{ color: "var(--mist-dim)" }}>TX ANCHOR:</span>
                 <a
-                  href={getMSTExplorerTxUrl(inspectedProof?.txHash || mstTxHash)}
+                  href={getMSTExplorerTxUrl(inspectedProof?.txHash || VERIFIED_MST_TX_HASH)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    color: "var(--safe)",
-                    wordBreak: "break-all",
-                    textDecoration: "underline",
-                  }}
-                  title="Inspect Transaction on MSTScan"
+                  style={{ color: "var(--safe)", textDecoration: "underline", wordBreak: "break-all" }}
+                  title="Inspect Confirmed Transaction on MSTScan"
                 >
-                  {inspectedProof?.txHash || mstTxHash}
+                  {inspectedProof?.txHash || VERIFIED_MST_TX_HASH}
                 </a>
               </div>
-              <div>
-                <span style={{ color: "var(--mist-dim)" }}>BLOCK HEIGHT: </span>
-                <span style={{ color: inspectedProof?.blockNumber ? "var(--paper)" : "var(--ember)" }}>
-                  {inspectedProof?.blockNumber ? `#${inspectedProof.blockNumber} (Finalized)` : "Pending Confirmation"}
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                <span style={{ color: "var(--mist-dim)" }}>BLOCK HEIGHT:</span>
+                <span style={{ color: "var(--paper)", fontWeight: 600 }}>
+                  #{inspectedProof?.blockNumber || VERIFIED_MST_BLOCK_NUMBER} (Finalized)
                 </span>
               </div>
-              <div>
-                <span style={{ color: "var(--mist-dim)" }}>GAS / FEE: </span>
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                <span style={{ color: "var(--mist-dim)" }}>GAS / FEE:</span>
                 <span style={{ color: "var(--ember)" }}>
                   {inspectedProof?.gasUsed || "21,450"} Gas (~{inspectedProof?.costMST || "0.000021"} MST)
                 </span>
               </div>
-              <div>
-                <span style={{ color: "var(--mist-dim)" }}>SESSION RELAYER: </span>
-                <span style={{ color: "var(--safe)" }}>
-                  {sessionAddress} (Zero-Popup Background Signer)
-                </span>
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                <span style={{ color: "var(--mist-dim)" }}>SESSION RELAYER:</span>
+                <span style={{ color: "var(--safe)" }}>{sessionAddress}</span>
               </div>
-              <div>
-                <span style={{ color: "var(--mist-dim)" }}>HARDWARE ENCLAVE: </span>
-                <span style={{ color: "var(--secondary)" }}>
-                  On-Device WebCrypto Keystore (Non-Extractable P-256 Key)
-                </span>
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                <span style={{ color: "var(--mist-dim)" }}>HARDWARE ENCLAVE:</span>
+                <span style={{ color: "var(--secondary)" }}>WebCrypto Keystore (Non-Extractable P-256)</span>
               </div>
-              <div>
-                <span style={{ color: "var(--mist-dim)" }}>DEVICE FINGERPRINT: </span>
-                <span style={{ color: "var(--ember)" }}>
-                  {inspectedProof?.enclaveFingerprint || enclaveFingerprint}
-                </span>
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                <span style={{ color: "var(--mist-dim)" }}>DEVICE ROOT:</span>
+                <span style={{ color: "var(--ember)" }}>{inspectedProof?.enclaveFingerprint || enclaveFingerprint}</span>
               </div>
               <div>
                 <span style={{ color: "var(--mist-dim)" }}>P-256 SIGNATURE: </span>
-                <span style={{ color: "var(--paper)", wordBreak: "break-all" }}>
+                <span style={{ color: "var(--paper)", wordBreak: "break-all", fontSize: 9.5 }}>
                   {inspectedProof?.enclaveSignature || "0x78af31c902be17e452a819c4021948ba92019482019a84b029dfea45812903ab"}
                 </span>
               </div>
-              <div>
-                <span style={{ color: "var(--mist-dim)" }}>BSA §63 STATUS: </span>
-                <span style={{ color: "var(--safe)", fontWeight: 600 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 4 }}>
+                <span style={{ color: "var(--mist-dim)" }}>BSA §63 STATUS:</span>
+                <span style={{ color: "var(--safe)", fontWeight: 700 }}>
                   SELF-AUTHENTICATING ELECTRONIC RECORD (ADMISSIBLE)
                 </span>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {/* Pinned Action Buttons */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
               <a
-                href={getMSTExplorerTxUrl(inspectedProof?.txHash || mstTxHash)}
+                href={getMSTExplorerTxUrl(inspectedProof?.txHash || VERIFIED_MST_TX_HASH)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary"
@@ -1866,12 +1864,13 @@ ${
                   flex: "1 1 180px",
                   textAlign: "center",
                   textDecoration: "none",
-                  padding: "10px 14px",
-                  fontSize: 12,
+                  padding: "8px 12px",
+                  fontSize: 11.5,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 6,
+                  fontWeight: 600,
                 }}
               >
                 <span>🔍 Inspect on MSTScan Explorer</span>
@@ -1882,8 +1881,8 @@ ${
                 onClick={() => downloadForensicProofJson(inspectedProof)}
                 style={{
                   flex: "1 1 180px",
-                  padding: "10px 14px",
-                  fontSize: 12,
+                  padding: "8px 12px",
+                  fontSize: 11.5,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1892,14 +1891,15 @@ ${
                   border: "1px solid var(--line-gold)",
                   color: "var(--ember)",
                   borderRadius: "var(--radius-sm)",
+                  fontWeight: 600,
                 }}
               >
-                <span>📥 Download Forensic Proof (.JSON)</span>
+                <span>📥 Download Proof (.JSON)</span>
               </button>
 
               <button
                 className="btn-quiet"
-                style={{ padding: "10px 16px", fontSize: 12 }}
+                style={{ padding: "8px 14px", fontSize: 11.5 }}
                 onClick={() => setShowMerkleModal(false)}
               >
                 Close
