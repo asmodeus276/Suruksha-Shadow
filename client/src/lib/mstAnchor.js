@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+﻿import { ethers } from "ethers";
 import * as mstSdk from "@mstblockchain/mst-sdk";
 
 /**
@@ -353,7 +353,7 @@ export async function anchorEvidenceToMST(
   sha256Hash,
   metadata = {},
   onStatusUpdate = null,
-  options = { silent: true }
+  _options = { silent: true }
 ) {
   const timestamp = Date.now();
   const sessionWallet = getOrCreateSessionWallet();

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * DPDP Act 2023 — Consent Artifact Generator
  * -----------------------------------------------------------
  * Generates machine-readable, tamper-evident consent records
@@ -81,7 +81,7 @@ export async function generateConsentArtifact({
     spec_version: "DPDP-2023/V1.0",
     artifact_id: crypto.randomUUID(),
     data_principal_id: userId,
-    data_fiduciary: "Suruksha-Shadow",
+    data_fiduciary: "Suraksha-Shadow",
     purpose_code: purposeCode,
     sensor_scope: sensorType,
     retention_period_days: retentionPeriodDays,

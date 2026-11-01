@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -18,7 +18,11 @@ export default function LiveMap({ locations = [], isActive = true, height = 280 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clean up any stale leaflet container instance ID
+    // Clean up any existing map instance (handles React StrictMode double-invoke)
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
     if (containerRef.current._leaflet_id) {
       delete containerRef.current._leaflet_id;
     }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+﻿import { useEffect, useRef, useCallback, useState } from "react";
 
 // Standard universal emergency phrases that always trigger distress detection (English & Devanagari)
 const UNIVERSAL_EMERGENCY_WORDS = [
@@ -384,6 +384,28 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
   const prevMotionRef = useRef(0);
   const pcmRollingRingRef = useRef([]); // rolling pre-roll buffer (last 1.5s)
   const activeUtterancePcmRef = useRef([]); // current active utterance samples
+  const isVoiceActiveRef = useRef(false); // tracks whether voice is currently active in VAD
+  const codeWordRef = useRef(codeWord); // always-current codeword for closures
+  const enabledRef = useRef(enabled);
+  const onTriggerRef = useRef(onTrigger);
+  const apiBaseUrlRef = useRef(apiBaseUrl);
+  const startRecognitionRef = useRef(null);
+
+  useEffect(() => {
+    codeWordRef.current = codeWord;
+  }, [codeWord]);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
+  useEffect(() => {
+    onTriggerRef.current = onTrigger;
+  }, [onTrigger]);
+
+  useEffect(() => {
+    apiBaseUrlRef.current = apiBaseUrl;
+  }, [apiBaseUrl]);
 
   // Self-healing auto-reset on disarmed -> armed transition
   const prevEnabledRef = useRef(false);
@@ -401,14 +423,14 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
       if (triggeredRef.current) return;
       triggeredRef.current = true;
       console.log(`[SURAKSHA SHIELD] LIVE sensor trigger fired: ${type} (Confidence: ${Math.round(confidence * 100)}%)`);
-      onTrigger?.({
+      onTriggerRef.current?.({
         triggerType: type,
         mode: "live",
         confidence,
         details: details || `Live sensor trigger: ${type}`,
       });
     },
-    [onTrigger]
+    []
   );
 
   // Manual Trigger Simulation for testing
@@ -423,6 +445,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
   );
 
   // Helper: Dispatch standalone 16kHz WAV slice to Cloud Whisper / Gemini API (Fallback)
+  /* eslint-disable react-hooks/preserve-manual-memoization */
   const sendWavToWhisper = useCallback(
     async (wavBlob) => {
       if (triggeredRef.current || !wavBlob || wavBlob.size < 1200) return;
@@ -443,14 +466,14 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         });
         const dataUrl = await base64Promise;
 
-        const endpoint = `${apiBaseUrl || ""}/api/audio/transcribe`;
+        const endpoint = `${apiBaseUrlRef.current || ""}/api/audio/transcribe`;
         const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             audio: dataUrl,
             mimeType: "audio/wav",
-            codeWord: codeWord || "banana",
+            codeWord: codeWordRef.current || "banana",
           }),
         });
 
@@ -465,7 +488,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
             setTranscript(`🗣️ AI Heard: "${heardText.trim()}"`);
             setMicStatus("whisper-active");
 
-            if (data.isMatch || isFuzzyCodeWordMatch(heardText, codeWord)) {
+            if (data.isMatch || isFuzzyCodeWordMatch(heardText, codeWordRef.current)) {
               console.log("[SURAKSHA SHIELD] AI codeword match confirmed:", heardText);
               setTranscript(`🚨 "${heardText.toUpperCase()}" (MATCHED)`);
               setMicStatus("matched");
@@ -489,8 +512,9 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         }
       }
     },
-    [apiBaseUrl, codeWord, fire]
+    [fire]
   );
+  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   // --- Engine 2: Web Audio Acoustic Level Meter & Silent VAD (With Muted Destination) ---
   // IMPORTANT: This engine MUST run first because it acquires the shared microphone stream.
@@ -795,10 +819,14 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
     let isCurrentlyListening = false;
     let consecutiveNoSpeechErrors = 0;
 
-    // Detect user's browser language with intelligent defaults
+    // Support English, Indian English, and Hindi seamlessly.
+    // In Chrome, "en-IN" is bilingual: it transcribes both Hindi distress words
+    // ("bachao", "madad", "chhoro", "khatra") AND English ("help me", "banana", "police")
+    // into standard Latin text that matches our comprehensive phonetic aliases.
+    // If user's OS is explicitly Hindi, use "hi-IN" (matching our Devanagari dictionary).
     const defaultLang =
-      typeof navigator !== "undefined" && navigator.language && navigator.language.startsWith("en")
-        ? navigator.language
+      typeof navigator !== "undefined" && navigator.language && navigator.language.startsWith("hi")
+        ? "hi-IN"
         : "en-IN";
 
     function cleanupInstance() {
@@ -830,6 +858,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
     }
 
     function startRecognition() {
+      startRecognitionRef.current = startRecognition;
       if (isDestroyed || !enabled || triggeredRef.current || isCurrentlyListening) return;
 
       cleanupInstance();
@@ -860,9 +889,13 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
           if (isDestroyed || triggeredRef.current) return;
           consecutiveNoSpeechErrors = 0;
 
+          // Read the always-current codeword from the ref (avoids stale closure)
+          const target = (codeWordRef.current || "banana").toLowerCase().trim();
+
           let interimText = "";
           let finalAccumulated = "";
 
+          // Scan all active results in utterance so full phrase is always preserved
           for (let i = 0; i < event.results.length; i++) {
             const res = event.results[i];
             const transcriptText = res[0]?.transcript || "";
@@ -873,18 +906,19 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
             }
           }
 
-          const currentHearing = (interimText || finalAccumulated || "").trim();
+          // Combine both interim and final text for display and matching
+          const combinedText = (finalAccumulated + " " + interimText).trim();
+          const currentHearing = combinedText || "";
           if (currentHearing) {
             setTranscript(`🗣️ Hearing: "${currentHearing}"`);
             setMicStatus("hearing");
           }
 
-          const target = (codeWord || "banana").toLowerCase().trim();
           let matched = false;
           let matchedWord = "";
           let matchConfidence = 0.95;
 
-          // 1. Check all alternative transcripts
+          // 1. Check all alternative transcripts across all active results
           for (let i = 0; i < event.results.length; i++) {
             const result = event.results[i];
             for (let j = 0; j < result.length; j++) {
@@ -894,7 +928,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
               if (target && isFuzzyCodeWordMatch(alt, target)) {
                 matched = true;
                 matchedWord = target;
-                matchConfidence = 0.99;
+                matchConfidence = result.isFinal ? 0.99 : 0.97;
                 break;
               }
 
@@ -933,10 +967,21 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
           }
 
           // 3. Overall full phrase fuzzy check
-          if (!matched && currentHearing && (isFuzzyCodeWordMatch(currentHearing, target) || isFuzzyCodeWordMatch(finalAccumulated, target))) {
-            matched = true;
-            matchedWord = target;
-            matchConfidence = 0.94;
+          if (!matched && currentHearing) {
+            if (isFuzzyCodeWordMatch(currentHearing, target) || (finalAccumulated && isFuzzyCodeWordMatch(finalAccumulated, target))) {
+              matched = true;
+              matchedWord = target;
+              matchConfidence = 0.94;
+            } else {
+              for (const universal of UNIVERSAL_EMERGENCY_WORDS) {
+                if (isFuzzyCodeWordMatch(currentHearing, universal) || (finalAccumulated && isFuzzyCodeWordMatch(finalAccumulated, universal))) {
+                  matched = true;
+                  matchedWord = universal;
+                  matchConfidence = 0.94;
+                  break;
+                }
+              }
+            }
           }
 
           if (matched) {
@@ -955,6 +1000,15 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
           if (isDestroyed) return;
 
           if (e.error === "aborted") {
+            return;
+          }
+
+          if (e.error === "language-not-supported") {
+            console.warn(`[SURAKSHA SHIELD] SpeechRecognition language ${defaultLang} not supported, falling back to en-US`);
+            if (recognitionInstance) {
+              recognitionInstance.lang = "en-US";
+            }
+            scheduleRestart(200);
             return;
           }
 
@@ -1019,7 +1073,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
       if (restartTimer) clearTimeout(restartTimer);
       cleanupInstance();
     };
-  }, [codeWord, enabled, fire]);
+  }, [enabled, fire]); // codeWord removed — read from codeWordRef to avoid tearing down SpeechRecognition on every keystroke
 
   // --- Engine 3: Motion Calibration ---
   useEffect(() => {
@@ -1147,6 +1201,9 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
     setSyllableCount(0);
     isTranscribingRef.current = false;
     setIsWhisperTranscribing(false);
+    if (enabledRef.current) {
+      startRecognitionRef.current?.();
+    }
   }, []);
 
   return {

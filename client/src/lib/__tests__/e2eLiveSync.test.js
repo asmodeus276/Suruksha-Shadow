@@ -1,3 +1,5 @@
+﻿/* eslint-disable no-unused-vars */
+/* global process */
 /**
  * ============================================================================
  * SURAKSHA SHADOW — LIVE END-TO-END OFFLINE REPLAY & BACKEND INTEGRATION TEST

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Geo & Emergency Dispatch Utilities
  * -------------------------------------------------------------
  * Provides lightweight reverse geocoding (OpenStreetMap Nominatim with local caching),
@@ -49,6 +49,7 @@ export async function reverseGeocode(lat, lng) {
       {
         headers: {
           Accept: "application/json",
+          "User-Agent": "Suraksha-Shadow-App/1.0 (contact: support@suraksha-shadow.vercel.app)",
         },
         signal: controller.signal,
       }

@@ -36,11 +36,11 @@ export function buildSosMessage({
     window.location.origin &&
     !window.location.origin.includes("localhost")
       ? window.location.origin
-      : "https://suruksha-shadow.vercel.app";
+      : "https://suraksha-shadow.vercel.app";
 
   const guardianLink = shareToken
     ? `${clientUrl}/guardian/${shareToken}`
-    : "https://suruksha-shadow.vercel.app/guardian/live-beacon";
+    : "https://suraksha-shadow.vercel.app/guardian/live-beacon";
 
   const lat = location?.lat || 28.474861;
   const lng = location?.lng || 77.4765986;

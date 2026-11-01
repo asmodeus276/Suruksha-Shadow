@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+﻿import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import {
@@ -12,7 +12,6 @@ import {
   NavigationIcon,
   ShareIcon,
   WhatsAppIcon,
-  ShieldAlertIcon,
 } from "../components/icons";
 import logoImg from "../assets/logo.jpg";
 import LiveMap from "../components/LiveMap";
@@ -313,8 +312,7 @@ export default function GuardianView() {
 
   const isActive = emergency.status === "active";
   const startTime = emergency.start_time ? new Date(emergency.start_time).getTime() : null;
-  const elapsedSecs = startTime ? Math.max(0, Math.floor((nowTick - startTime) / 1000)) : 0;
-  const _elapsedMins = Math.floor(elapsedSecs / 60);
+  const _elapsedSecs = startTime ? Math.max(0, Math.floor((nowTick - startTime) / 1000)) : 0;
   const batteryPct = emergency.battery_pct != null ? emergency.battery_pct : 78;
 
   return (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+﻿import { useEffect, useRef, useState, useCallback } from "react";
 import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 import * as fpModule from "fingerpose";
 
@@ -27,7 +27,7 @@ const GestureEstimator = fp?.GestureEstimator || fpModule?.GestureEstimator;
  */
 
 // Configure rule-based GestureDescription for the trapped-thumb fist position.
-let signalForHelpGesture = null;
+let signalForHelpGesture;
 let GESTURE_ESTIMATOR = null;
 
 if (GestureDescription && GestureEstimator && Finger && FingerCurl) {
@@ -450,7 +450,7 @@ export function useGestureDetection({
         setDiagnosticInfo(err.message || "Failed to initialize camera watch");
       }
     }
-  }, [fire, holdDurationMs, stopCamera]);
+  }, [fire, holdDurationMs, stopCamera, facingMode]);
 
   // Toggle Camera Watch ON/OFF
   const toggleCameraWatch = useCallback(() => {

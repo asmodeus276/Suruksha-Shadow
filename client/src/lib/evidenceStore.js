@@ -1,4 +1,4 @@
-/**
+﻿/**
  * High-Frequency Optical Burst Engine, WebCrypto Hardware Keystore,
  * Continuous Audio Slice Notarizer & Autonomous Background Sync Queue
  * -------------------------------------------------------------------
@@ -583,7 +583,7 @@ export async function captureOpticalBurst({
           audio: false,
         });
       } catch (camErr) {
-        throw new Error(`Webcam hardware access failed: ${camErr.message}`);
+        throw new Error(`Webcam hardware access failed: ${camErr.message}`, { cause: camErr });
       }
     }
 

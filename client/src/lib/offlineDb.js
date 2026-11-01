@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ============================================================================
  * SURAKSHA SHADOW — OFFLINE INDEXEDDB RESILIENCE ENGINE
  * ============================================================================
@@ -54,7 +54,7 @@ export function openResilienceDB() {
 
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onupgradeneeded = (event) => {
+    request.onupgradeneeded = (_event) => {
       const db = request.result;
 
       // 1. emergency_events store
@@ -186,17 +186,22 @@ export async function getEmergencyEvent(id) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORES.EMERGENCY_EVENTS, "readonly");
     const store = tx.objectStore(STORES.EMERGENCY_EVENTS);
+    // Pre-queue both requests before any callbacks fire to keep the
+    // transaction alive across both IDB result handlers.
     const req = store.get(id);
+    const index = store.index("emergencyId");
+    const idxReq = index.get(id);
 
-    req.onsuccess = () => {
-      if (req.result) return resolve(req.result);
-      // Try querying by emergencyId index
-      const index = store.index("emergencyId");
-      const idxReq = index.get(id);
-      idxReq.onsuccess = () => resolve(idxReq.result || null);
-      idxReq.onerror = () => reject(idxReq.error);
-    };
+    let settled = false;
+    function settle(value) {
+      if (!settled) { settled = true; resolve(value); }
+    }
+
+    req.onsuccess = () => { if (req.result) settle(req.result); };
     req.onerror = () => reject(req.error);
+    // Index result used as fallback if primary key lookup returns nothing
+    idxReq.onsuccess = () => settle(idxReq.result || null);
+    idxReq.onerror = () => { if (!settled) reject(idxReq.error); };
   });
 }
 
@@ -531,7 +536,7 @@ export async function getResilienceStats() {
   const db = await openResilienceDB();
   const stores = Object.values(STORES);
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
     const tx = db.transaction(stores, "readonly");
     const stats = {};
     let completed = 0;

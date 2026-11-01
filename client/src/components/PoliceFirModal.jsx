@@ -1,16 +1,11 @@
-import { useState, useRef } from "react";
+﻿import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   FileTextIcon,
-  ShieldIcon,
   ShieldCheckIcon,
   CopyIcon,
   CheckIcon,
-  MapPinIcon,
-  ClockIcon,
-  CameraIcon,
   SparkleIcon,
-  AlertTriangleIcon,
 } from "./icons";
 import { VERIFIED_MST_TX_HASH, getMSTExplorerTxUrl } from "../lib/mstAnchor";
 
@@ -24,6 +19,11 @@ import { VERIFIED_MST_TX_HASH, getMSTExplorerTxUrl } from "../lib/mstAnchor";
  * - Bharatiya Sakshya Adhiniyam (BSA) 2023 §63 (Admissibility of Electronic Records)
  * - Federal Rules of Evidence (FRE) 902(13)/(14)
  */
+/** Generates a stable FIR dossier ID. Called once per modal mount, not during render. */
+function generateDossierId() {
+  return `FIR-SURAKSHA-${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
 export default function PoliceFirModal({
   isOpen,
   onClose,
@@ -33,7 +33,7 @@ export default function PoliceFirModal({
   mstExplorerUrl = getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH),
 }) {
   const [complainantName, setComplainantName] = useState("Suraksha User (Confidential)");
-  const [contactPhone, setContactPhone] = useState("+91 98765 43210");
+  const [contactPhone, _setContactPhone] = useState("+91 98765 43210");
   const [policeStation, setPoliceStation] = useState("Station House Officer (SHO), Local Police / Cyber Cell");
   const [offenseType, setOffenseType] = useState("Emergency Distress / Stalking & Threat Anomaly");
   const [activeTab, setActiveTab] = useState("petition"); // "petition" | "bsa63" | "export"
@@ -41,7 +41,7 @@ export default function PoliceFirModal({
   const [emailSent, setEmailSent] = useState(false);
 
   const printAreaRef = useRef(null);
-
+  const [generatedDossierId] = useState(generateDossierId);
   if (!isOpen) return null;
 
   // Derive incident details
@@ -76,8 +76,6 @@ export default function PoliceFirModal({
   const audioHash =
     incident?.audioHash ||
     "0x7d3910f824b910a827401c9481923e018471b0923e410f9238a01b48293e8471";
-
-  const generatedDossierId = `FIR-SURAKSHA-${Math.floor(100000 + Math.random() * 900000)}`;
 
   // Formatted plaintext for e-FIR Copy & Email
   const plainFirText = `================================================================================

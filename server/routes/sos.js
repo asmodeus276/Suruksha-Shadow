@@ -114,7 +114,7 @@ router.post(["/", "/trigger"], async (req, res) => {
 
     if (contactsError) throw contactsError;
 
-    const clientUrl = process.env.CLIENT_URL || "https://suruksha-shadow.vercel.app";
+    const clientUrl = process.env.CLIENT_URL || "https://suraksha-shadow.vercel.app";
     const guardianUrl = `${clientUrl}/guardian/${event.share_token}`;
     const sendLat = lat || 28.474861;
     const sendLng = lng || 77.4765986;
@@ -181,7 +181,7 @@ router.post(["/", "/trigger"], async (req, res) => {
 
     // Fetch contacts (from in-memory or defaults)
     const contacts = inMemoryContacts.get(userId) || getOrCreateDefaultContacts(userId);
-    const clientUrl = process.env.CLIENT_URL || "https://suruksha-shadow.vercel.app";
+    const clientUrl = process.env.CLIENT_URL || "https://suraksha-shadow.vercel.app";
     const guardianUrl = `${clientUrl}/guardian/${shareToken}`;
     const sendLat = lat || 28.474861;
     const sendLng = lng || 77.4765986;

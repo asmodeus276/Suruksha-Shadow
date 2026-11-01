@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef } from "react";
 import { saveGpsPoint, enqueueSync, updateSyncItemStatus, STORES } from "../lib/offlineDb";
 
 const PING_INTERVAL_MS = 7000; // within the 5-10s target from the TRD
@@ -37,7 +37,7 @@ export function useGuardianPing({ eventId, apiBaseUrl, enabled, onLocationUpdate
       };
 
       // 1. Persist locally to IndexedDB
-      let localGpsRecord = null;
+      let localGpsRecord;
       let syncQueueItem = null;
       try {
         localGpsRecord = await saveGpsPoint({

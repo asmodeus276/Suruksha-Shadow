@@ -13,7 +13,7 @@ router.post("/send-alert", async (req, res) => {
   const targets = Array.isArray(phoneNumbers) && phoneNumbers.length > 0 ? phoneNumbers : ["8800948288"];
   const validNumbers = [...new Set(targets.map((p) => String(p).trim()).filter(Boolean))];
 
-  const clientUrl = process.env.CLIENT_URL || "https://suruksha-shadow.vercel.app";
+  const clientUrl = process.env.CLIENT_URL || "https://suraksha-shadow.vercel.app";
   const token = shareToken || "50e17dc8-6010-4e70-9e25-9f7f4a80db62";
   const guardianLink = `${clientUrl}/guardian/${token}`;
 

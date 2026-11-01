@@ -1,3 +1,5 @@
+﻿/* eslint-disable no-unused-vars */
+/* global process */
 /**
  * ============================================================================
  * SURAKSHA SHADOW — OFFLINE INDEXEDDB RESILIENCE ENGINE TEST SUITE

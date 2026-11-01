@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, memo } from "react";
+﻿import { useEffect, useState, useCallback, useRef, memo } from "react";
 import { createPortal } from "react-dom";
 import { getVaultRecords } from "../hooks/useEvidenceVault";
 import {
@@ -13,7 +13,6 @@ import {
   JUDGE_DEMO_WALLET_ACCOUNT,
   getInjectedProvider,
   getMSTExplorerTxUrl,
-  isValidTxHash,
   getSessionAddress,
   ANCHOR_STATUS,
 } from "../lib/mstAnchor";
@@ -111,17 +110,6 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
     getEnclaveFingerprint().then((fp) => setEnclaveFingerprint(fp));
   }, []);
 
-  // Subscribe to real-time auto-sync queue updates
-  useEffect(() => {
-    const unsub = subscribeToNotarizationQueue((status) => {
-      setQueueStatus(status);
-      if (status.event?.type === "ITEM_ANCHORED") {
-        load();
-      }
-    });
-    return unsub;
-  }, []);
-
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -156,6 +144,17 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
       setLoading(false);
     }
   }, []);
+
+  // Subscribe to real-time auto-sync queue updates
+  useEffect(() => {
+    const unsub = subscribeToNotarizationQueue((status) => {
+      setQueueStatus(status);
+      if (status.event?.type === "ITEM_ANCHORED") {
+        load();
+      }
+    });
+    return unsub;
+  }, [load]);
 
   useEffect(() => {
     load();
