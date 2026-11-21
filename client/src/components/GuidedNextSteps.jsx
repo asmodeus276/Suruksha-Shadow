@@ -246,7 +246,7 @@ function ComplaintPanel({ apiBaseUrl, eventId, messages }) {
       {docs.map((d, i) => (
         <div className="doc-block" key={i}>
           <div style={{ marginBottom: 2 }}>
-            <SourceTag label={type === "police" ? "BNS" : "POSH"} />
+            <SourceTag label={d.source || (type === "police" ? "BNS" : "POSH")} />
           </div>
           <div className="doc-title">{d.title}</div>
           <p>{d.content}</p>

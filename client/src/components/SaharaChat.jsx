@@ -6,9 +6,10 @@ import { SendIcon } from "./icons";
 // sends that text as the user's first message immediately — no typing needed.
 const QUICK_REPLIES = [
   { label: "I'm safe now", sub: "मैं सुरक्षित हूँ" },
-  { label: "I need legal help", sub: "मुझे कानूनी मदद चाहिए" },
-  { label: "I'm still in danger", sub: "मैं अभी भी खतरे में हूँ" },
-  { label: "Help me draft a complaint", sub: "शिकायत लिखने में मदद करें" },
+  { label: "What is BNS Section 78 (Stalking)?", sub: "BNS धारा 78 (Stalking) क्या है?" },
+  { label: "Can police arrest a woman at night?", sub: "क्या रात में महिला की गिरफ़्तारी हो सकती है?" },
+  { label: "What is a Zero FIR?", sub: "Zero FIR क्या है और कैसे दर्ज करें?" },
+  { label: "Help me draft a complaint", sub: "शिकायत / FIR का ड्राफ़्ट बनाएँ" },
 ];
 
 /**
