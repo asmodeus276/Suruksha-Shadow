@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import {
@@ -630,7 +630,7 @@ export default function GuardianView() {
           <span className="eyebrow">TAMPER-EVIDENT JUDICIAL PROOF</span>
           <h4 style={{ marginBottom: 8 }}>Section 63 BSA / FRE 902 Seal</h4>
           <p style={{ fontSize: 12, color: "var(--mist-dim)", marginBottom: 12 }}>
-            Signed via hardware private key and incorporated into an immutable Merkle tree anchored to MST Blockchain Testnet.
+            Signed via hardware private key and incorporated into an immutable Merkle tree anchored to Polygon Amoy Testnet.
           </p>
 
           <div
@@ -661,8 +661,8 @@ export default function GuardianView() {
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "var(--mist-dim)" }}>
-            <span>BLOCK ANCHOR: <strong style={{ color: "var(--paper)" }}>MST TESTNET #91562037</strong></span>
-            <span className="tag tag-safe" style={{ fontSize: 10 }}>VERIFIED ON MSTSCAN</span>
+            <span>BLOCK ANCHOR: <strong style={{ color: "var(--paper)" }}>POLYGON AMOY #80002</strong></span>
+            <span className="tag tag-safe" style={{ fontSize: 10 }}>VERIFIED ON POLYGONSCAN</span>
           </div>
         </div>
       </div>

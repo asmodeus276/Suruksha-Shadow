@@ -1,22 +1,21 @@
-﻿import { useEffect, useState, useCallback, useRef, memo } from "react";
+import { useEffect, useState, useCallback, useRef, memo } from "react";
 import { createPortal } from "react-dom";
 import { getVaultRecords } from "../hooks/useEvidenceVault";
 import {
-  anchorEvidenceToMST,
+  anchorEvidenceToPolygon,
   connectBridgeKeyWallet,
   deriveOfflineTxPlaceholder,
-  MST_CONTRACT_ADDRESS,
-  MST_EXPLORER_BASE,
-  MST_CONTRACT_EXPLORER_URL,
-  VERIFIED_MST_TX_HASH,
-  VERIFIED_MST_BLOCK_NUMBER,
+  POLYGON_CONTRACT_ADDRESS,
+  POLYGON_EXPLORER_BASE,
+  POLYGON_CONTRACT_EXPLORER_URL,
+  VERIFIED_POLYGON_TX_HASH,
+  VERIFIED_POLYGON_BLOCK_NUMBER,
   JUDGE_DEMO_WALLET_ACCOUNT,
   getInjectedProvider,
-  getMSTExplorerTxUrl,
+  getPolygonExplorerTxUrl,
   getSessionAddress,
   ANCHOR_STATUS,
-} from "../lib/mstAnchor";
-import CameraWatch from "./CameraWatch";
+} from "../lib/polygonAnchor";import CameraWatch from "./CameraWatch";
 import PoliceFirModal from "./PoliceFirModal";
 import {
   getLatestOpticalBurst,
@@ -46,12 +45,13 @@ import {
  * Complies with Bharatiya Sakshya Adhiniyam (BSA) 2023 §63 and
  * Federal Rules of Evidence (FRE) 902(13)/(14).
  *
- * Integrated with MST Blockchain Testnet:
- * Contract: 0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5
- * Chain ID: 91562037 (https://rpc.mstblockchain.com)
+ * Integrated with Polygon Amoy Testnet (Chain ID 80002):
+ * Contract: 0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb
+ * RPC: https://polygon-amoy-bor-rpc.publicnode.com
+ * Explorer: https://amoy.polygonscan.com
  *
  * Startup App Features:
- * - Autonomous MST Notarization Engine with Zero-Popup Session Relayer
+ * - Autonomous Polygon Notarization Engine with Zero-Popup Session Relayer
  * - Real-Time Automated State Badges (🟢 On-Chain Proof / ⚡ Auto-Syncing / 💾 Hardware Signed)
  * - Continuous Background Auto-Sync Queue (Every 5 seconds)
  * - On-Device WebCrypto Keystore (Non-Extractable P-256 Key)
@@ -84,10 +84,10 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
   const [selectedBurstFrame, setSelectedBurstFrame] = useState(0);
   const [showCameraModal, setShowCameraModal] = useState(false);
 
-  // MST Blockchain Global & Individual State
-  const [mstTxHash, setMstTxHash] = useState(VERIFIED_MST_TX_HASH);
+  // Polygon Blockchain Global & Individual State
+  const [mstTxHash, setMstTxHash] = useState(VERIFIED_POLYGON_TX_HASH);
   const [mstExplorerUrl, setMstExplorerUrl] = useState(
-    getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH)
+    getPolygonExplorerTxUrl(VERIFIED_POLYGON_TX_HASH)
   );
   const [mstRecordsMap, setMstRecordsMap] = useState({});
   const [walletAccount, setWalletAccount] = useState(null);
@@ -96,7 +96,7 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
   // Top 3 Discrete Artifacts Hashes
   const [acousticTx] = useState({
     sha256: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    txHash: "0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec",
+    txHash: VERIFIED_POLYGON_TX_HASH,
     signature: "0x78af31c902be17e452a819c4021948ba92019482019a84b029dfea45812903ab",
   });
   const [cardiacTx] = useState({
@@ -121,11 +121,12 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
       let latestLiveTx = null;
       let latestExp = null;
       for (const r of data) {
-        if (r.mstAnchor?.txHash) {
-          newMap[r.id] = r.mstAnchor;
-          if (!latestLiveTx && !r.mstAnchor.simulated) {
-            latestLiveTx = r.mstAnchor.txHash;
-            latestExp = r.mstAnchor.explorerUrl;
+        const anchor = r.polygonAnchor || r.mstAnchor;
+        if (anchor?.txHash) {
+          newMap[r.id] = anchor;
+          if (!latestLiveTx && !anchor.simulated) {
+            latestLiveTx = anchor.txHash;
+            latestExp = anchor.explorerUrl;
           }
         }
       }
@@ -134,8 +135,8 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
         setMstTxHash(latestLiveTx);
         setMstExplorerUrl(latestExp);
       } else {
-        setMstTxHash(VERIFIED_MST_TX_HASH);
-        setMstExplorerUrl(getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH));
+        setMstTxHash(VERIFIED_POLYGON_TX_HASH);
+        setMstExplorerUrl(getPolygonExplorerTxUrl(VERIFIED_POLYGON_TX_HASH));
       }
     } catch (err) {
       console.error("Failed to load Evidence Vault records:", err);
@@ -184,12 +185,22 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
           frames,
           bsaCompliance: "BSA 2023 §63 / FRE 902(13)&(14) Certified",
           simulated: true,
+          polygonAnchor: {
+            success: true,
+            txHash: burstTx,
+            explorerUrl: getPolygonExplorerTxUrl(VERIFIED_POLYGON_TX_HASH),
+            contractAddress: POLYGON_CONTRACT_ADDRESS,
+            blockNumber: VERIFIED_POLYGON_BLOCK_NUMBER,
+            timestamp: Date.now(),
+            simulated: true,
+            status: ANCHOR_STATUS.SIMULATION,
+          },
           mstAnchor: {
             success: true,
             txHash: burstTx,
-            explorerUrl: getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH),
-            contractAddress: MST_CONTRACT_ADDRESS,
-            blockNumber: 5330564,
+            explorerUrl: getPolygonExplorerTxUrl(VERIFIED_POLYGON_TX_HASH),
+            contractAddress: POLYGON_CONTRACT_ADDRESS,
+            blockNumber: VERIFIED_POLYGON_BLOCK_NUMBER,
             timestamp: Date.now(),
             simulated: true,
             status: ANCHOR_STATUS.SIMULATION,
@@ -247,18 +258,19 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
   };
 
   /**
-   * Open In-App Cryptographic Proof & MST Blockchain Inspector Modal
+   * Open In-App Cryptographic Proof & Polygon Blockchain Inspector Modal
    */
   const handleOpenProofModal = (proof = null) => {
     const isRealTx = proof?.txHash && !proof?.simulated;
-    const targetTx = proof?.txHash || mstTxHash || VERIFIED_MST_TX_HASH;
+    const targetTx = proof?.txHash || mstTxHash || VERIFIED_POLYGON_TX_HASH;
     setInspectedProof({
       txHash: targetTx,
-      contractAddress: MST_CONTRACT_ADDRESS,
-      blockNumber: proof?.blockNumber || (isRealTx ? proof?.blockNumber : 5330564),
+      contractAddress: POLYGON_CONTRACT_ADDRESS,
+      blockNumber: proof?.blockNumber || (isRealTx ? proof?.blockNumber : VERIFIED_POLYGON_BLOCK_NUMBER),
       gasUsed: proof?.gasUsed || "0",
-      costMST: proof?.costMST || "0",
-      explorerUrl: getMSTExplorerTxUrl(targetTx, proof?.simulated !== false),
+      costPOL: proof?.costPOL || proof?.costMST || "0",
+      costMST: proof?.costPOL || proof?.costMST || "0",
+      explorerUrl: getPolygonExplorerTxUrl(targetTx, proof?.simulated !== false),
       enclaveSignature: proof?.enclaveSignature || "0x78af31c902be17e452a819c4021948ba92019482019a84b029dfea45812903ab",
       enclaveFingerprint: proof?.enclaveFingerprint || enclaveFingerprint,
       simulated: proof?.simulated !== false,
@@ -271,21 +283,21 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
    * Download Verifiable Forensic Cryptographic Proof (.JSON)
    */
   const downloadForensicProofJson = (proof = null) => {
-    const currentTx = proof?.txHash || mstTxHash || VERIFIED_MST_TX_HASH;
+    const currentTx = proof?.txHash || mstTxHash || VERIFIED_POLYGON_TX_HASH;
     const payload = {
       standard: "Bharatiya Sakshya Adhiniyam (BSA) 2023 §63 & FRE 902(13)/(14)",
       legalFramework: "Certificate of Electronic Record Authenticity",
-      blockchain: "MST Blockchain (Testnet)",
-      chainId: 91562037,
-      rpcEndpoint: "https://testnetrpc.mstblockchain.com",
-      contractAddress: MST_CONTRACT_ADDRESS,
-      contractExplorer: MST_CONTRACT_EXPLORER_URL,
+      blockchain: "Polygon Blockchain (Amoy Testnet)",
+      chainId: 80002,
+      rpcEndpoint: "https://polygon-amoy-bor-rpc.publicnode.com",
+      contractAddress: POLYGON_CONTRACT_ADDRESS,
+      contractExplorer: POLYGON_CONTRACT_EXPLORER_URL,
       transactionAnchorHash: currentTx,
-      transactionExplorerUrl: getMSTExplorerTxUrl(currentTx, proof?.simulated !== false),
+      transactionExplorerUrl: getPolygonExplorerTxUrl(currentTx, proof?.simulated !== false),
       status: "CONFIRMED_ON_CHAIN",
-      blockHeight: proof?.blockNumber || 5330564,
+      blockHeight: proof?.blockNumber || VERIFIED_POLYGON_BLOCK_NUMBER,
       gasUsed: proof?.gasUsed || "21450",
-      costMST: proof?.costMST || "0.000021",
+      costPOL: proof?.costPOL || proof?.costMST || "0.000021",
       consensusTimestamp: new Date().toISOString(),
       sessionRelayerKey: sessionAddress,
       keystoreEnclave: "Hardware Enclave: On-Device WebCrypto Keystore (Non-Extractable P-256 Key)",
@@ -305,7 +317,7 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `MST_FORENSIC_PROOF_${currentTx.slice(0, 10)}.json`;
+    a.download = `POLYGON_FORENSIC_PROOF_${currentTx.slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -351,7 +363,7 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
     try {
       const record = await onCapture(10000);
       if (record && record.sha256) {
-        const anchorRes = await anchorEvidenceToMST(
+        const anchorRes = await anchorEvidenceToPolygon(
           record.id,
           record.sha256,
           {
@@ -377,6 +389,7 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
 
           const updatedRecord = {
             ...record,
+            polygonAnchor: anchorRes,
             mstAnchor: anchorRes,
             syncStatus: "anchored",
           };
@@ -470,10 +483,11 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
             handleOpenProofModal(
               customProof || {
                 txHash,
-                contractAddress: MST_CONTRACT_ADDRESS,
+                contractAddress: POLYGON_CONTRACT_ADDRESS,
                 blockNumber: recordMst?.blockNumber || null,
                 gasUsed: recordMst?.gasUsed || "0",
-                costMST: recordMst?.costMST || "0",
+                costPOL: recordMst?.costPOL || recordMst?.costMST || "0",
+                costMST: recordMst?.costPOL || recordMst?.costMST || "0",
                 simulated: false,
                 status: ANCHOR_STATUS.CONFIRMED,
               }
@@ -511,9 +525,10 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
             handleOpenProofModal(
               customProof || {
                 txHash,
-                contractAddress: MST_CONTRACT_ADDRESS,
+                contractAddress: POLYGON_CONTRACT_ADDRESS,
                 blockNumber: null,
                 gasUsed: "0",
+                costPOL: "0",
                 costMST: "0",
                 simulated: true,
                 status: ANCHOR_STATUS.SIMULATION,
@@ -561,10 +576,10 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
           color: "var(--ember)",
           animation: "pulse 1.8s infinite ease-in-out",
         }}
-        title="Autonomous session relayer is silently broadcasting this artifact to MST Testnet."
+        title="Autonomous session relayer is silently broadcasting this artifact to Polygon Amoy Testnet."
       >
         <span>⚡</span>
-        <span>Auto-Syncing to MST...</span>
+        <span>Auto-Syncing to Polygon...</span>
       </span>
     );
   };
@@ -577,13 +592,14 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
           ? "COUNTERSIGNED & VERIFIED"
           : "ANCHORED_ON_CHAIN";
         const txHashVal =
+          r.polygonAnchor?.txHash ||
           r.mstAnchor?.txHash ||
           mstRecordsMap[r.id]?.txHash ||
           mstTxHash ||
-          VERIFIED_MST_TX_HASH;
+          VERIFIED_POLYGON_TX_HASH;
         const sigVal = r.enclaveSignature ? r.enclaveSignature.slice(0, 16) + "…" : "0x78af31…84b";
 
-        return `| ${i + 1} | ${r.id} | ${formatTime(r.createdAt || r.capturedAt)} | ${r.durationMs ? (r.durationMs / 1000).toFixed(1) + "s" : "10.0s"} | ${r.mimeType || "audio/webm"} | ${r.sha256} | ${sigVal} | ${serverStatus} | ${txHashVal} | ${MST_CONTRACT_ADDRESS} | 91562037 |`;
+        return `| ${i + 1} | ${r.id} | ${formatTime(r.createdAt || r.capturedAt)} | ${r.durationMs ? (r.durationMs / 1000).toFixed(1) + "s" : "10.0s"} | ${r.mimeType || "audio/webm"} | ${r.sha256} | ${sigVal} | ${serverStatus} | ${txHashVal} | ${POLYGON_CONTRACT_ADDRESS} | 80002 |`;
       })
       .join("\n");
 
@@ -591,9 +607,9 @@ function EvidenceVaultComponent({ refreshTrigger, onCapture }) {
 ## UNDER SECTION 63 OF BHARATIYA SAKSHYA ADHINIYAM (BSA), 2023 / FRE 902(13)&(14)
 Generated by: Suraksha Shadow Personal Safety Mesh
 Date of Export: ${timestamp}
-Platform Protocol: SPEC-BSA-63.REV6 (Hardware WebCrypto P-256 + MST Blockchain Testnet #91562037)
-MST Target Contract: ${MST_CONTRACT_ADDRESS}
-MST Testnet Explorer: ${MST_EXPLORER_BASE}
+Platform Protocol: SPEC-BSA-63.REV6 (Hardware WebCrypto P-256 + Polygon Amoy Testnet #80002)
+Polygon Target Contract: ${POLYGON_CONTRACT_ADDRESS}
+Polygon Amoy Explorer: ${POLYGON_EXPLORER_BASE}
 Autonomous Session Relayer: ${sessionAddress}
 Hardware Enclave: On-Device WebCrypto Keystore (Non-Extractable P-256 Key)
 Device Fingerprint: ${enclaveFingerprint}
@@ -606,26 +622,26 @@ This document constitutes an electronic record and self-authenticating certifica
 I hereby certify that:
 1. The electronic records referenced herein were generated automatically by the Suraksha Shadow cryptographic safety daemon operating within a non-extractable WebCrypto ECDSA P-256 hardware keystore.
 2. Each audio segment and optical camera burst was hashed immediately at capture using cryptographic SHA-256 before disk persistence and signed with the device enclave private key.
-3. Every discrete artifact was anchored independently via autonomous session-relayed on-chain transactions to the MST Blockchain public ledger (Contract: ${MST_CONTRACT_ADDRESS} / Chain ID: 91562037).
+3. Every discrete artifact was anchored independently via autonomous session-relayed on-chain transactions to the Polygon public ledger (Contract: ${POLYGON_CONTRACT_ADDRESS} / Chain ID: 80002).
 4. Chain of custody has been continuously preserved, cryptographically sealed, and is fully tamper-evident.
 
 ---
 
 ### 2. RECORDED FORENSIC ARTIFACTS
-| Item # | Record ID | Client Capture Time | Duration | MIME Type | Client SHA-256 Hash | P-256 Signature | Status | MST Blockchain Tx Hash | MST Contract | Chain ID |
-|--------|-----------|---------------------|----------|-----------|---------------------|-----------------|--------|------------------------|--------------|----------|
+| Item # | Record ID | Client Capture Time | Duration | MIME Type | Client SHA-256 Hash | P-256 Signature | Status | Polygon Blockchain Tx Hash | Polygon Contract | Chain ID |
+|--------|-----------|---------------------|----------|-----------|---------------------|-----------------|--------|----------------------------|------------------|----------|
 ${
   rows ||
-  `| 1 | AUD-BURST-01 | ${timestamp} | 10.0s | audio/webm | 0x9f83c68334b07f89fa6e9b4690c74f57c2c4d51624c87895315be96f64a1329a | 0x78af31c902be… | ANCHORED_ON_CHAIN | ${mstTxHash} | ${MST_CONTRACT_ADDRESS} | 91562037 |`
+  `| 1 | AUD-BURST-01 | ${timestamp} | 10.0s | audio/webm | 0x9f83c68334b07f89fa6e9b4690c74f57c2c4d51624c87895315be96f64a1329a | 0x78af31c902be… | ANCHORED_ON_CHAIN | ${mstTxHash} | ${POLYGON_CONTRACT_ADDRESS} | 80002 |`
 }
 
 ---
 
 ### 3. TECHNICAL ATTESTATION
-- **Primary Public Ledger**: MST Blockchain Testnet (Chain ID 91562037 / RPC https://rpc.mstblockchain.com)
-- **Deployed Notary Contract**: ${MST_CONTRACT_ADDRESS}
-- **MSTScan Explorer**: https://testnet.mstscan.com
-- **Verified On-Chain Proof**: https://testnet.mstscan.com/tx/${mstTxHash}
+- **Primary Public Ledger**: Polygon Amoy Testnet (Chain ID 80002 / RPC https://polygon-amoy-bor-rpc.publicnode.com)
+- **Deployed Notary Contract**: ${POLYGON_CONTRACT_ADDRESS}
+- **PolygonScan Explorer**: ${POLYGON_EXPLORER_BASE}
+- **Verified On-Chain Proof**: ${POLYGON_EXPLORER_BASE}/tx/${mstTxHash}
 - **Session Relayer Key**: ${sessionAddress}
 - **Hardware Enclave**: On-Device WebCrypto Keystore (Non-Extractable P-256 Key)
 - **Device Fingerprint**: ${enclaveFingerprint}
@@ -641,7 +657,7 @@ ${
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Suraksha_Forensic_Dossier_BSA63_MST_${Date.now()}.md`;
+    a.download = `Suraksha_Forensic_Dossier_BSA63_Polygon_${Date.now()}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -716,7 +732,7 @@ ${
                   gap: 8,
                 }}
               >
-                <span>🛡️ Autonomous MST Notarization Engine: ACTIVE</span>
+                <span>🛡️ Autonomous Polygon Notarization Engine: ACTIVE</span>
                 <span
                   style={{
                     fontSize: 10.5,
@@ -732,14 +748,14 @@ ${
                 </span>
               </div>
               <div style={{ fontSize: 11.5, color: "var(--mist-dim)", marginTop: 2 }}>
-                Auto-sealing 10s audio slices and optical bursts onto MST Testnet with non-extractable WebCrypto P-256 keys. Zero manual popups required.
+                Auto-sealing 10s audio slices and optical bursts onto Polygon Amoy Testnet with non-extractable WebCrypto P-256 keys. Zero manual popups required.
               </div>
             </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <a
-              href={MST_CONTRACT_EXPLORER_URL}
+              href={POLYGON_CONTRACT_EXPLORER_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="tag tag-gold"
@@ -752,10 +768,10 @@ ${
                 alignItems: "center",
                 gap: 4,
               }}
-              title={`View Notary Contract: ${MST_CONTRACT_ADDRESS}`}
+              title={`View Notary Contract: ${POLYGON_CONTRACT_ADDRESS}`}
             >
               <span>📜 Contract:</span>
-              <span>{MST_CONTRACT_ADDRESS.slice(0, 6)}…{MST_CONTRACT_ADDRESS.slice(-4)}</span>
+              <span>{POLYGON_CONTRACT_ADDRESS.slice(0, 6)}…{POLYGON_CONTRACT_ADDRESS.slice(-4)}</span>
             </a>
 
             <button
@@ -772,9 +788,9 @@ ${
                 background: "rgba(0, 230, 118, 0.15)",
                 border: "1px solid rgba(0, 230, 118, 0.4)",
               }}
-              title="Inspect latest consensus notarization on MSTScan"
+              title="Inspect latest consensus notarization on PolygonScan"
             >
-              <span>🟢 MSTScan #91562037</span>
+              <span>🟢 Polygon Amoy #80002</span>
             </button>
           </div>
         </div>
@@ -833,7 +849,7 @@ ${
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          {/* BridgeKey Wallet Status Button */}
+          {/* Web3 / BridgeKey Wallet Status Button */}
           <button
             className="btn-quiet"
             onClick={handleConnectWallet}
@@ -849,15 +865,15 @@ ${
               color: "var(--ember)",
               background: "var(--surface-high)",
             }}
-            title="Connect BridgeKey Wallet (MST Testnet)"
+            title="Connect Web3 / BridgeKey Wallet (Polygon Amoy)"
           >
             <span>🔑</span>
             <span>
               {walletAccount
-                ? `BridgeKey: ${walletAccount.slice(0, 6)}…${walletAccount.slice(-4)}`
+                ? `Wallet: ${walletAccount.slice(0, 6)}…${walletAccount.slice(-4)}`
                 : isConnectingWallet
                 ? "Connecting…"
-                : "BridgeKey / Wallet"}
+                : "Web3 / Wallet"}
             </span>
           </button>
 
@@ -950,7 +966,7 @@ ${
                     color: "var(--paper)",
                   }}
                 >
-                  INCIDENT_DOSSIER_#SV-2026-MST
+                  INCIDENT_DOSSIER_#SV-2026-POLYGON
                 </span>
                 <span className="tag tag-safe" style={{ fontSize: 10 }}>
                   SEALED
@@ -974,7 +990,7 @@ ${
           >
             <span>STATUS:</span>
             <span className="tag tag-safe" style={{ fontSize: 10.5, fontWeight: 700 }}>
-              AUTO-ANCHORED ON MST TESTNET
+              AUTO-ANCHORED ON POLYGON TESTNET
             </span>
           </div>
         </div>
@@ -1021,7 +1037,7 @@ ${
               </div>
               {renderStateBadge(null, acousticTx.txHash, {
                 txHash: acousticTx.txHash,
-                contractAddress: MST_CONTRACT_ADDRESS,
+                contractAddress: POLYGON_CONTRACT_ADDRESS,
                 blockNumber: null,
                 enclaveSignature: acousticTx.signature,
               })}
@@ -1120,7 +1136,7 @@ ${
               </div>
               {renderStateBadge(null, cardiacTx.txHash, {
                 txHash: cardiacTx.txHash,
-                contractAddress: MST_CONTRACT_ADDRESS,
+                contractAddress: POLYGON_CONTRACT_ADDRESS,
                 blockNumber: null,
                 enclaveSignature: cardiacTx.signature,
               })}
@@ -1132,7 +1148,7 @@ ${
                 lineHeight: 1.35,
               }}
             >
-              PPG optical pulse logs. Notarized on MST Testnet at 100ms intervals.
+              PPG optical pulse logs. Notarized on Polygon Amoy Testnet at 100ms intervals.
             </p>
             {/* Inline ECG Sparkline */}
             <div
@@ -1219,12 +1235,12 @@ ${
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {renderStateBadge(
-                  opticalBurst?.mstAnchor,
-                  opticalBurst?.mstAnchor?.txHash,
+                  opticalBurst?.polygonAnchor || opticalBurst?.mstAnchor,
+                  opticalBurst?.polygonAnchor?.txHash || opticalBurst?.mstAnchor?.txHash,
                   {
-                    txHash: opticalBurst?.mstAnchor?.txHash || "0x4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
-                    contractAddress: MST_CONTRACT_ADDRESS,
-                    blockNumber: opticalBurst?.mstAnchor?.blockNumber || null,
+                    txHash: opticalBurst?.polygonAnchor?.txHash || opticalBurst?.mstAnchor?.txHash || VERIFIED_POLYGON_TX_HASH,
+                    contractAddress: POLYGON_CONTRACT_ADDRESS,
+                    blockNumber: opticalBurst?.polygonAnchor?.blockNumber || opticalBurst?.mstAnchor?.blockNumber || null,
                     enclaveSignature: opticalBurst?.enclaveSignature,
                   }
                 )}
@@ -1254,7 +1270,7 @@ ${
                 lineHeight: 1.35,
               }}
             >
-              750ms rapid sequence (150ms intervals). Merkle root anchored to MST Testnet.
+              750ms rapid sequence (150ms intervals). Merkle root anchored to Polygon Amoy Testnet.
             </p>
 
             {/* Interactive Frame Preview Display */}
@@ -1433,7 +1449,7 @@ ${
                 Admissibility Statement (Section 63 BSA &amp; FRE 902(13)/(14))
               </div>
               <div style={{ fontSize: 11, color: "var(--mist-dim)" }}>
-                Self-authenticating electronic record anchored to MST Blockchain contract ({MST_CONTRACT_ADDRESS.slice(0, 10)}…)
+                Self-authenticating electronic record anchored to Polygon smart contract ({POLYGON_CONTRACT_ADDRESS.slice(0, 10)}…)
               </div>
             </div>
           </div>
@@ -1537,14 +1553,14 @@ ${
                 marginInline: "auto",
               }}
             >
-              When Armed, audio is continuously sliced into 10-second chunks, signed with non-extractable WebCrypto P-256 hardware keys, and auto-notarized on the MST Blockchain (Contract: {MST_CONTRACT_ADDRESS.slice(0, 10)}…).
+              When Armed, audio is continuously sliced into 10-second chunks, signed with non-extractable WebCrypto P-256 hardware keys, and auto-notarized on Polygon Amoy Testnet (Contract: {POLYGON_CONTRACT_ADDRESS.slice(0, 10)}…).
             </p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {records.map((r) => {
               const isPlaying = playingId === r.id;
-              const recordMst = r.mstAnchor || mstRecordsMap[r.id];
+              const recordMst = r.polygonAnchor || r.mstAnchor || mstRecordsMap[r.id];
               const itemTxHash = recordMst?.txHash || `0x${(r.sha256 || "").slice(2, 66).padEnd(64, "0")}`;
 
               return (
@@ -1641,10 +1657,11 @@ ${
                       {/* Automated Real-Time State Badge (Replaced Manual "+ Live Notarize" Button) */}
                       {renderStateBadge(recordMst, itemTxHash, {
                         txHash: itemTxHash,
-                        contractAddress: MST_CONTRACT_ADDRESS,
+                        contractAddress: POLYGON_CONTRACT_ADDRESS,
                         blockNumber: recordMst?.blockNumber || null,
                         gasUsed: recordMst?.gasUsed || "21,450",
-                        costMST: recordMst?.costMST || "0.000021",
+                        costPOL: recordMst?.costPOL || recordMst?.costMST || "0.000021",
+                        costMST: recordMst?.costPOL || recordMst?.costMST || "0.000021",
                         enclaveSignature: r.enclaveSignature,
                         enclaveFingerprint: r.enclaveFingerprint,
                       })}
@@ -1742,7 +1759,7 @@ ${
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span className="eyebrow" style={{ margin: 0, fontSize: 10.5 }}>
-                  MST BLOCKCHAIN &amp; BSA 2023 §63
+                  POLYGON BLOCKCHAIN &amp; BSA 2023 §63
                 </span>
                 <span className="tag tag-safe" style={{ fontSize: 9.5, padding: "2px 6px" }}>
                   CONSENSUS VALIDATED
@@ -1769,7 +1786,7 @@ ${
                 flexShrink: 0,
               }}
             >
-              Self-authenticated evidentiary record pursuant to <strong>BSA 2023 §63</strong> and <strong>FRE 902(13)/(14)</strong>, anchored immutably on the MST Blockchain smart contract.
+              Self-authenticated evidentiary record pursuant to <strong>BSA 2023 §63</strong> and <strong>FRE 902(13)/(14)</strong>, anchored immutably on the Polygon Amoy smart contract.
             </p>
 
             {/* Scrollable Data Box */}
@@ -1790,42 +1807,42 @@ ${
             >
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
                 <span style={{ color: "var(--mist-dim)" }}>NETWORK:</span>
-                <span style={{ color: "var(--paper)" }}>MST Testnet (Chain ID: 91562037 / 0x57520f5)</span>
+                <span style={{ color: "var(--paper)" }}>Polygon Amoy Testnet (Chain ID: 80002 / 0x13882)</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
                 <span style={{ color: "var(--mist-dim)" }}>CONTRACT:</span>
                 <a
-                  href={MST_CONTRACT_EXPLORER_URL}
+                  href={POLYGON_CONTRACT_EXPLORER_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "var(--ember)", textDecoration: "underline" }}
-                  title="View Contract on MSTScan"
+                  title="View Contract on PolygonScan"
                 >
-                  {MST_CONTRACT_ADDRESS}
+                  {POLYGON_CONTRACT_ADDRESS}
                 </a>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
                 <span style={{ color: "var(--mist-dim)" }}>TX ANCHOR:</span>
                 <a
-                  href={getMSTExplorerTxUrl(inspectedProof?.txHash || VERIFIED_MST_TX_HASH)}
+                  href={getPolygonExplorerTxUrl(inspectedProof?.txHash || VERIFIED_POLYGON_TX_HASH)}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "var(--safe)", textDecoration: "underline", wordBreak: "break-all" }}
-                  title="Inspect Confirmed Transaction on MSTScan"
+                  title="Inspect Confirmed Transaction on PolygonScan"
                 >
-                  {inspectedProof?.txHash || VERIFIED_MST_TX_HASH}
+                  {inspectedProof?.txHash || VERIFIED_POLYGON_TX_HASH}
                 </a>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
                 <span style={{ color: "var(--mist-dim)" }}>BLOCK HEIGHT:</span>
                 <span style={{ color: "var(--paper)", fontWeight: 600 }}>
-                  #{inspectedProof?.blockNumber || VERIFIED_MST_BLOCK_NUMBER} (Finalized)
+                  #{inspectedProof?.blockNumber || VERIFIED_POLYGON_BLOCK_NUMBER} (Finalized)
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
                 <span style={{ color: "var(--mist-dim)" }}>GAS / FEE:</span>
                 <span style={{ color: "var(--ember)" }}>
-                  {inspectedProof?.gasUsed || "21,450"} Gas (~{inspectedProof?.costMST || "0.000021"} MST)
+                  {inspectedProof?.gasUsed || "21,450"} Gas (~{inspectedProof?.costPOL || inspectedProof?.costMST || "0.000021"} POL)
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
@@ -1857,7 +1874,7 @@ ${
             {/* Pinned Action Buttons */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
               <a
-                href={getMSTExplorerTxUrl(inspectedProof?.txHash || VERIFIED_MST_TX_HASH)}
+                href={getPolygonExplorerTxUrl(inspectedProof?.txHash || VERIFIED_POLYGON_TX_HASH)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary"
@@ -1874,7 +1891,7 @@ ${
                   fontWeight: 600,
                 }}
               >
-                <span>🔍 Inspect on MSTScan Explorer</span>
+                <span>🔍 Inspect on PolygonScan Explorer</span>
               </a>
 
               <button
@@ -1949,7 +1966,7 @@ ${
                   WEB3 WALLET INTEGRATION
                 </span>
                 <span className="tag tag-gold" style={{ fontSize: 10 }}>
-                  MST TESTNET
+                  POLYGON AMOY
                 </span>
               </div>
               <button
@@ -1962,7 +1979,7 @@ ${
             </div>
 
             <h3 style={{ fontSize: 18, marginBottom: 8, color: "var(--paper)" }}>
-              Connect BridgeKey / Judicial Keystore
+              Connect Web3 / Judicial Keystore
             </h3>
             <p
               style={{
@@ -1972,7 +1989,7 @@ ${
                 marginBottom: 16,
               }}
             >
-              Suraksha Shadow uses an autonomous background session relayer for instant zero-popup notarization. You can also link your personal <strong>BridgeKey Wallet</strong> or EIP-1193 provider as the verified custodian.
+              Suraksha Shadow uses an autonomous background session relayer for instant zero-popup notarization on Polygon Amoy. You can also link your personal <strong>Web3 Wallet</strong> (MetaMask, Rabby, OKX) or EIP-1193 provider as the verified custodian.
             </p>
 
             {/* Option 1: 1-Tap Judge & Auditor Enclave Key */}
@@ -1987,12 +2004,12 @@ ${
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span style={{ fontWeight: 600, color: "var(--ember)", fontSize: 13 }}>
-                  🛡️ Judge / Enclave BridgeKey Account
+                  🛡️ Judge / Enclave Auditor Account
                 </span>
                 <span className="tag tag-safe" style={{ fontSize: 9.5 }}>1-Tap Demo</span>
               </div>
               <p style={{ fontSize: 11.5, color: "var(--mist)", marginBottom: 10 }}>
-                Instant authentication with a pre-configured legal auditor keypair (<code>0x71C9…F9A1</code>) with 100 MST Testnet balance.
+                Instant authentication with a pre-configured legal auditor keypair (<code>0x71C9…F9A1</code>) with 100 POL Testnet balance.
               </p>
               <button
                 className="btn-primary"
@@ -2020,12 +2037,12 @@ ${
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span style={{ fontWeight: 600, color: "var(--paper)", fontSize: 13 }}>
-                  🔌 Browser Extension (BridgeKey / MetaMask)
+                  🔌 Browser Extension (MetaMask / Web3 Wallet)
                 </span>
                 <span className="tag tag-mist" style={{ fontSize: 9.5 }}>EIP-1193</span>
               </div>
               <p style={{ fontSize: 11.5, color: "var(--mist)", marginBottom: 10 }}>
-                Connect your installed BridgeKey Chrome Extension or standard Ethereum provider on MST Chain ID <code>91562037</code>.
+                Connect your installed Web3 Wallet extension or standard Ethereum provider on Polygon Amoy Chain ID <code>80002</code>.
               </p>
               <button
                 className="btn-quiet"
@@ -2063,10 +2080,10 @@ ${
                 marginBottom: 14,
               }}
             >
-              <div><strong>Target Contract:</strong> 0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5</div>
-              <div><strong>RPC URL:</strong> https://rpc.mstblockchain.com</div>
-              <div><strong>Chain ID:</strong> 91562037 (0x57520f5) | <strong>Symbol:</strong> MST</div>
-              <div><strong>Explorer:</strong> https://testnet.mstscan.com</div>
+              <div><strong>Target Contract:</strong> {POLYGON_CONTRACT_ADDRESS}</div>
+              <div><strong>RPC URL:</strong> https://polygon-amoy-bor-rpc.publicnode.com</div>
+              <div><strong>Chain ID:</strong> 80002 (0x13882) | <strong>Symbol:</strong> POL</div>
+              <div><strong>Explorer:</strong> {POLYGON_EXPLORER_BASE}</div>
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end" }}>

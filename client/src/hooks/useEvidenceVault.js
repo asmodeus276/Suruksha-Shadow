@@ -1,10 +1,10 @@
 import { useRef, useCallback } from "react";
 import { createEvidenceBlock } from "../lib/evidenceIntegrity";
-import { anchorEvidenceToMST } from "../lib/mstAnchor";
+import { anchorEvidenceToPolygon } from "../lib/polygonAnchor";
 import {
   signArtifactDigest,
   getEnclaveFingerprint,
-  enqueueForMSTNotarization,
+  enqueueForPolygonNotarization,
 } from "../lib/evidenceStore";
 
 /**
@@ -13,7 +13,7 @@ import {
  * Automated evidence capture & judicial vault:
  * Captures ambient audio clips, computes SHA-256 digests,
  * signs with WebCrypto non-extractable P-256 hardware keys,
- * and immutably anchors every discrete artifact to the MST Blockchain.
+ * and immutably anchors every discrete artifact to Polygon Amoy.
  *
  * Storage: IndexedDB (shield_evidence_vault)
  * Complies with BSA 2023 §63 & FRE 902(13)/(14).
@@ -202,11 +202,11 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
             console.warn("Evidence Vault: evidence block creation/upload failed:", err);
           }
 
-          // Dedicated MST Blockchain Notarization Anchor (Silent Session Relayer)
-          let mstAnchor = null;
+          // Dedicated Polygon Amoy Blockchain Notarization Anchor (Silent Session Relayer)
+          let polygonAnchor = null;
           if (hash) {
             try {
-              mstAnchor = await anchorEvidenceToMST(
+              polygonAnchor = await anchorEvidenceToPolygon(
                 artifactId,
                 hash,
                 {
@@ -218,12 +218,12 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
                 null,
                 { silent: true }
               );
-            } catch (mstErr) {
-              console.warn("MST Blockchain anchoring error (non-fatal):", mstErr);
+            } catch (polyErr) {
+              console.warn("Polygon Blockchain anchoring error (non-fatal):", polyErr);
             }
 
             // Enqueue into 5-second background sync queue
-            enqueueForMSTNotarization({
+            enqueueForPolygonNotarization({
               id: artifactId,
               sha256: hash,
               type: "audio_clip",
@@ -250,7 +250,8 @@ export function useEvidenceVault({ onSaved, apiBaseUrl, activeSosId } = {}) {
               ? { lat: evidenceMetadata.lat, lng: evidenceMetadata.lng, accuracy: evidenceMetadata.accuracy }
               : null,
             serverReceipt: serverReceipt || null,
-            mstAnchor: mstAnchor || null,
+            polygonAnchor: polygonAnchor || null,
+            mstAnchor: polygonAnchor || null, // backward-compat alias
             syncStatus: "anchored",
           };
 

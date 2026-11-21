@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   FileTextIcon,
@@ -7,7 +7,7 @@ import {
   CheckIcon,
   SparkleIcon,
 } from "./icons";
-import { VERIFIED_MST_TX_HASH, getMSTExplorerTxUrl } from "../lib/mstAnchor";
+import { VERIFIED_POLYGON_TX_HASH, getPolygonExplorerTxUrl } from "../lib/polygonAnchor";
 
 /**
  * PoliceFirModal
@@ -29,8 +29,8 @@ export default function PoliceFirModal({
   onClose,
   incident,
   opticalBurst,
-  mstTxHash = VERIFIED_MST_TX_HASH,
-  mstExplorerUrl = getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH),
+  mstTxHash = VERIFIED_POLYGON_TX_HASH,
+  mstExplorerUrl = getPolygonExplorerTxUrl(VERIFIED_POLYGON_TX_HASH),
 }) {
   const [complainantName, setComplainantName] = useState("Suraksha User (Confidential)");
   const [contactPhone, _setContactPhone] = useState("+91 98765 43210");
@@ -113,7 +113,7 @@ I, ${complainantName}, Contact: ${contactPhone}, hereby formally submit this ele
      * Frame 4: ${burstHashes[3] || "N/A"}
      * Frame 5: ${burstHashes[4] || "N/A"}
    - Ambient Audio SHA-256 Hash: ${audioHash}
-   - Public Blockchain Notarization Tx Anchor (MST Testnet):
+   - Public Blockchain Notarization Tx Anchor (Polygon Amoy Testnet):
      Hash: ${mstTxHash}
      Explorer Verification URL: ${mstExplorerUrl}
 
@@ -160,8 +160,8 @@ Generated via Suraksha Shadow Judicial Enclave (Verifiable Blockchain Proof)`;
         burstHashes,
         audioHash,
         blockchainAnchor: {
-          network: "MST Blockchain Testnet",
-          contract: "0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5",
+          network: "Polygon Amoy Testnet (Chain ID: 80002)",
+          contract: "0x8E14Fa95b6a3780D2D794F01235F69f45C99f24E",
           txHash: mstTxHash,
           explorerUrl: mstExplorerUrl,
         },
@@ -526,10 +526,10 @@ Generated via Suraksha Shadow Judicial Enclave (Verifiable Blockchain Proof)`;
                       <td style={{ padding: "6px 10px", border: "1px solid #ddd", fontFamily: "monospace", wordBreak: "break-all" }}>{audioHash}</td>
                     </tr>
                     <tr style={{ background: "#fffdf0" }}>
-                      <td style={{ padding: "6px 10px", border: "1px solid #ddd", fontWeight: "bold", color: "#856404" }}>MST Blockchain Anchor Tx</td>
+                      <td style={{ padding: "6px 10px", border: "1px solid #ddd", fontWeight: "bold", color: "#856404" }}>Polygon Blockchain Anchor Tx</td>
                       <td style={{ padding: "6px 10px", border: "1px solid #ddd", fontFamily: "monospace", wordBreak: "break-all", color: "#856404" }}>
                         {mstTxHash}<br />
-                        <span style={{ fontSize: 9.5, color: "#666" }}>Verified on MST Explorer: {mstExplorerUrl}</span>
+                        <span style={{ fontSize: 9.5, color: "#666" }}>Verified on PolygonScan: {mstExplorerUrl}</span>
                       </td>
                     </tr>
                   </tbody>
@@ -632,7 +632,7 @@ Generated via Suraksha Shadow Judicial Enclave (Verifiable Blockchain Proof)`;
                     Throughout the material part of the said period, the device was operating properly without interference or alteration.
                   </li>
                   <li style={{ marginBottom: 8 }}>
-                    The SHA-256 cryptographic hashes (<code>{merkleRoot.slice(0, 24)}...</code>) and Public MST Blockchain Notarization anchor (<code>{mstTxHash.slice(0, 24)}...</code>) confirm complete data immutability.
+                    The SHA-256 cryptographic hashes (<code>{merkleRoot.slice(0, 24)}...</code>) and Public Polygon Blockchain Notarization anchor (<code>{mstTxHash.slice(0, 24)}...</code>) confirm complete data immutability.
                   </li>
                 </ol>
 

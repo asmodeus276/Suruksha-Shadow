@@ -1,9 +1,9 @@
 /**
- * BSA 2023 Section 63 & MST On-Chain Evidence Integrity Block Builder
+ * BSA 2023 Section 63 & Polygon On-Chain Evidence Integrity Block Builder
  * ---------------------------------------------------------------------
  * Creates composite evidence blocks that cryptographically bind
  * audio capture data to GPS metadata and timestamps, and anchors
- * the resulting digest onto the MST Blockchain Testnet.
+ * the resulting digest onto Polygon Amoy Testnet.
  *
  * The composite hash format is:
  *   SHA-256( [metadata_length: 4 bytes BE] + [metadata JSON] + [audio bytes] )
@@ -13,17 +13,19 @@
  *
  * The resulting `clientHash` is the capture-time integrity marker.
  * To eliminate reliance on central server trust, this hash is anchored
- * onto the MST Blockchain (Chain ID 91562037), making evidence timestamps
+ * onto Polygon Amoy (Chain ID 80002), making evidence timestamps
  * and authenticity mathematically provable in a court of law.
  */
 
-export const MST_TESTNET_CONFIG = {
-  chainId: 91562037,
-  name: "MST Blockchain Testnet",
-  explorerBase: "https://testnet.mstscan.com/tx/",
-  notaryContract: "0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5",
-  rpcEndpoint: "https://rpc.mstblockchain.com",
+export const POLYGON_AMOY_CONFIG = {
+  chainId: 80002,
+  name: "Polygon Amoy Testnet",
+  explorerBase: "https://amoy.polygonscan.com/tx/",
+  notaryContract: "0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb",
+  rpcEndpoint: "https://polygon-amoy-bor-rpc.publicnode.com",
 };
+
+export const MST_TESTNET_CONFIG = POLYGON_AMOY_CONFIG; // Backward-compatibility alias
 
 /**
  * Creates a composite evidence block from an audio recording and GPS metadata.

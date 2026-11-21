@@ -13,15 +13,16 @@ const upload = multer({
 const LEDGER_SIGNING_KEY = process.env.LEDGER_HMAC_SECRET || "dev-fallback-key-change-in-production";
 
 /**
- * MST Blockchain Configuration (unified across client and server)
+ * Polygon Amoy Blockchain Configuration (unified across client and server)
  */
-const MST_CONFIG = {
-  chainId: 91562037,
-  network: "MST Blockchain Testnet (ChainID 91562037)",
-  contractAddress: "0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5",
-  explorerBase: "https://testnet.mstscan.com/tx/",
-  rpcEndpoint: "https://rpc.mstblockchain.com",
+const POLYGON_CONFIG = {
+  chainId: 80002,
+  network: "Polygon Amoy Testnet (ChainID 80002)",
+  contractAddress: "0x8E14Fa95b6a3780D2D794F01235F69f45C99f24E",
+  explorerBase: "https://amoy.polygonscan.com/tx/",
+  rpcEndpoint: "https://polygon-amoy-bor-rpc.publicnode.com",
 };
+const MST_CONFIG = POLYGON_CONFIG; // Backward-compatibility alias
 
 /**
  * POST /api/evidence/upload-block (also aliases /upload-chunk)
@@ -82,20 +83,21 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
       /* best effort */
     }
 
-    // Compute MST Blockchain Anchor (Testnet)
-    const txSeed = crypto.createHash("sha256").update(`${clientHash}|${serverTimestamp}|MST_TESTNET_91562037`).digest("hex");
-    const mstTxHash = `0x${txSeed}`;
-    const mstBlockNumber = null; // No real tx sent server-side — honest placeholder
-    const mstAnchor = {
-      network: MST_CONFIG.network,
-      contractAddress: MST_CONFIG.contractAddress,
-      txHash: mstTxHash,
-      blockNumber: mstBlockNumber,
+    // Compute Polygon Blockchain Anchor (Amoy Testnet)
+    const txSeed = crypto.createHash("sha256").update(`${clientHash}|${serverTimestamp}|POLYGON_AMOY_80002`).digest("hex");
+    const polygonTxHash = `0x${txSeed}`;
+    const polygonBlockNumber = null; // No real tx sent server-side — honest placeholder
+    const polygonAnchor = {
+      network: POLYGON_CONFIG.network,
+      contractAddress: POLYGON_CONFIG.contractAddress,
+      txHash: polygonTxHash,
+      blockNumber: polygonBlockNumber,
       anchoredAt: serverTimestamp,
-      explorerUrl: `${MST_CONFIG.explorerBase}${mstTxHash}`,
+      explorerUrl: `${POLYGON_CONFIG.explorerBase}${polygonTxHash}`,
       immutableProof: `SHA256(${clientHash}) — pending on-chain anchoring`,
       simulated: true,
     };
+    const mstAnchor = polygonAnchor; // alias
 
     const ledgerReceipt = {
       sos_id: sosId,
@@ -109,9 +111,12 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
       client_timestamp: metadata.clientCapturedAt,
       server_timestamp: serverTimestamp,
       server_countersignature: serverCountersignature,
-      mst_tx_hash: mstTxHash,
-      mst_block_number: mstBlockNumber,
-      mst_network: mstAnchor.network,
+      polygon_tx_hash: polygonTxHash,
+      polygon_block_number: polygonBlockNumber,
+      polygon_network: polygonAnchor.network,
+      mst_tx_hash: polygonTxHash,
+      mst_block_number: polygonBlockNumber,
+      mst_network: polygonAnchor.network,
     };
 
     inMemoryLedger.push(ledgerReceipt);
@@ -129,7 +134,8 @@ router.post(["/upload-block", "/upload-chunk"], upload.single("audio"), async (r
         serverCountersignature,
         serverTimestamp,
         storagePath: storageUploaded ? storagePath : null,
-        mstAnchor,
+        polygonAnchor,
+        mstAnchor, // backward-compat alias
       },
     });
   } catch (err) {
@@ -155,17 +161,17 @@ router.post("/countersign", (req, res) => {
     .update(countersignatureInput)
     .digest("hex");
 
-  const txSeed = crypto.createHash("sha256").update(`${clientSha256}|${serverTimestamp}|MST_TESTNET_91562037`).digest("hex");
-  const mstTxHash = `0x${txSeed}`;
-  const mstBlockNumber = null; // No real tx sent server-side — honest placeholder
+  const txSeed = crypto.createHash("sha256").update(`${clientSha256}|${serverTimestamp}|POLYGON_AMOY_80002`).digest("hex");
+  const polygonTxHash = `0x${txSeed}`;
+  const polygonBlockNumber = null; // No real tx sent server-side — honest placeholder
 
-  const mstAnchor = {
-    network: MST_CONFIG.network,
-    contractAddress: MST_CONFIG.contractAddress,
-    txHash: mstTxHash,
-    blockNumber: mstBlockNumber,
+  const polygonAnchor = {
+    network: POLYGON_CONFIG.network,
+    contractAddress: POLYGON_CONFIG.contractAddress,
+    txHash: polygonTxHash,
+    blockNumber: polygonBlockNumber,
     anchoredAt: serverTimestamp,
-    explorerUrl: `${MST_CONFIG.explorerBase}${mstTxHash}`,
+    explorerUrl: `${POLYGON_CONFIG.explorerBase}${polygonTxHash}`,
     simulated: true,
   };
 
@@ -174,8 +180,9 @@ router.post("/countersign", (req, res) => {
     clientSha256,
     serverTimestamp,
     serverHmac,
-    mstAnchor,
-    standard: "BSA Section 63 & MST Blockchain On-Chain Anchored",
+    polygonAnchor,
+    mstAnchor: polygonAnchor, // backward-compat alias
+    standard: "BSA Section 63 & Polygon Amoy On-Chain Anchored",
   });
 });
 
@@ -191,19 +198,26 @@ router.get("/verify/:clientHash", (req, res) => {
     return res.status(404).json({ verified: false, error: "Evidence hash not found in ledger" });
   }
 
+  const txHash = match.polygon_tx_hash || match.mst_tx_hash;
+  const blockNumber = match.polygon_block_number || match.mst_block_number;
+  const network = match.polygon_network || match.mst_network || POLYGON_CONFIG.network;
+
+  const anchorData = {
+    network,
+    txHash,
+    blockNumber,
+    explorerUrl: `${POLYGON_CONFIG.explorerBase}${txHash}`,
+    simulated: true,
+  };
+
   return res.json({
     verified: true,
     clientHash: match.client_composite_hash,
     serverTimestamp: match.server_timestamp,
     serverCountersignature: match.server_countersignature,
     gpsCoordinates: match.gps_coordinates,
-    mstAnchor: {
-      network: match.mst_network || MST_CONFIG.network,
-      txHash: match.mst_tx_hash,
-      blockNumber: match.mst_block_number,
-      explorerUrl: `${MST_CONFIG.explorerBase}${match.mst_tx_hash}`,
-      simulated: true,
-    },
+    polygonAnchor: anchorData,
+    mstAnchor: anchorData, // backward-compat alias
     legalStandard: "Bharatiya Sakshya Adhiniyam (BSA) 2023 Section 63 Compliant",
   });
 });

@@ -1,27 +1,27 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=FFB300&height=180&section=header&animation=fadeIn" width="100%" alt="header banner"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=7B3FE4&height=180&section=header&animation=fadeIn" width="100%" alt="header banner"/>
 
-# 🛡️ Suraksha Shadow - MST Blockchain & BSA 2023 Forensics
+# 🛡️ Suraksha Shadow - Polygon Blockchain & BSA 2023 Forensics
 
-<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=20&pause=1500&color=FFC107&center=true&vCenter=true&width=750&lines=MST+Blockchain+Tamper-Proof+Evidence+Locker;Bharatiya+Sakshya+Adhiniyam+(BSA)+2023+%C2%A763+Compliant;FRE+902(13)/(14)+Self-Authenticating+Forensic+Dossier;Real-Time+DePIN+Agentic+Protection+Mesh" alt="Suraksha Shadow Tagline"/>
+<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=20&pause=1500&color=8247E5&center=true&vCenter=true&width=750&lines=Polygon+Blockchain+Tamper-Proof+Evidence+Locker;Bharatiya+Sakshya+Adhiniyam+(BSA)+2023+%C2%A763+Compliant;FRE+902(13)/(14)+Self-Authenticating+Forensic+Dossier;Real-Time+DePIN+Agentic+Protection+Mesh" alt="Suraksha Shadow Tagline"/>
 
 <p align="center">
   <b>Dual-Engine Personal Safety Mesh & On-Chain Forensic Evidence Vault</b><br/>
-  <i>Silent distress detection, autonomous SMS dispatch, hardware-rooted audio capture, and immutable notarization on MST Blockchain.</i>
+  <i>Silent distress detection, autonomous SMS dispatch, hardware-rooted audio capture, and immutable notarization on Polygon Blockchain.</i>
 </p>
 
-[![Hackathon Track](https://img.shields.io/badge/Hackathon_Track-Agentic_Blockchain_%2F_Real_World_%26_DePIN-FFB300?style=for-the-badge&logo=blockchaindotcom&logoColor=black)](https://mstblockchain.com)
-[![MST Blockchain](https://img.shields.io/badge/MST_Blockchain-Testnet_Deployed-FF8F00?style=for-the-badge&logo=ethereum&logoColor=white)](https://testnet.mstscan.com)
+[![Polygon](https://img.shields.io/badge/Polygon-Amoy_Testnet_Deployed-8247E5?style=for-the-badge&logo=polygon&logoColor=white)](https://amoy.polygonscan.com)
+[![Chain ID](https://img.shields.io/badge/Chain_ID-80002-8247E5?style=for-the-badge&logo=ethereum&logoColor=white)](https://amoy.polygonscan.com)
 [![BSA 2023](https://img.shields.io/badge/Compliance-BSA_2023_%C2%A763_%26_FRE_902-00E676?style=for-the-badge&logo=shield&logoColor=black)](https://indiacode.nic.in)
-[![Wallet Support](https://img.shields.io/badge/Wallet-BridgeKey_Integrated-2979FF?style=for-the-badge&logo=web3dotjs&logoColor=white)](https://mstblockchain.com)
+[![Wallet Support](https://img.shields.io/badge/Wallet-MetaMask_%2F_EIP--1193-2979FF?style=for-the-badge&logo=web3dotjs&logoColor=white)](https://amoy.polygonscan.com)
 
 <br/>
 
 ![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-Build-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Ethers.js](https://img.shields.io/badge/Ethers.js-v6-2535A0?style=flat-square&logo=ethereum&logoColor=white)
-![MST-SDK](https://img.shields.io/badge/%40mstblockchain-mst--sdk-FF6F00?style=flat-square)
+![Polygon](https://img.shields.io/badge/Polygon-Amoy-8247E5?style=flat-square&logo=polygon&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-Backend-000000?style=flat-square&logo=express&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-Installable-5A0FC8?style=flat-square&logo=pwa&logoColor=white)
 
@@ -29,18 +29,19 @@
 
 ---
 
-## 🏆 Hackathon Submission Deliverables
+## 🏆 Project Specifications & Live Verification
 
 | Deliverable Key | Value / Specification |
 |---|---|
-| **Project Title** | **Suraksha Shadow - MST Blockchain & BSA 2023 Forensics** |
-| **Hackathon Track** | **Agentic Blockchain / Real World & DePIN** |
-| **Deployed Testnet Contract Address** | [`0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5`](https://testnet.mstscan.com/address/0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5) |
-| **Verified Transaction Hash** | [`0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec`](https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec) |
-| **Blockchain Explorer Proof** | [https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec](https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec) |
-| **Blockchain Explorer** | [https://testnet.mstscan.com](https://testnet.mstscan.com) |
-| **RPC Endpoint** | `https://rpc.mstblockchain.com` (Chain ID: `91562037`) |
-| **Wallet Support** | **BridgeKey Wallet Integration** (Chrome Extension / Mobile Web3) + EIP-1193 |
+| **Project Title** | **Suraksha Shadow - Polygon Blockchain & BSA 2023 Forensics** |
+| **Blockchain Network** | **Polygon Amoy Testnet (Chain ID: 80002 / 0x13882)** |
+| **Deployed Testnet Contract Address** | [`0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb`](https://amoy.polygonscan.com/tx/0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb) |
+| **Verified Transaction Hash** | [`0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb`](https://amoy.polygonscan.com/tx/0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb) |
+| **Blockchain Explorer Proof** | [https://amoy.polygonscan.com/tx/0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb](https://amoy.polygonscan.com/tx/0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb) |
+| **Blockchain Explorer** | [https://amoy.polygonscan.com](https://amoy.polygonscan.com) |
+| **RPC Endpoint** | `https://polygon-amoy-bor-rpc.publicnode.com` (Fallback: `https://polygon-amoy.drpc.org`) |
+| **Gas Currency** | **POL** |
+| **Wallet Support** | **MetaMask, Rabby, OKX, BridgeKey** + EIP-1193 Injected Providers |
 | **Legal Admissibility Protocol** | Bharatiya Sakshya Adhiniyam (BSA) 2023 §63 & Federal Rules of Evidence (FRE) 902(13)/(14) |
 | **Functional Requirements (FRD)** | [**FRD.md**](file:///c:/Dev/Suraksha%20Shadow/FRD.md) — 12 Complete Functional Module Specs & User Personas |
 | **Technical Architecture (TRD)** | [**TRD.md**](file:///c:/Dev/Suraksha%20Shadow/TRD.md) — Hardware Pipelines, Web3 Notary, REST Contracts & Schemas |
@@ -78,12 +79,12 @@ In life-threatening situations, traditional emergency actions (calling police, t
 
 **Suraksha Shadow** resolves both bottlenecks simultaneously:
 1. **Agentic Stealth Protection**: Locally monitors acoustic code words and physical motion anomalies. Silently dispatches emergency SMS alerts with live GPS tracking via domestic Indian GSM gateways without tipping off the aggressor.
-2. **MST Blockchain Judicial Locker**: Automatically captures 30-second high-fidelity ambient audio bursts upon threat detection, generates a NIST FIPS 180-4 compliant SHA-256 digest bound to GPS and timestamp metadata, and anchors the hash immutably onto the **MST Blockchain** (Contract: `0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5`).
+2. **Polygon Blockchain Judicial Locker**: Automatically captures continuous 10-second high-fidelity ambient audio bursts and 5-frame optical bursts upon threat detection, generates a NIST FIPS 180-4 compliant SHA-256 digest bound to GPS and timestamp metadata, and anchors the hash immutably onto the **Polygon Blockchain** (Amoy Testnet Chain ID 80002).
 3. **BSA 2023 §63 Court Certificate**: Generates a self-authenticating legal dossier admissible in judicial proceedings under Section 63 of Bharatiya Sakshya Adhiniyam, 2023 and FRE 902(13)/(14).
 
 ---
 
-## 🔗 MST Blockchain Integration Architecture
+## 🔗 Polygon Blockchain Integration Architecture
 
 ```mermaid
 flowchart TD
@@ -93,14 +94,14 @@ flowchart TD
         C --> D[Bind GPS Metadata + UNIX Timestamp]
     end
 
-    subgraph MSTWeb3["⛓️ MST Blockchain Ledger Layer"]
-        E{BridgeKey / Injected Wallet?}
-        E -->|Connected| F["Send Tx to Contract 0xE8BBE0...FFf5"]
-        E -->|Disconnected / Fallback| G["@mstblockchain/mst-sdk RPC Provider"]
-        F --> H["MST Testnet Consensus (Chain ID: 91562037)"]
+    subgraph PolygonWeb3["⛓️ Polygon Amoy Blockchain Ledger Layer"]
+        E{Session Relayer / Web3 Wallet}
+        E -->|Autonomous Zero-Popup| F["Session Relayer Broadcasts to Polygon RPC"]
+        E -->|Manual Injected Wallet| G["MetaMask / Rabby / Web3 Wallet Provider"]
+        F --> H["Polygon Amoy Consensus (Chain ID: 80002)"]
         G --> H
-        H --> I["Immutable Block Notarization"]
-        I --> J["MSTScan Explorer Verification Badge"]
+        H --> I["Immutable Block Finalization"]
+        I --> J["PolygonScan Explorer Verification Badge"]
     end
 
     subgraph LegalDossier["⚖️ Judicial Admissibility"]
@@ -111,56 +112,44 @@ flowchart TD
     D --> E
 ```
 
-### Core Web3 Utility (`client/src/lib/mstAnchor.js`)
-- Detects `window.bridgekey` or standard `window.ethereum` injected Web3 providers.
-- Falls back to `@mstblockchain/mst-sdk` Provider targeting `https://rpc.mstblockchain.com`.
-- Constructs an evidentiary calldata payload:
-  ```json
-  {
-    "victimId": "EVID-1726144800000",
-    "hash": "9f83c68334b07f89fa6e9b4690c74f57c2c4d51624c87895315be96f64a1329a",
-    "timestamp": 1726144800000,
-    "metadata": {
-      "lat": 28.6139,
-      "lng": 77.2090,
-      "accuracy": 4.2,
-      "mimeType": "audio/webm"
-    }
-  }
-  ```
-- Executes transaction to target contract `0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5`.
-- Provides simulated testnet broadcast telemetry if offline or in testing mode so UI never crashes.
-- Returns `{ success: true, txHash, explorerUrl: "https://testnet.mstscan.com/tx/" + txHash }`.
+### Core Web3 Utility (`client/src/lib/polygonAnchor.js`)
+- Detects standard `window.ethereum` injected Web3 providers (MetaMask, Rabby, OKX, etc.).
+- Utilizes autonomous zero-popup background session relayer with live Bor RPC endpoints:
+  - `https://polygon-amoy-bor-rpc.publicnode.com`
+  - `https://polygon-amoy.drpc.org`
+- Executes on-chain notarization targeting Polygon Amoy Contract `0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb`.
+- Provides backward-compatibility aliases for seamless legacy record verification (`anchorEvidenceToMST`, `mstAnchor`, etc.).
+- Returns `{ success: true, txHash, explorerUrl: "https://amoy.polygonscan.com/tx/" + txHash }`.
 
 ---
 
 ## 🛡️ Interactive Evidence Vault Features
 
-### 1. Tactical MSTScan Verification Badge
-Whenever new evidence is recorded or hashed (e.g. clicking **+ Record Forensic Test Clip** or during an active SOS transition), the app automatically triggers `anchorEvidenceToMST` and renders an interactive tactical badge:
+### 1. Tactical PolygonScan Verification Badge
+Whenever new evidence is recorded or hashed (e.g. clicking **+ Record 10s Test Clip** or during an active SOS transition), the app automatically triggers `anchorEvidenceToPolygon` and renders an interactive tactical badge:
 <div align="center">
   <br/>
-  <b><code>🛡️ Verified on MSTScan: [0x633a3747...]</code></b><br/>
-  <i>Direct clickable hyperlink to <a href="https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec">MSTScan Verified Transaction Proof</a></i>
+  <b><code>🛡️ Verified on PolygonScan: [0x93838ab7...]</code></b><br/>
+  <i>Direct clickable hyperlink to <a href="https://amoy.polygonscan.com/tx/0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb">PolygonScan Verified Transaction Proof</a></i>
   <br/><br/>
 </div>
 
-### 2. BridgeKey Wallet One-Click Integration
-- Header includes a dedicated **🔑 Connect BridgeKey** button.
-- Allows judges and users to authenticate their BridgeKey address directly within the dApp.
-- Signs and submits notarization transactions directly from the victim's cryptographic keypair.
+### 2. Web3 Wallet One-Click Integration
+- Header includes a dedicated **🔑 Web3 / Wallet** button.
+- Allows judges, legal auditors, and users to authenticate their wallet address directly within the dApp.
+- Features a **1-Tap Judge Demo Key** with 100 POL testnet balance for seamless evaluation.
 
 ### 3. Cryptographic Artifact Cards
-- **Acoustic Audio Burst**: Raw FLAC/WebM waveform with client-side SHA-256 hash.
-- **Biometric Cardiac Telemetry**: PPG pulse log showing acute stress tachycardia spike.
-- **Raw Sensor DNG Burst**: Low-light optical capture with EXIF metadata tied to atomic time.
+- **Acoustic Audio Burst**: Raw WebM waveform with client-side SHA-256 hash and on-device P-256 signature.
+- **Biometric Cardiac Telemetry**: PPG pulse log showing acute stress tachycardia spikes.
+- **5-Frame Optical Burst**: High-frequency 750ms rapid sequence anchored via Merkle root onto Polygon.
 
 ### 4. Self-Authenticating Judicial Dossier Export
 Generates a markdown legal certificate complying with Section 63 of Bharatiya Sakshya Adhiniyam, 2023:
-- Cryptographic hash breakdown for every recorded frame.
-- Primary blockchain notarization on **MST Blockchain Testnet** (`0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5`).
-- Secondary ledger notarization on Polygon PoS.
-- Hardware keystore root attestation (Titan M2 / Android KeyStore StrongBox).
+- Cryptographic SHA-256 hash breakdown for every recorded frame and audio chunk.
+- Primary blockchain notarization on **Polygon Amoy Testnet (Chain ID: 80002)**.
+- Hardware keystore root attestation (On-Device WebCrypto Keystore / Non-Extractable P-256 Key).
+- 1-Click Formal Police FIR Generator conforming to Bharatiya Nagarik Suraksha Sanhita (BNSS) §173.
 
 ---
 
@@ -171,17 +160,19 @@ Suraksha-Shadow/
 ├── client/                     # React 19 + Vite Web3 Frontend (PWA)
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── EvidenceVault.jsx   # Tamper-Evident Locker with MSTScan Badges
+│   │   │   ├── EvidenceVault.jsx   # Tamper-Evident Locker with PolygonScan Badges
+│   │   │   ├── PoliceFirModal.jsx  # 1-Click Police FIR & BNSS §173 Generator
 │   │   │   ├── TacticalOverview.jsx# Operator Command Hub
 │   │   │   └── ...
 │   │   ├── hooks/
-│   │   │   └── useEvidenceVault.js # IndexedDB persistence & auto-MST anchor
+│   │   │   └── useEvidenceVault.js # IndexedDB persistence & auto-Polygon anchor
 │   │   ├── lib/
-│   │   │   ├── mstAnchor.js        # Web3 MST Blockchain anchoring utility
-│   │   │   ├── evidenceIntegrity.js# Composite binary SHA-256 builder
+│   │   │   ├── polygonAnchor.js    # Web3 Polygon Amoy anchoring & relayer utility
+│   │   │   ├── mstAnchor.js        # Backward-compatibility alias wrapper
+│   │   │   ├── evidenceStore.js    # IndexedDB & continuous background queue
 │   │   │   └── ...
 │   │   └── App.jsx
-│   └── package.json            # @mstblockchain/mst-sdk, ethers, etc.
+│   └── package.json            # ethers, @mstblockchain/mst-sdk, etc.
 ├── server/                     # Express Node.js Backend API
 │   ├── lib/
 │   │   ├── sms.js              # GSM SMS Dispatch (Fast2SMS / Textbee)
@@ -201,16 +192,16 @@ Suraksha-Shadow/
 
 ---
 
-## 👥 Hackathon Track Submission Note
+## 👥 Blockchain Network Specifications
 
-This project is built and optimized for the **MST Blockchain Hackathon** under the **Agentic Blockchain / Real World & DePIN** track.
-
-- **Contract**: `0xE8BBE0724FD722944f9FaB13A13d143928d0FFf5`
-- **Network**: MST Testnet (Chain ID 91562037)
-- **Verified Tx Hash**: `0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec`
-- **Explorer Proof**: https://testnet.mstscan.com/tx/0x633a37470faa316de7087a907c1654695eee9d3978c334854a82e2419db046ec
-- **Explorer**: https://testnet.mstscan.com
+- **Target Network**: Polygon Amoy Testnet (EVM)
+- **Chain ID**: `80002` (`0x13882`)
+- **Native Symbol**: `POL`
+- **Verified Tx Hash**: [`0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb`](https://amoy.polygonscan.com/tx/0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb)
+- **Explorer Proof**: https://amoy.polygonscan.com/tx/0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb
+- **Explorer URL**: https://amoy.polygonscan.com
+- **Public RPC**: `https://polygon-amoy-bor-rpc.publicnode.com`
 
 <div align="center">
-<img src="https://capsule-render.vercel.app/api?type=waving&color=FFB300&height=120&section=footer&animation=fadeIn" width="100%" alt="footer banner"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=7B3FE4&height=120&section=footer&animation=fadeIn" width="100%" alt="footer banner"/>
 </div>

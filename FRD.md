@@ -17,7 +17,7 @@
 **Suraksha Shadow** is an autonomous, privacy-first, anti-coercion emergency response and forensic evidence gathering platform. Designed specifically for high-stress, hostile, and low-connectivity environments, Suraksha Shadow transforms any smartphone or browser into an active personal sentinel that:
 1. **Detects Distress Without Physical Interaction**: Listens for spoken emergency codewords (e.g., *"banana"*, *"bachao"*, *"help"*), acoustic scream spikes (>76 dB), violent struggle shaking, and internationally recognized distress hand signals (Signal for Help).
 2. **Defeats Coercion & Forced Cancellation**: Implements duress-resistant security PINs (genuine vs. coercive) and decoy calculator stealth cloaks to protect victims under physical threat.
-3. **Anchors Court-Admissible Evidence**: Gathers real-time timestamped photos, audio clips, and GPS telemetry, notarizing them with SHA-256 cryptographic hashes on the MST Blockchain compliant with **Section 63 of the Bharatiya Sakshya Adhiniyam (BSA), 2023**.
+3. **Anchors Court-Admissible Evidence**: Gathers real-time timestamped photos, audio clips, and GPS telemetry, notarizing them with SHA-256 cryptographic hashes on the Polygon Blockchain compliant with **Section 63 of the Bharatiya Sakshya Adhiniyam (BSA), 2023**.
 4. **Automates Legal Recourse**: Generates 1-Click Police First Information Reports (FIR) and judicial dossiers, and locates 24/7 Safe Havens (police stations, hospitals) within seconds.
 
 ---
@@ -29,7 +29,7 @@ graph TD
     A[Victim / Citizen in Distress] -->|Live Voice / Gesture / Motion| B(Suraksha Shadow Sentinel)
     B -->|Silent Coercion-Resistant SOS| C[Trusted Contacts & Guardians]
     B -->|Direct Carrier SMS / WhatsApp| D[Local Emergency Responders 112]
-    B -->|Cryptographic Notarization| E[MST Blockchain Evidence Vault]
+    B -->|Cryptographic Notarization| E[Polygon Blockchain Evidence Vault]
     B -->|1-Click Police FIR| F[Police Station & Legal Counsel]
     B -->|24/7 Sanctuary Routing| G[Safe Havens Radar]
 ```
@@ -78,12 +78,12 @@ graph TD
 
 ---
 
-### FR-3: Forensic Evidence Vault & MST Blockchain Notarization
+### FR-3: Forensic Evidence Vault & Polygon Blockchain Notarization
 * **Description**: Autonomous collection and tamper-evident cryptographic timestamping of incident media compliant with Section 63 of Bharatiya Sakshya Adhiniyam (BSA), 2023.
 * **Functional Requirements**:
   * **FR-3.1**: Upon SOS activation, the system **SHALL** automatically initiate background photo captures, audio recordings, and GPS breadcrumbs every 10 seconds.
   * **FR-3.2**: Every artifact **SHALL** be hashed client-side using `SHA-256` (Web Crypto API) incorporating binary data, exact UTC timestamp, and GPS coordinates.
-  * **FR-3.3**: The system **SHALL** anchor artifact hashes into the MST Blockchain / Polygon Ledger, recording the immutable Block Number, Transaction Hash, and MSTScan explorer URL.
+  * **FR-3.3**: The system **SHALL** anchor artifact hashes into the Polygon Blockchain (Amoy Testnet Chain ID 80002), recording the immutable Block Number, Transaction Hash, and PolygonScan explorer URL.
   * **FR-3.4**: The system **SHALL** provide a 1-Click **"Export Section 63 BSA Judicial Dossier"** generating a court-admissible certificate containing cryptographic hashes, chain of custody logs, and device metadata.
 
 ---

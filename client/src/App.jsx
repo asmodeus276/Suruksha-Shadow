@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useShieldDetection, requestDevicePermissions } from "./hooks/useShieldDetection";
 import { useGestureDetection } from "./hooks/useGestureDetection";
 import { useGuardianPing } from "./hooks/useGuardianPing";
@@ -341,7 +341,7 @@ export default function App() {
     }
   }, [activeEventId]);
 
-  // Continuous 10-Second Audio Chunk Slicer & MST On-Chain Auto-Notarizer (Active Emergency Mode)
+  // Continuous 10-Second Audio Chunk Slicer & Polygon On-Chain Auto-Notarizer (Active Emergency Mode)
   // Runs during active SOS emergency to build forensic evidence vault without interfering with standby codeword listening
   useEffect(() => {
     let isMounted = true;

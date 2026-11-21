@@ -6,7 +6,7 @@
 
 | **Document Version** | 2.4.0 |
 | **Status** | Approved / Production Architecture |
-| **Primary Frameworks** | React 19, Vite, Node.js Express, MediaPipe, Web Audio/Speech, Web3 MST SDK |
+| **Primary Frameworks** | React 19, Vite, Node.js Express, MediaPipe, Web Audio/Speech, Ethers.js v6 |
 | **Classification** | Engineering Architecture Reference |
 | **Last Updated** | September 2026 |
 
@@ -41,8 +41,8 @@ graph TB
     end
 
     subgraph Web3 [Decentralized Trust Tier]
-        MST[MST Blockchain / Polygon Notarizer]
-        EXPLORER[MSTScan Public Verification Explorer]
+        POLYGON[Polygon Amoy Blockchain Notarizer]
+        EXPLORER[PolygonScan Public Verification Explorer]
     end
 
     UI --> AS & CV & KS
@@ -52,7 +52,7 @@ graph TB
     UI --> GSM & WA
     IDB --> SYNC --> API
     API --> WHISPER & SMS_GATEWAY & PIN_SEC
-    API --> MST --> EXPLORER
+    API --> POLYGON --> EXPLORER
 ```
 
 ---
@@ -69,8 +69,9 @@ graph TB
 * **Icons**: `lucide-react` 1.16.0.
 
 ### 2.2 Decentralized Blockchain Tier
-* **Blockchain SDK**: `@mstblockchain/mst-sdk` + `ethers.js` 6.13.0.
-* **Anchoring Smart Contract**: MST Blockchain Evidentiary Notary Contract (Polygon Proof-of-Stake / MST Layer-1).
+* **Blockchain Network**: Polygon Amoy Testnet (Chain ID 80002 / 0x13882).
+* **Web3 Library**: `ethers.js` 6.13.0 with autonomous zero-popup background session relayer.
+* **Anchoring Smart Contract**: Evidentiary Notary Contract on Polygon Amoy (`0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb`).
 
 ### 2.3 Backend API (Node.js & Express)
 * **Runtime**: Node.js v18.0.0+ / v20 LTS.

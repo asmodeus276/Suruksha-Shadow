@@ -1,4 +1,4 @@
-﻿/**
+/**
  * High-Frequency Optical Burst Engine, WebCrypto Hardware Keystore,
  * Continuous Audio Slice Notarizer & Autonomous Background Sync Queue
  * -------------------------------------------------------------------
@@ -9,19 +9,19 @@
  * 1. WebCrypto Hardware Keystore (Non-Extractable P-256 ECDSA Keypair in IndexedDB)
  * 2. 5-Frame High-Frequency Rapid Optical Burst Engine (150ms intervals)
  * 3. Continuous 10-Second Audio Chunk Slicer
- * 4. Autonomous 5-Second Background Sync Queue (Zero-Popup MST Notarization Relayer)
+ * 4. Autonomous 5-Second Background Sync Queue (Zero-Popup Polygon Notarization Relayer)
  * 5. Dedicated per-artifact SHA-256 digests and cryptographic signatures
  */
 
 import {
-  anchorEvidenceToMST,
+  anchorEvidenceToPolygon,
   deriveOfflineTxPlaceholder,
-  getMSTExplorerTxUrl,
-  MST_CONTRACT_ADDRESS,
+  getPolygonExplorerTxUrl,
+  POLYGON_CONTRACT_ADDRESS,
   ANCHOR_STATUS,
-  VERIFIED_MST_TX_HASH,
-  VERIFIED_MST_BLOCK_NUMBER,
-} from "./mstAnchor";
+  VERIFIED_POLYGON_TX_HASH,
+  VERIFIED_POLYGON_BLOCK_NUMBER,
+} from "./polygonAnchor";
 
 const OPTICAL_BURSTS_KEY = "suraksha_optical_bursts_v1";
 const KEYSTORE_DB_NAME = "SurakshaKeystore";
@@ -29,7 +29,7 @@ const KEYSTORE_STORE_NAME = "keys";
 const KEYSTORE_KEY_ID = "device_enclave_p256";
 const EVIDENCE_DB_NAME = "shield_evidence_vault";
 const EVIDENCE_STORE_NAME = "recordings";
-const QUEUE_STORAGE_KEY = "suraksha_mst_sync_queue_v1";
+const QUEUE_STORAGE_KEY = "suraksha_polygon_sync_queue_v1";
 
 // ============================================================================
 // SECTION 1: WEBCRYPTO HARDWARE KEYSTORE ENGINE (NON-EXTRACTABLE P-256 ECDSA)
@@ -258,7 +258,7 @@ let isProcessingQueue = false;
 
 function loadSyncQueue() {
   try {
-    const raw = localStorage.getItem(QUEUE_STORAGE_KEY);
+    const raw = localStorage.getItem(QUEUE_STORAGE_KEY) || localStorage.getItem("suraksha_mst_sync_queue_v1");
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -314,7 +314,7 @@ export function subscribeToNotarizationQueue(listener) {
 }
 
 /**
- * Enqueues an artifact into the silent background sync queue.
+ * Enqueues an artifact into the silent background sync queue for Polygon Amoy notarization.
  *
  * @param {Object} item
  * @param {string} item.id
@@ -323,7 +323,7 @@ export function subscribeToNotarizationQueue(listener) {
  * @param {Object} [item.metadata]
  * @returns {Promise<void>}
  */
-export async function enqueueForMSTNotarization({ id, sha256, type = "audio_slice", metadata = {} }) {
+export async function enqueueForPolygonNotarization({ id, sha256, type = "audio_slice", metadata = {} }) {
   const queue = loadSyncQueue();
   const existingIdx = queue.findIndex((q) => q.id === id);
 
@@ -349,6 +349,9 @@ export async function enqueueForMSTNotarization({ id, sha256, type = "audio_slic
   // Trigger immediate non-blocking flush
   setTimeout(() => flushNotarizationQueue(), 50);
 }
+
+// Backward-compatible alias
+export const enqueueForMSTNotarization = enqueueForPolygonNotarization;
 
 /**
  * Flushes and processes pending items in the background auto-sync queue.
@@ -376,7 +379,7 @@ export async function flushNotarizationQueue() {
       notifyQueueListeners({ type: "ITEM_SYNCING", id: item.id });
 
       try {
-        const anchorRes = await anchorEvidenceToMST(
+        const anchorRes = await anchorEvidenceToPolygon(
           item.id,
           item.sha256,
           {
@@ -389,7 +392,8 @@ export async function flushNotarizationQueue() {
 
         if (anchorRes && anchorRes.success) {
           item.status = "anchored";
-          item.mstAnchor = anchorRes;
+          item.polygonAnchor = anchorRes;
+          item.mstAnchor = anchorRes; // alias
           item.anchoredAt = Date.now();
 
           // Update record in IndexedDB if it's an audio recording
@@ -405,6 +409,7 @@ export async function flushNotarizationQueue() {
             if (record) {
               const updatedRecord = {
                 ...record,
+                polygonAnchor: anchorRes,
                 mstAnchor: anchorRes,
                 syncStatus: "anchored",
               };
@@ -668,9 +673,20 @@ export async function captureOpticalBurst({
   const enclaveSignature = await signArtifactDigest(compositeHash);
   const enclaveFingerprint = await getEnclaveFingerprint();
 
-  // Derive dedicated transaction anchor for this optical burst
+  // Derive dedicated transaction anchor for this optical burst on Polygon Amoy
   const txHash = await deriveOfflineTxPlaceholder(compositeHash, burstId, Date.now());
-  const explorerUrl = getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH);
+  const explorerUrl = getPolygonExplorerTxUrl(VERIFIED_POLYGON_TX_HASH);
+
+  const initialAnchor = {
+    success: true,
+    txHash,
+    explorerUrl,
+    contractAddress: POLYGON_CONTRACT_ADDRESS,
+    blockNumber: VERIFIED_POLYGON_BLOCK_NUMBER,
+    timestamp: Date.now(),
+    simulated: true,
+    status: ANCHOR_STATUS.SIMULATION,
+  };
 
   const burstRecord = {
     id: burstId,
@@ -690,22 +706,14 @@ export async function captureOpticalBurst({
     frames,
     bsaCompliance: "BSA 2023 §63 / FRE 902(13)&(14) Certified",
     simulated,
-    mstAnchor: {
-      success: true,
-      txHash,
-      explorerUrl,
-      contractAddress: MST_CONTRACT_ADDRESS,
-      blockNumber: VERIFIED_MST_BLOCK_NUMBER,
-      timestamp: Date.now(),
-      simulated: true,
-      status: ANCHOR_STATUS.SIMULATION,
-    },
+    polygonAnchor: initialAnchor,
+    mstAnchor: initialAnchor, // backward-compat alias
   };
 
   saveOpticalBurst(burstRecord);
 
-  // Enqueue for silent background auto-sync to MST Testnet
-  enqueueForMSTNotarization({
+  // Enqueue for silent background auto-sync to Polygon Amoy Testnet
+  enqueueForPolygonNotarization({
     id: burstId,
     sha256: compositeHash,
     type: "optical_burst",
@@ -871,19 +879,20 @@ export async function startContinuousAudioNotarization({
         const signature = await signArtifactDigest(sha256);
         const enclaveFingerprint = await getEnclaveFingerprint();
 
-        // Derive deterministic transaction anchor upfront so evidence record has immediate verified link
+        // Derive deterministic transaction anchor upfront on Polygon Amoy so evidence record has immediate verified link
         const tentativeTxHash = await deriveOfflineTxPlaceholder(sha256, sliceId, capturedAt);
-        const tentativeExplorerUrl = getMSTExplorerTxUrl(VERIFIED_MST_TX_HASH);
+        const tentativeExplorerUrl = getPolygonExplorerTxUrl(VERIFIED_POLYGON_TX_HASH);
 
         const initialAnchor = {
           success: true,
           txHash: tentativeTxHash,
           explorerUrl: tentativeExplorerUrl,
-          contractAddress: MST_CONTRACT_ADDRESS,
-          blockNumber: VERIFIED_MST_BLOCK_NUMBER,
+          contractAddress: POLYGON_CONTRACT_ADDRESS,
+          blockNumber: VERIFIED_POLYGON_BLOCK_NUMBER,
           timestamp: capturedAt,
           gasUsed: "0",
-          costMST: "0",
+          costPOL: "0",
+          costMST: "0", // alias
           simulated: true,
           status: ANCHOR_STATUS.SIMULATION,
         };
@@ -900,14 +909,15 @@ export async function startContinuousAudioNotarization({
           durationMs: 10000,
           mimeType: recordedMime || mimeType || "audio/webm",
           blob: sliceBlob,
-          mstAnchor: initialAnchor,
+          polygonAnchor: initialAnchor,
+          mstAnchor: initialAnchor, // alias
           syncStatus: typeof navigator !== "undefined" && !navigator.onLine ? "offline_signed" : "pending_anchor",
         };
 
         await saveEvidenceRecord(record);
 
         // Enqueue into autonomous 5-second background sync queue
-        enqueueForMSTNotarization({
+        enqueueForPolygonNotarization({
           id: sliceId,
           sha256,
           type: "audio_slice",

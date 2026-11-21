@@ -20,7 +20,7 @@
 **Suraksha Shadow** is an autonomous, privacy-first, anti-coercion emergency response and forensic evidence gathering platform. Designed specifically for high-stress, hostile, and low-connectivity environments, Suraksha Shadow transforms any smartphone or browser into an active personal sentinel that:
 1. **Detects Distress Without Physical Interaction**: Listens for spoken emergency codewords (e.g., *"banana"*, *"bachao"*, *"help"*), acoustic scream spikes (>76 dB), violent struggle shaking, and internationally recognized distress hand signals (Signal for Help).
 2. **Defeats Coercion & Forced Cancellation**: Implements duress-resistant security PINs (genuine vs. coercive) and decoy calculator stealth cloaks to protect victims under physical threat.
-3. **Anchors Court-Admissible Evidence**: Gathers real-time timestamped photos, audio clips, and GPS telemetry, notarizing them with SHA-256 cryptographic hashes on the MST Blockchain compliant with **Section 63 of the Bharatiya Sakshya Adhiniyam (BSA), 2023**.
+3. **Anchors Court-Admissible Evidence**: Gathers real-time timestamped photos, audio clips, and GPS telemetry, notarizing them with SHA-256 cryptographic hashes on the Polygon Blockchain compliant with **Section 63 of the Bharatiya Sakshya Adhiniyam (BSA), 2023**.
 4. **Automates Legal Recourse**: Generates 1-Click Police First Information Reports (FIR) and judicial dossiers, and locates 24/7 Safe Havens (police stations, hospitals) within seconds.
 
 ---
@@ -32,7 +32,7 @@ graph TD
     A[Victim / Citizen in Distress] -->|Live Voice / Gesture / Motion| B(Suraksha Shadow Sentinel)
     B -->|Silent Coercion-Resistant SOS| C[Trusted Contacts & Guardians]
     B -->|Direct Carrier SMS / WhatsApp| D[Local Emergency Responders 112]
-    B -->|Cryptographic Notarization| E[MST Blockchain Evidence Vault]
+    B -->|Cryptographic Notarization| E[Polygon Blockchain Evidence Vault]
     B -->|1-Click Police FIR| F[Police Station & Legal Counsel]
     B -->|24/7 Sanctuary Routing| G[Safe Havens Radar]
 ```
@@ -68,10 +68,10 @@ graph TD
 * **FR-2.3**: Requires continuous 1.2-second hold with visual progress ring to eliminate false triggers.
 * **FR-2.4**: Supports front/rear camera cycling and works in low ambient light.
 
-### FR-3: Forensic Evidence Vault & MST Blockchain Notarization
+### FR-3: Forensic Evidence Vault & Polygon Blockchain Notarization
 * **FR-3.1**: Automatically captures background photos, audio clips, and GPS breadcrumbs every 10 seconds during active emergencies.
 * **FR-3.2**: Computes client-side SHA-256 hash using Web Crypto API over binary media, UTC timestamp, and location coordinates.
-* **FR-3.3**: Anchors hashes into MST Blockchain / Polygon Ledger, recording Block Number, Transaction Hash, and MSTScan explorer URL.
+* **FR-3.3**: Anchors hashes into Polygon Blockchain (Amoy Testnet Chain ID 80002), recording Block Number, Transaction Hash, and PolygonScan explorer URL.
 * **FR-3.4**: 1-Click **"Export Section 63 BSA Judicial Dossier"** generates court-admissible electronic record certificates.
 
 ### FR-4: 1-Click Police FIR & Legal Dossier Generator
@@ -148,8 +148,8 @@ graph TB
     end
 
     subgraph Web3 [Decentralized Trust Tier]
-        MST[MST Blockchain / Polygon Notarizer]
-        EXPLORER[MSTScan Public Verification Explorer]
+        POLYGON[Polygon Amoy Blockchain Notarizer]
+        EXPLORER[PolygonScan Public Verification Explorer]
     end
 
     UI --> AS & CV & KS
@@ -159,7 +159,7 @@ graph TB
     UI --> GSM & WA
     IDB --> SYNC --> API
     API --> WHISPER & SMS_GATEWAY & PIN_SEC
-    API --> MST --> EXPLORER
+    API --> POLYGON --> EXPLORER
 ```
 
 ---
@@ -175,7 +175,7 @@ graph TB
 | **Gesture Rules** | `fingerpose` | 0.1.0 | Rule-based gesture confidence scoring |
 | **Mapping Engine** | `leaflet` + `react-leaflet` | 1.9.4 / 5.0.0 | Offline-capable OpenStreetMap / CartoDB tiles |
 | **Client Database** | `idb` | 8.0.2 | IndexedDB promise-based offline persistence |
-| **Web3 Blockchain** | `@mstblockchain/mst-sdk` + `ethers` | 6.13.0 | MST Blockchain smart contract notarization |
+| **Web3 Blockchain** | `ethers` v6 | 6.13.0 | Polygon Amoy smart contract notarization & session relayer |
 | **Backend API** | Node.js + Express | 20 LTS / 4.21.0 | REST services & Cloud AI gateway |
 | **Speech Fallback** | Groq / Google GenAI SDK | Whisper Large v3 / Gemini 1.5 Flash | Server-side 16kHz WAV transcription |
 
