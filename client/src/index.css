@@ -1994,7 +1994,7 @@ textarea::placeholder {
 /* Overlaid Recenter Button: 📍 My Location */
 .live-safety-map-my-location-btn {
   position: absolute;
-  top: 14px;
+  bottom: 20px;
   right: 14px;
   z-index: 1000;
   display: inline-flex;
@@ -2005,10 +2005,10 @@ textarea::placeholder {
   -webkit-backdrop-filter: blur(12px);
   border: 1.5px solid var(--line-gold);
   color: var(--ember);
-  padding: 9px 16px;
+  padding: 8px 14px;
   border-radius: var(--radius-full);
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55), 0 0 12px rgba(232, 196, 104, 0.2);
   cursor: pointer;
@@ -2030,7 +2030,7 @@ textarea::placeholder {
 /* Floating Status Pill */
 .live-safety-map-status-pill {
   position: absolute;
-  bottom: 28px;
+  bottom: 20px;
   left: 14px;
   z-index: 1000;
   display: inline-flex;

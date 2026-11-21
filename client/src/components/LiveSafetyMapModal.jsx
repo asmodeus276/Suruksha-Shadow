@@ -5,35 +5,33 @@ import { reverseGeocode, formatCoords } from "../lib/geo";
 
 const TILE_LAYERS = {
   streets: {
-    name: "Streets",
+    name: "Map",
     icon: "🗺️",
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    url: "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
     options: {
       maxZoom: 20,
-      subdomains: "abcd",
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/" target="_blank" rel="noopener noreferrer">CARTO</a>',
-    },
-  },
-  dark: {
-    name: "Tactical",
-    icon: "🌙",
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",
-    options: {
-      maxZoom: 20,
-      subdomains: "abcd",
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/" target="_blank" rel="noopener noreferrer">CARTO</a>',
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Maps",
     },
   },
   satellite: {
     name: "Satellite",
     icon: "🛰️",
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    url: "https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
     options: {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a>, Earthstar Geographics',
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Maps",
+    },
+  },
+  terrain: {
+    name: "Terrain",
+    icon: "⛰️",
+    url: "https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}",
+    options: {
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Maps",
     },
   },
 };
@@ -381,7 +379,7 @@ export default function LiveSafetyMapModal({ isOpen, onClose }) {
           />
 
           {/* Floating Layer Switcher */}
-          <div className="app-map-layer-switch" style={{ top: 14, left: 14 }}>
+          <div className="app-map-layer-switch">
             {Object.entries(TILE_LAYERS).map(([key, config]) => (
               <button
                 key={key}

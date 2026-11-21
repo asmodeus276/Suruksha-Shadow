@@ -1,45 +1,43 @@
-﻿import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Navigation, Maximize2, Minimize2, Crosshair } from "lucide-react";
 
 /**
- * Tile layer configurations for modern real-app map visuals:
- * 1. Carto Voyager: Clean, modern pastel look (like Apple Maps / Google Maps)
- * 2. Carto Dark Matter: Sleek tactical dark theme (matches obsidian UI)
- * 3. Esri World Imagery: Crisp satellite photography
+ * Real Google Maps tile layers:
+ * 1. Streets (lyrs=m): Standard authentic Google Maps
+ * 2. Satellite (lyrs=y): Google Hybrid (real satellite photography + roads)
+ * 3. Terrain (lyrs=p): Google Terrain topography
  */
 const TILE_LAYERS = {
   streets: {
-    name: "Streets",
+    name: "Map",
     icon: "🗺️",
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    url: "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
     options: {
       maxZoom: 20,
-      subdomains: "abcd",
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/" target="_blank" rel="noopener noreferrer">CARTO</a>',
-    },
-  },
-  dark: {
-    name: "Tactical",
-    icon: "🌙",
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",
-    options: {
-      maxZoom: 20,
-      subdomains: "abcd",
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/" target="_blank" rel="noopener noreferrer">CARTO</a>',
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Maps",
     },
   },
   satellite: {
     name: "Satellite",
     icon: "🛰️",
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    url: "https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
     options: {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a>, Earthstar Geographics',
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Maps",
+    },
+  },
+  terrain: {
+    name: "Terrain",
+    icon: "⛰️",
+    url: "https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}",
+    options: {
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Maps",
     },
   },
 };
