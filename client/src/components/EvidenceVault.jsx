@@ -755,6 +755,30 @@ ${
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <a
+              href={getPolygonExplorerTxUrl(VERIFIED_POLYGON_TX_HASH)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="tag"
+              style={{
+                textDecoration: "none",
+                fontSize: 11,
+                padding: "6px 12px",
+                background: "#8247E5",
+                color: "#ffffff",
+                fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                borderRadius: "var(--radius-sm)",
+                boxShadow: "0 2px 8px rgba(130, 71, 229, 0.35)",
+              }}
+              title="Inspect Live Verified Transaction on PolygonScan"
+            >
+              <span>🟣 View on PolygonScan</span>
+              <span style={{ fontSize: 10, opacity: 0.85 }}>↗</span>
+            </a>
+
+            <a
               href={POLYGON_CONTRACT_EXPLORER_URL}
               target="_blank"
               rel="noopener noreferrer"
@@ -1882,16 +1906,20 @@ ${
                   flex: "1 1 180px",
                   textAlign: "center",
                   textDecoration: "none",
-                  padding: "8px 12px",
-                  fontSize: 11.5,
+                  padding: "9px 14px",
+                  fontSize: 12,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 6,
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  background: "#8247E5",
+                  color: "#ffffff",
+                  border: "none",
+                  boxShadow: "0 2px 10px rgba(130, 71, 229, 0.4)",
                 }}
               >
-                <span>🔍 Inspect on PolygonScan Explorer</span>
+                <span>🟣 Inspect Live on PolygonScan ↗</span>
               </a>
 
               <button

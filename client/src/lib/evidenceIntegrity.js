@@ -21,7 +21,8 @@ export const POLYGON_AMOY_CONFIG = {
   chainId: 80002,
   name: "Polygon Amoy Testnet",
   explorerBase: "https://amoy.polygonscan.com/tx/",
-  notaryContract: "0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb",
+  notaryContract: "0x8E14Fa95b6a3780D2D794F01235F69f45C99f24E",
+  verifiedTxHash: "0x93838ab7dae0698561e96e95a8243c81710980c604a132b34e4287914178c4bb",
   rpcEndpoint: "https://polygon-amoy-bor-rpc.publicnode.com",
 };
 

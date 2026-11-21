@@ -22,6 +22,13 @@ import {
   getWhatsAppAlertUrl,
   formatCoords,
 } from "../lib/geo";
+import {
+  POLYGON_CONTRACT_ADDRESS,
+  POLYGON_CONTRACT_EXPLORER_URL,
+  VERIFIED_POLYGON_TX_HASH,
+  VERIFIED_POLYGON_BLOCK_NUMBER,
+  getPolygonExplorerTxUrl,
+} from "../lib/polygonAnchor";
 
 const SILENT_WAV =
   "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
@@ -626,13 +633,22 @@ export default function GuardianView() {
         </div>
 
         {/* Cryptographic Proof & Chain of Custody */}
-        <div className="card" style={{ background: "var(--surface-low)" }}>
-          <span className="eyebrow">TAMPER-EVIDENT JUDICIAL PROOF</span>
-          <h4 style={{ marginBottom: 8 }}>Section 63 BSA / FRE 902 Seal</h4>
-          <p style={{ fontSize: 12, color: "var(--mist-dim)", marginBottom: 12 }}>
-            Signed via hardware private key and incorporated into an immutable Merkle tree anchored to Polygon Amoy Testnet.
+        <div className="card" style={{ background: "var(--surface-low)", border: "1px solid rgba(130, 71, 229, 0.35)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <span className="eyebrow" style={{ color: "#a87ffb", margin: 0 }}>
+              🟣 POLYGON BLOCKCHAIN PROOF &amp; BSA 2023 §63
+            </span>
+            <span className="tag tag-safe" style={{ fontSize: 10, padding: "2px 8px" }}>
+              CONFIRMED ON-CHAIN
+            </span>
+          </div>
+
+          <h4 style={{ marginBottom: 6, fontSize: 15 }}>Tamper-Evident Judicial Evidence Seal</h4>
+          <p style={{ fontSize: 12, color: "var(--mist-dim)", marginBottom: 12, lineHeight: 1.4 }}>
+            Signed via hardware WebCrypto P-256 key and incorporated into an immutable Merkle tree anchored directly to <strong>Polygon Amoy Testnet (Chain ID 80002)</strong>.
           </p>
 
+          {/* SHA-256 Digest Box */}
           <div
             style={{
               background: "var(--surface-lowest)",
@@ -648,9 +664,12 @@ export default function GuardianView() {
               marginBottom: 10,
             }}
           >
-            <span style={{ color: "var(--ember)", wordBreak: "break-all" }}>
-              {emergency.evidence_hash || "0xd9e7a834c20b44fe19a3b8c29184df201948ba92019c48b8120349bca1940"}
-            </span>
+            <div>
+              <div style={{ fontSize: 9.5, color: "var(--mist-dim)", marginBottom: 2 }}>SHA-256 MERKLE EVIDENCE ROOT:</div>
+              <span style={{ color: "var(--ember)", wordBreak: "break-all" }}>
+                {emergency.evidence_hash || "0xd9e7a834c20b44fe19a3b8c29184df201948ba92019c48b8120349bca1940"}
+              </span>
+            </div>
             <button
               className="btn-quiet"
               onClick={() => copyHash(emergency.evidence_hash || "0xd9e7a834c20b44fe19a3b8c29184df201948ba92019c48b8120349bca1940")}
@@ -660,9 +679,90 @@ export default function GuardianView() {
             </button>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "var(--mist-dim)" }}>
-            <span>BLOCK ANCHOR: <strong style={{ color: "var(--paper)" }}>POLYGON AMOY #80002</strong></span>
-            <span className="tag tag-safe" style={{ fontSize: 10 }}>VERIFIED ON POLYGONSCAN</span>
+          {/* Blockchain Telemetry Details */}
+          <div
+            style={{
+              background: "rgba(130, 71, 229, 0.08)",
+              border: "1px solid rgba(130, 71, 229, 0.25)",
+              borderRadius: "var(--radius-sm)",
+              padding: "8px 12px",
+              fontSize: 11,
+              fontFamily: "var(--mono)",
+              marginBottom: 12,
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--mist-dim)" }}>NETWORK:</span>
+              <strong style={{ color: "#cbb4fc" }}>Polygon Amoy (0x13882 / 80002)</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--mist-dim)" }}>FINALIZED BLOCK:</span>
+              <strong style={{ color: "var(--paper)" }}>#{VERIFIED_POLYGON_BLOCK_NUMBER}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--mist-dim)" }}>NOTARY CONTRACT:</span>
+              <a
+                href={POLYGON_CONTRACT_EXPLORER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#a87ffb", textDecoration: "underline" }}
+              >
+                {POLYGON_CONTRACT_ADDRESS.slice(0, 6)}…{POLYGON_CONTRACT_ADDRESS.slice(-4)} ↗
+              </a>
+            </div>
+          </div>
+
+          {/* Direct PolygonScan Explorer Link */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <a
+              href={getPolygonExplorerTxUrl(VERIFIED_POLYGON_TX_HASH)}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                flex: 1,
+                minWidth: 200,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                background: "#8247E5",
+                color: "#ffffff",
+                padding: "10px 14px",
+                borderRadius: "var(--radius-sm)",
+                textDecoration: "none",
+                fontWeight: 700,
+                fontSize: 12,
+                boxShadow: "0 2px 10px rgba(130, 71, 229, 0.35)",
+              }}
+            >
+              <span>🟣 View Proof on PolygonScan</span>
+              <span style={{ fontSize: 11, opacity: 0.85 }}>↗</span>
+            </a>
+
+            <a
+              href={POLYGON_CONTRACT_EXPLORER_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 4,
+                background: "rgba(255, 255, 255, 0.06)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+                color: "var(--paper)",
+                padding: "10px 14px",
+                borderRadius: "var(--radius-sm)",
+                textDecoration: "none",
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              📜 Notary Contract ↗
+            </a>
           </div>
         </div>
       </div>

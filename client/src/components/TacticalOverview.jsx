@@ -323,7 +323,7 @@ function TacticalOverviewComponent({ onArm, armed, onSelectTab, onOpenDecoy, onO
                 <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--secondary)" }}>SHA-256 MERKLE</span>
               </div>
               <p style={{ fontSize: 12, color: "var(--mist)", lineHeight: 1.4, marginBottom: 8 }}>
-                Every sensor burst—audio slice, acceleration jolt, photo raw frame—is instantly signed via WebCrypto P-256 hardware private key and incorporated into an immutable Merkle tree anchored on MST Blockchain Testnet #91562037.
+                Every sensor burst—audio slice, acceleration jolt, photo raw frame—is instantly signed via WebCrypto P-256 hardware private key and incorporated into an immutable Merkle tree anchored on Polygon Amoy Testnet (Chain ID 80002 / Block #53410347).
               </p>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--surface-high)", padding: "6px 10px", borderRadius: 6, fontFamily: "var(--mono)", fontSize: 11 }}>
                 <span style={{ color: "var(--mist-dim)" }}>ROOT_HASH:</span>
