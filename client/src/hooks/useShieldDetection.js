@@ -17,6 +17,10 @@ const UNIVERSAL_EMERGENCY_WORDS = [
   "please help",
   "somebody help",
   "bachao",
+  "bacao",
+  "bacao mujhe",
+  "bacaoo",
+  "bacaho",
   "bachao mujhe",
   "bchao",
   "bachaoo",
@@ -109,6 +113,11 @@ const PHONETIC_ALIASES = {
   ],
   bachao: [
     "bachao",
+    "bacao",
+    "bacao mujhe",
+    "bacaoo",
+    "bacaho",
+    "bachhao",
     "bachao mujhe",
     "bchao",
     "bachaoo",
@@ -542,6 +551,22 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
 
     async function initAcousticEngine() {
       try {
+        const isMobile =
+          typeof navigator !== "undefined" &&
+          /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || "");
+        const isWebSpeechSupported =
+          typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+        // CRITICAL MOBILE FIX: On mobile phones (Android / iOS), the hardware microphone is strictly single-client.
+        // If getUserMedia acquires the microphone, Web Speech API (SpeechRecognition) is starved of audio and
+        // fails with 'audio-capture' or receives silence!
+        // On mobile, when SpeechRecognition is supported, we MUST give it exclusive ownership of the microphone.
+        if (isMobile && isWebSpeechSupported) {
+          console.log("[SURAKSHA SHIELD] Mobile phone detected: Granting exclusive microphone hardware to SpeechRecognition.");
+          setMicStatus("listening");
+          return;
+        }
+
         if (!navigator?.mediaDevices?.getUserMedia) return;
 
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -581,8 +606,6 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         const preRollCount = Math.round(actualSampleRate * 0.45);
         const postRollCount = Math.round(actualSampleRate * 0.35);
         const minUtteranceSamples = Math.round(actualSampleRate * 0.25);
-
-        const isWebSpeechSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
         // Only create ScriptProcessorNode if Web Speech API is NOT supported (for Cloud STT fallback)
         // This prevents hardware echo cancellation from suppressing the mic when Web Speech API is listening natively
@@ -859,13 +882,18 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
 
     function startRecognition() {
       startRecognitionRef.current = startRecognition;
-      if (isDestroyed || !enabled || triggeredRef.current || isCurrentlyListening) return;
+      if (isDestroyed || !enabledRef.current || triggeredRef.current || isCurrentlyListening) return;
 
       cleanupInstance();
 
+      const isMobile =
+        typeof navigator !== "undefined" &&
+        /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || "");
+
       try {
         const recognition = new SpeechRecognition();
-        recognition.continuous = true;
+        // On mobile, discrete utterance mode avoids Android Chrome continuous stream timeouts
+        recognition.continuous = !isMobile;
         recognition.interimResults = true;
         recognition.lang = defaultLang;
         recognition.maxAlternatives = 8;
@@ -882,7 +910,46 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
         // Called when audio capture begins — confirms the mic is actually feeding audio
         recognition.onaudiostart = () => {
           if (isDestroyed) return;
+          isCurrentlyListening = true;
+          setMicStatus("listening");
+          if (isMobile) {
+            setAudioLevel(15);
+            setAudioDb(35);
+          }
           console.log("[SURAKSHA SHIELD] SpeechRecognition audio capture active.");
+        };
+
+        recognition.onsoundstart = () => {
+          if (isDestroyed) return;
+          if (isMobile) {
+            setAudioLevel(40);
+            setAudioDb(52);
+          }
+        };
+
+        recognition.onspeechstart = () => {
+          if (isDestroyed) return;
+          setMicStatus("hearing");
+          if (isMobile) {
+            setAudioLevel(75);
+            setAudioDb(72);
+          }
+        };
+
+        recognition.onspeechend = () => {
+          if (isDestroyed) return;
+          if (isMobile) {
+            setAudioLevel(20);
+            setAudioDb(38);
+          }
+        };
+
+        recognition.onsoundend = () => {
+          if (isDestroyed) return;
+          if (isMobile) {
+            setAudioLevel(8);
+            setAudioDb(30);
+          }
         };
 
         recognition.onresult = (event) => {
@@ -1029,8 +1096,10 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
           // 'network' error happens on mobile when connectivity is spotty
           // 'audio-capture' error happens when mic is busy or re-negotiating
           if (e.error === "network" || e.error === "audio-capture") {
-            console.warn(`[SURAKSHA SHIELD] SpeechRecognition ${e.error} notice, recovering...`);
+            console.warn(`[SURAKSHA SHIELD] SpeechRecognition ${e.error} notice, restarting in 400ms...`);
             setMicStatus("listening");
+            cleanupInstance();
+            scheduleRestart(400);
             return;
           }
 
@@ -1039,9 +1108,9 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
 
         recognition.onend = () => {
           isCurrentlyListening = false;
-          if (isDestroyed || !enabled || triggeredRef.current) return;
-          // Ultra-responsive restart with 180ms delay to avoid Chrome throttle while minimizing deaf gap
-          scheduleRestart(180);
+          if (isDestroyed || !enabledRef.current || triggeredRef.current) return;
+          // Ultra-responsive restart with short delay to avoid Chrome throttle while minimizing deaf gap
+          scheduleRestart(isMobile ? 120 : 180);
         };
 
         recognitionInstance = recognition;
@@ -1056,7 +1125,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
       } catch (err) {
         isCurrentlyListening = false;
         console.warn("[SURAKSHA SHIELD] SpeechRecognition start failed:", err.message);
-        if (!isDestroyed && enabled && !triggeredRef.current) {
+        if (!isDestroyed && enabledRef.current && !triggeredRef.current) {
           scheduleRestart(300);
         }
       }
@@ -1065,7 +1134,7 @@ export function useShieldDetection({ codeWord = "banana", onTrigger, enabled = t
     // Start SpeechRecognition promptly upon arming for instant response
     const initialDelay = setTimeout(() => {
       if (!isDestroyed) startRecognition();
-    }, 100);
+    }, 50);
 
     return () => {
       isDestroyed = true;

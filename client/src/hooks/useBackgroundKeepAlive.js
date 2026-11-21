@@ -26,15 +26,24 @@ export function useBackgroundKeepAlive({ enabled }) {
 
     const audio = new Audio(SILENT_LOOP_WAV);
     audio.loop = true;
-    audio.volume = 0; // belt-and-suspenders — the WAV itself is already silent
+    audio.volume = 0;
     audioRef.current = audio;
 
-    audio.play().catch((err) => {
-      // Most likely: this ran outside a user-gesture context. Not fatal —
-      // Shield's detection still works normally in the foreground, this
-      // purely affects how long it survives once backgrounded.
-      console.warn("Background keep-alive audio couldn't start:", err?.name);
-    });
+    // Only play silent audio when the tab is backgrounded / screen locked
+    // to prevent AudioFocus conflicts with SpeechRecognition in the foreground
+    const handleVisibility = () => {
+      if (document.hidden) {
+        audio.play().catch(() => {});
+      } else {
+        audio.pause();
+      }
+    };
+
+    if (document.hidden) {
+      audio.play().catch(() => {});
+    }
+
+    document.addEventListener("visibilitychange", handleVisibility);
 
     if ("mediaSession" in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -42,14 +51,13 @@ export function useBackgroundKeepAlive({ enabled }) {
         artist: "Listening for your code word",
       });
       navigator.mediaSession.playbackState = "playing";
-      // Prevent the OS's lock-screen media controls from actually
-      // pausing detection if someone taps "pause" by accident.
       navigator.mediaSession.setActionHandler("pause", () => {
         audio.play().catch(() => {});
       });
     }
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
       audio.pause();
       audio.src = "";
       if ("mediaSession" in navigator) {
