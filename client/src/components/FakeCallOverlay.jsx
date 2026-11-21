@@ -9,10 +9,58 @@ import {
 } from "./icons";
 
 const DEFAULT_CALLERS = [
-  { name: "Papa (Home)", number: "+91 98201 44821" },
-  { name: "Mom", number: "+91 98110 59203" },
-  { name: "Inspector Sharma", number: "Police Control Room" },
-  { name: "Rohit (Bhaiya)", number: "+91 99341 02914" },
+  {
+    id: "papa",
+    name: "Papa (Home)",
+    number: "+91 98201 44821",
+    voice: "Charon",
+    dialogues: [
+      "Beta, where have you reached? I'm waiting on the balcony.",
+      "Keep the phone on speaker and walk towards the main road.",
+      "I can see the street from here, don't worry. Just come straight home.",
+      "Rohit is right here with me. We are watching the gate for you.",
+      "Okay, keep talking to me until you step inside.",
+    ],
+  },
+  {
+    id: "mom",
+    name: "Mom",
+    number: "+91 98110 59203",
+    voice: "Aoede",
+    dialogues: [
+      "Beta, are you almost here? Dinner is ready on the table.",
+      "Take the lighted main road, don't go through the dark lane.",
+      "Papa and I are waiting at the front door. Keep talking to me.",
+      "Walk fast beta, I'm watching the street from the balcony.",
+      "Okay, I'm staying on the line with you. See you in two minutes.",
+    ],
+  },
+  {
+    id: "police",
+    name: "Inspector Sharma",
+    number: "Police Control Room (PCR 112)",
+    voice: "Charon",
+    dialogues: [
+      "Control room to unit. Madam, are you on the route? Patrol PCR is 200 metres away.",
+      "Stay near the bright street light by the crossing. Our vehicle has flashing beacons on.",
+      "We have visual of the sector road. You are safe, maintain your direction.",
+      "Local beat constables are alerted. Keep this channel open.",
+      "PCR van 7 arriving at the signal now.",
+    ],
+  },
+  {
+    id: "rohit",
+    name: "Rohit (Bhaiya)",
+    number: "+91 99341 02914",
+    voice: "Puck",
+    dialogues: [
+      "Di, where are you? Mom asked me to come pick you up.",
+      "I'm right at the turn near the medical store on my scooter.",
+      "Wait right there under the street light, I'll be there in 30 seconds.",
+      "Keep talking to me, I'm wearing my helmet and coming right now.",
+      "I can see your street, honking my horn now.",
+    ],
+  },
 ];
 
 /**
@@ -31,7 +79,7 @@ function createRingtonePlayer() {
       if (AudioContext) audioCtx = new AudioContext();
     }
     if (audioCtx && audioCtx.state === "suspended") {
-      audioCtx.resume();
+      audioCtx.resume().catch(() => {});
     }
   }
 
@@ -95,30 +143,34 @@ function createRingtonePlayer() {
           /* ignore */
         }
       }
+      if (audioCtx && audioCtx.state !== "closed") {
+        audioCtx.close().catch(() => {});
+        audioCtx = null;
+      }
     },
   };
 }
 
-const DIALOGUE_LINES = [
-  "Hey, are you almost home? Dinner is waiting.",
-  "I was just checking where you reached. Can you see the main road?",
-  "Okay good, don't rush. The driver is taking the usual flyover route, right?",
-  "Alright, I'll stay on the line with you until you step inside.",
-  "Yeah, Rohit is here too. We're keeping the porch light on for you.",
-  "Okay, take care. Speak to you in two minutes!",
-];
-
-export default function FakeCallOverlay({ isOpen, onClose, defaultCallerIndex = 0 }) {
+export default function FakeCallOverlay({
+  isOpen,
+  onClose,
+  defaultCallerIndex = 0,
+  apiBaseUrl = "",
+}) {
   const [callState, setCallState] = useState("ringing"); // 'ringing' | 'connected'
-  const [caller] = useState(DEFAULT_CALLERS[defaultCallerIndex] || DEFAULT_CALLERS[0]);
+  const [callerIndex, setCallerIndex] = useState(defaultCallerIndex);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaker, setIsSpeaker] = useState(true);
   const [speakingLine, setSpeakingLine] = useState("");
 
+  const caller = DEFAULT_CALLERS[callerIndex] || DEFAULT_CALLERS[0];
+
   const ringtoneRef = useRef(null);
   const durationTimerRef = useRef(null);
   const speechLoopRef = useRef(false);
+  const audioCtxRef = useRef(null);
+  const activeSourceRef = useRef(null);
 
   // Initialize ringtone handler once
   useEffect(() => {
@@ -126,6 +178,27 @@ export default function FakeCallOverlay({ isOpen, onClose, defaultCallerIndex = 
     return () => {
       ringtoneRef.current?.stop();
     };
+  }, []);
+
+  // Cleanup helper to stop any in-flight audio / TTS
+  const stopAllAudio = useCallback(() => {
+    speechLoopRef.current = false;
+    if (activeSourceRef.current) {
+      try {
+        activeSourceRef.current.stop();
+        activeSourceRef.current.disconnect();
+      } catch {
+        /* ignore */
+      }
+      activeSourceRef.current = null;
+    }
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
   }, []);
 
   // Handle overlay open / close
@@ -136,16 +209,14 @@ export default function FakeCallOverlay({ isOpen, onClose, defaultCallerIndex = 
       setIsMuted(false);
       setIsSpeaker(true);
       setSpeakingLine("");
+      setCallerIndex(defaultCallerIndex);
       ringtoneRef.current?.start();
     } else {
       ringtoneRef.current?.stop();
       if (durationTimerRef.current) clearInterval(durationTimerRef.current);
-      speechLoopRef.current = false;
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
+      stopAllAudio();
     }
-  }, [isOpen]);
+  }, [isOpen, defaultCallerIndex, stopAllAudio]);
 
   // Duration timer when connected
   useEffect(() => {
@@ -161,30 +232,140 @@ export default function FakeCallOverlay({ isOpen, onClose, defaultCallerIndex = 
     };
   }, [callState]);
 
-  // Speak dialogue lines sequentially using SpeechSynthesis
+  /**
+   * Plays Gemini TTS audio buffer through a phone earpiece acoustic simulation:
+   * 1. 300Hz - 3400Hz telephone bandpass
+   * 2. -6dB high-shelf cut at 3200Hz
+   * 3. Dynamics compressor for authentic call clarity
+   */
+  const playTelephoneBuffer = useCallback((base64Audio, mimeType) => {
+    return new Promise((resolve) => {
+      if (!speechLoopRef.current) return resolve();
+
+      let ctx = audioCtxRef.current;
+      if (!ctx || ctx.state === "closed") {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return resolve();
+        ctx = new AC();
+        audioCtxRef.current = ctx;
+      }
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
+
+      const binaryStr = atob(base64Audio);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+      const onDecoded = (audioBuffer) => {
+        if (!speechLoopRef.current) return resolve();
+
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        activeSourceRef.current = source;
+
+        // Bandpass filter: standard telephone voice range 300–3400 Hz
+        const bandpass = ctx.createBiquadFilter();
+        bandpass.type = "bandpass";
+        bandpass.frequency.value = 1800;
+        bandpass.Q.value = 0.7;
+
+        // Subtle high-shelf cut to remove digital crispness
+        const shelf = ctx.createBiquadFilter();
+        shelf.type = "highshelf";
+        shelf.frequency.value = 3200;
+        shelf.gain.value = -6;
+
+        // Light dynamics compression
+        const compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.value = -18;
+        compressor.knee.value = 8;
+        compressor.ratio.value = 3;
+        compressor.attack.value = 0.015;
+        compressor.release.value = 0.1;
+
+        source.connect(bandpass);
+        bandpass.connect(shelf);
+        shelf.connect(compressor);
+        compressor.connect(ctx.destination);
+
+        source.onended = () => {
+          activeSourceRef.current = null;
+          setTimeout(resolve, 1400); // Natural conversation pause
+        };
+
+        source.start();
+      };
+
+      if (mimeType?.includes("wav") || mimeType?.includes("audio/wav")) {
+        ctx.decodeAudioData(bytes.buffer.slice(0), onDecoded, () => resolve());
+      } else {
+        // Raw 16-bit PCM (24kHz standard Gemini format)
+        const sampleRate = parseInt(mimeType?.match(/rate=(\d+)/)?.[1] || "24000", 10);
+        const samples = new Int16Array(bytes.buffer);
+        const float32 = new Float32Array(samples.length);
+        for (let i = 0; i < samples.length; i++) float32[i] = samples[i] / 32768.0;
+        const buffer = ctx.createBuffer(1, float32.length, sampleRate);
+        buffer.getChannelData(0).set(float32);
+        onDecoded(buffer);
+      }
+    });
+  }, []);
+
+  /**
+   * Browser SpeechSynthesis fallback in case Gemini TTS is offline
+   */
+  const speakSynthesisFallback = useCallback((line) => {
+    return new Promise((resolve) => {
+      if (!("speechSynthesis" in window) || !speechLoopRef.current) {
+        return setTimeout(resolve, 3500);
+      }
+      const utterance = new SpeechSynthesisUtterance(line);
+      utterance.rate = 0.95;
+      utterance.pitch = caller.voice === "Aoede" ? 1.05 : 0.95;
+      utterance.onend = () => setTimeout(resolve, 1500);
+      utterance.onerror = () => setTimeout(resolve, 1500);
+      window.speechSynthesis.speak(utterance);
+    });
+  }, [caller.voice]);
+
+  // Speak dialogue lines sequentially using Gemini TTS with telephone acoustic filter
   const startDialogueLoop = useCallback(async () => {
     speechLoopRef.current = true;
+    const lines = caller.dialogues || DEFAULT_CALLERS[0].dialogues;
     let idx = 0;
 
-    while (speechLoopRef.current && idx < DIALOGUE_LINES.length) {
-      const line = DIALOGUE_LINES[idx];
+    while (speechLoopRef.current && idx < lines.length) {
+      const line = lines[idx];
       setSpeakingLine(line);
 
-      await new Promise((resolve) => {
-        if (!("speechSynthesis" in window) || !speechLoopRef.current) {
-          return setTimeout(resolve, 3500);
-        }
-        const utterance = new SpeechSynthesisUtterance(line);
-        utterance.rate = 0.95; // calm, natural conversational pace
-        utterance.pitch = 1.0;
-        utterance.onend = () => setTimeout(resolve, 1800); // realistic human pause
-        utterance.onerror = () => setTimeout(resolve, 2000);
-        window.speechSynthesis.speak(utterance);
-      });
+      let playedViaGemini = false;
+      try {
+        const res = await fetch(`${apiBaseUrl}/api/fake-call/speak`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: line, voice: caller.voice || "Charon" }),
+          signal: AbortSignal.timeout(9000),
+        });
 
-      idx = (idx + 1) % DIALOGUE_LINES.length;
+        if (speechLoopRef.current && res.ok) {
+          const data = await res.json();
+          if (data.audio && speechLoopRef.current) {
+            await playTelephoneBuffer(data.audio, data.mimeType);
+            playedViaGemini = true;
+          }
+        }
+      } catch (err) {
+        console.warn("[FakeCall] Gemini TTS unavailable, falling back:", err.message);
+      }
+
+      if (!playedViaGemini && speechLoopRef.current) {
+        await speakSynthesisFallback(line);
+      }
+
+      idx = (idx + 1) % lines.length;
     }
-  }, []);
+  }, [caller, apiBaseUrl, playTelephoneBuffer, speakSynthesisFallback]);
 
   const handleAnswer = () => {
     ringtoneRef.current?.stop();
@@ -194,10 +375,7 @@ export default function FakeCallOverlay({ isOpen, onClose, defaultCallerIndex = 
 
   const handleDeclineOrEnd = () => {
     ringtoneRef.current?.stop();
-    speechLoopRef.current = false;
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
+    stopAllAudio();
     onClose();
   };
 
@@ -216,6 +394,7 @@ export default function FakeCallOverlay({ isOpen, onClose, defaultCallerIndex = 
 
       {/* Top Caller Bar */}
       <div className="fake-call-top">
+        {/* Caller Avatar */}
         <div className="fake-call-avatar">
           {caller.name.charAt(0)}
         </div>
@@ -224,6 +403,32 @@ export default function FakeCallOverlay({ isOpen, onClose, defaultCallerIndex = 
         <p className="fake-call-status">
           {callState === "ringing" ? "Incoming Call…" : formatCallTime(duration)}
         </p>
+
+        {/* Quick Caller Switcher (visible while ringing so user/judge can switch scenario) */}
+        {callState === "ringing" && (
+          <div style={{ display: "flex", gap: "6px", marginTop: "12px", flexWrap: "wrap", justifyContent: "center" }}>
+            {DEFAULT_CALLERS.map((c, i) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setCallerIndex(i)}
+                style={{
+                  background: callerIndex === i ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.06)",
+                  border: callerIndex === i ? "1px solid rgba(255,255,255,0.5)" : "1px solid rgba(255,255,255,0.12)",
+                  color: "#fff",
+                  fontSize: "11px",
+                  padding: "4px 8px",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  fontWeight: callerIndex === i ? "600" : "400",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {c.name.split(" ")[0]}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Middle Dialogue / Speech Transcript Indicator */}
@@ -238,7 +443,7 @@ export default function FakeCallOverlay({ isOpen, onClose, defaultCallerIndex = 
               <span className="wave-bar bar-5" />
             </div>
             <p className="fake-call-speech-text">
-              &ldquo;{speakingLine || "Connecting voice stream…"}&rdquo;
+              &ldquo;{speakingLine || "Connecting secure audio stream…"}&rdquo;
             </p>
           </div>
         )}

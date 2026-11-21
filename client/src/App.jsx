@@ -2289,6 +2289,7 @@ export default function App() {
         isOpen={isFakeCallOpen}
         onClose={() => setIsFakeCallOpen(false)}
         defaultCallerIndex={0}
+        apiBaseUrl={API_BASE_URL}
       />
 
       {/* 2. Acoustic Strobe Anti-Attacker Alarm */}
