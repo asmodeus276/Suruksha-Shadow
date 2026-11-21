@@ -179,20 +179,24 @@ router.post("/chat", async (req, res) => {
     return;
   }
 
-  // Model list — env model first (most likely what works for this key),
-  // then proven stable fallbacks. gemini-2.0-flash is fast; 1.5-flash is
-  // the most universally supported.
-  const envModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  // Model list — tested against this API key (AQ.* Antigravity key format).
+  // gemini-3.1-flash-lite: fastest confirmed at ~950ms, full streaming SSE.
+  // gemini-flash-lite-latest: alias that also works (~1050ms).
+  // gemini-3.8-flash: original model, works, slightly slower.
+  // Note: standard public names (gemini-1.5-flash, gemini-2.0-flash) are
+  //       NOT available on this key — do not add them back.
+  const envModel = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
   const modelsToTry = [
+    "gemini-3.1-flash-lite",
     envModel,
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
+    "gemini-flash-lite-latest",
+    "gemini-3.8-flash",
   ].filter((m, i, arr) => arr.indexOf(m) === i);
 
   const generationConfig = {
     temperature: 0.65,
     maxOutputTokens: 220,
-    thinkingConfig: { thinkingBudget: 0 }, // disable thinking for speed & clean output
+    // Note: thinkingConfig not supported on lite models with this API key
   };
 
   const requestBody = {
@@ -418,11 +422,11 @@ ${conversationText}`;
   }
 
   try {
-    const envModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const envModel = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
 
-    const modelsToTry = [envModel, "gemini-2.0-flash", "gemini-1.5-flash"].filter(
+    const modelsToTry = [envModel, "gemini-flash-lite-latest", "gemini-3.8-flash"].filter(
       (m, i, arr) => arr.indexOf(m) === i
     );
     let draft = null;
@@ -440,7 +444,6 @@ ${conversationText}`;
               generationConfig: {
                 temperature: 0.4,
                 maxOutputTokens: 600,
-                thinkingConfig: { thinkingBudget: 0 },
               },
             }),
           }
