@@ -2487,3 +2487,345 @@ textarea::placeholder {
   color: var(--mist-dim);
   line-height: 1.2;
 }
+
+
+/* ============================================================
+   REAL-APP INTERACTIVE MAP STYLING (Google / Apple Maps Standard)
+   ============================================================ */
+
+.app-map-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: #151821;
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+}
+
+.app-map-wrapper.is-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  max-width: none !important;
+}
+
+.app-map-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* Floating Top-Left Status HUD */
+.app-map-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(17, 19, 27, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(232, 196, 104, 0.25);
+  border-radius: var(--radius-full);
+  padding: 6px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  font-family: var(--sans);
+  pointer-events: auto;
+}
+
+.app-map-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: app-map-dot-pulse 1.8s infinite;
+}
+
+.app-map-live-dot.is-emergency {
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+}
+
+.app-map-hud-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--paper);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.app-map-hud-meta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--mist-dim);
+  border-left: 1px solid var(--line);
+  padding-left: 8px;
+}
+
+/* Floating Top-Right Layer Switcher */
+.app-map-layer-switch {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  background: rgba(17, 19, 27, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+}
+
+.app-map-layer-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mist);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.app-map-layer-btn:hover {
+  color: var(--paper);
+}
+
+.app-map-layer-btn.is-active {
+  background: var(--surface-bright);
+  color: var(--ember);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(232, 196, 104, 0.3);
+}
+
+/* Floating Bottom-Right Controls Group */
+.app-map-controls-group {
+  position: absolute;
+  bottom: 16px;
+  right: 14px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.app-map-control-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 19, 27, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--paper);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+}
+
+.app-map-control-btn:hover {
+  background: var(--surface-bright);
+  color: var(--ember);
+  transform: translateY(-2px);
+  border-color: rgba(232, 196, 104, 0.4);
+}
+
+.app-map-control-btn:active {
+  transform: scale(0.92);
+}
+
+.app-map-control-btn.is-active {
+  color: var(--ember);
+  border-color: var(--ember);
+  box-shadow: 0 0 12px rgba(232, 196, 104, 0.35);
+}
+
+.app-map-zoom-group {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-full);
+  background: rgba(17, 19, 27, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.app-map-zoom-btn {
+  width: 36px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--paper);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.app-map-zoom-btn:hover {
+  background: var(--surface-bright);
+  color: var(--ember);
+}
+
+.app-map-zoom-btn:first-child {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Pulsing Beacon Marker */
+.app-beacon-marker {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.app-beacon-radar-1,
+.app-beacon-radar-2 {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.app-beacon-radar-1 {
+  background: rgba(59, 130, 246, 0.35);
+  animation: app-radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.app-beacon-radar-2 {
+  background: rgba(59, 130, 246, 0.25);
+  animation: app-radar-ping 2s cubic-bezier(0, 0, 0.2, 1) 0.6s infinite;
+}
+
+.app-beacon-marker.is-emergency .app-beacon-radar-1 {
+  background: rgba(239, 68, 68, 0.4);
+}
+
+.app-beacon-marker.is-emergency .app-beacon-radar-2 {
+  background: rgba(245, 158, 11, 0.3);
+}
+
+.app-beacon-core {
+  position: relative;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 10px rgba(37, 99, 235, 0.7);
+  transition: transform 0.2s ease;
+}
+
+.app-beacon-marker.is-emergency .app-beacon-core {
+  background: #dc2626;
+  border-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 14px rgba(220, 38, 38, 0.85);
+}
+
+/* Start / Origin Pin */
+.app-origin-pin {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
+}
+
+/* Modern Leaflet Overrides */
+.leaflet-popup-content-wrapper {
+  background: rgba(17, 19, 27, 0.95) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(232, 196, 104, 0.35) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6) !important;
+  color: var(--paper) !important;
+  padding: 2px !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(17, 19, 27, 0.95) !important;
+  border: 1px solid rgba(232, 196, 104, 0.35) !important;
+}
+
+.leaflet-popup-close-button {
+  color: var(--mist-dim) !important;
+  padding: 6px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: var(--ember) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(17, 19, 27, 0.7) !important;
+  backdrop-filter: blur(4px) !important;
+  color: #888899 !important;
+  font-size: 9px !important;
+  padding: 2px 6px !important;
+  border-top-left-radius: 4px;
+}
+
+.leaflet-control-attribution a {
+  color: #a0a5b8 !important;
+  text-decoration: none !important;
+}
+
+@keyframes app-radar-ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes app-map-dot-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}
