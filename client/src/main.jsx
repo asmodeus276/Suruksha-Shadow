@@ -106,11 +106,11 @@ class RootErrorBoundary extends Component {
   }
 }
 
-// Automatically reload on service worker update
-registerSW({
+// Automatically update service worker and reload to latest deployment immediately
+const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
-    window.location.reload();
+    updateSW(true);
   },
 });
 
