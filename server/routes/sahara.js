@@ -37,7 +37,7 @@ Always follow these principles:
 // Short messages that are purely emotional/conversational — no need to
 // hit the embedding API for these. Saves ~400–700 ms per turn.
 const SKIP_EMBEDDING_REGEX =
-  /^(yes|no|okay|ok|help|safe|scared|fine|thank|please|idk|haan|nahi|theek|dar|safe|help|hmm|hm|acha|accha|samajh|samjha|okay|k|ok|sure)\b/i;
+  /^(yes|no|okay|ok|help|safe|scared|fine|thank|please|idk|haan|nahi|theek|dar|hmm|hm|acha|accha|samajh|samjha|k|sure)\b/i;
 
 function shouldSkipEmbedding(message) {
   const trimmed = message.trim();
@@ -47,12 +47,18 @@ function shouldSkipEmbedding(message) {
   );
 }
 
+// Extract clean text from a Gemini content part array, skipping thinking tokens.
+// Gemini 2.5+ models emit {thought: true, text: "..."} parts before real text.
+function extractText(candidate) {
+  const parts = candidate?.content?.parts || [];
+  const textPart = parts.find((p) => !p.thought && typeof p.text === "string");
+  return textPart?.text || "";
+}
+
 /**
  * POST /api/sahara/open
  * body: { eventId }
  * FR10 — called the moment the chat interface auto-opens after SOS fires.
- * Logs it to the timeline (consistent with every other emergency-event
- * milestone) and hands back the fixed, reliable opening line.
  */
 router.post("/open", async (req, res) => {
   const { eventId } = req.body;
@@ -87,15 +93,13 @@ router.post("/open", async (req, res) => {
 /**
  * POST /api/sahara/chat
  * body: { messages: [{ role: 'user' | 'assistant', content: string }] }
- * FR10 — the ongoing conversation, generated fresh each turn by the AI
- * under the trauma-informed system prompt above. The client sends the
- * full running history each call (no server-side chat state).
+ * FR10 — the ongoing conversation. Responds via Server-Sent Events (SSE):
+ *   data: {"chunk":"..."}  — incremental text
+ *   data: {"sources":[...]} — grounding sources after text ends
+ *   data: [DONE]            — stream complete
  *
- * Streaming: responds with Server-Sent Events (text/event-stream).
- * Each chunk is: data: {"chunk":"..."}\n\n
- * End of stream: data: [DONE]\n\n
- * Sources (after generation): data: {"sources":[...]}\n\n
- * Errors inside stream: data: {"error":"..."}\n\n
+ * Falls back to non-streaming generateContent if SSE fails, so the user
+ * always gets a response even on flaky connections or unsupported models.
  */
 router.post("/chat", async (req, res) => {
   const { messages } = req.body;
@@ -105,9 +109,6 @@ router.post("/chat", async (req, res) => {
   }
 
   // --- FR12 retrieval step ---
-  // Embed the person's latest message and pull the closest matches from
-  // the knowledge base. Short / emotional messages skip embedding entirely
-  // to save 400–700 ms — they won't benefit from legal grounding anyway.
   let retrievedDocs = [];
   const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
 
@@ -123,7 +124,6 @@ router.post("/chat", async (req, res) => {
         if (error) throw error;
         retrievedDocs = data || [];
       } else {
-        // In-memory keyword match against curated documents
         const queryWords = lastUserMessage.content
           .toLowerCase()
           .split(/\s+/)
@@ -136,8 +136,6 @@ router.post("/chat", async (req, res) => {
         }).slice(0, 3);
       }
     } catch (err) {
-      // Retrieval failing should degrade gracefully to ungrounded
-      // conversation, not break the chat entirely.
       console.warn("Knowledge base retrieval failed:", err.message);
     }
   }
@@ -154,136 +152,184 @@ router.post("/chat", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no"); // disable nginx buffering if present
+  res.setHeader("X-Accel-Buffering", "no");
 
   const sendEvent = (data) => {
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    try {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    } catch (_) { /* client disconnected */ }
   };
 
   const sendDone = () => {
-    res.write("data: [DONE]\n\n");
-    res.end();
+    try {
+      res.write("data: [DONE]\n\n");
+      res.end();
+    } catch (_) { /* client disconnected */ }
   };
 
-  try {
-    const contents = messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
+  const contents = messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
+  }));
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not configured");
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    sendEvent({ chunk: "I'm having a little trouble right now, but I'm still here with you. Are you safe at this moment?\n\nमुझे अभी थोड़ी दिक्कत हो रही है, पर मैं आपके साथ हूँ। क्या आप अभी सुरक्षित हैं?", fallback: true });
+    sendDone();
+    return;
+  }
+
+  // Model list — env model first (most likely what works for this key),
+  // then proven stable fallbacks. gemini-2.0-flash is fast; 1.5-flash is
+  // the most universally supported.
+  const envModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const modelsToTry = [
+    envModel,
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+  ].filter((m, i, arr) => arr.indexOf(m) === i);
+
+  const generationConfig = {
+    temperature: 0.65,
+    maxOutputTokens: 220,
+    thinkingConfig: { thinkingBudget: 0 }, // disable thinking for speed & clean output
+  };
+
+  const requestBody = {
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT + groundingBlock }] },
+    contents,
+    generationConfig,
+  };
+
+  // ── Attempt 1: SSE streaming ─────────────────────────────────────────────
+  let streamed = false;
+  let streamError = null;
+
+  for (const modelName of modelsToTry) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => "(no body)");
+        streamError = new Error(`Gemini SSE (${modelName}) ${response.status}: ${errorBody}`);
+        console.warn(streamError.message);
+        continue;
+      }
+
+      if (!response.body) {
+        streamError = new Error(`No response body from ${modelName}`);
+        continue;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        // Gemini SSE uses \r\n or \n — handle both
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() ?? ""; // keep last incomplete line
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (!raw || raw === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(raw);
+            const candidate = parsed.candidates?.[0];
+            if (!candidate) continue;
+
+            const chunk = extractText(candidate);
+            if (chunk) {
+              sendEvent({ chunk });
+              streamed = true;
+            }
+          } catch {
+            // malformed SSE line — skip
+          }
+        }
+      }
+
+      if (streamed) break; // success — stop trying other models
+    } catch (err) {
+      streamError = err;
+      console.warn(`Sahara SSE stream error (${modelName}):`, err.message);
     }
+  }
 
-    // Model priority: fastest first. gemini-2.0-flash-lite is significantly
-    // faster than 3.x flash models for short chat turns. Fall back to
-    // env-configured model (usually 2.5-flash) then 1.5-flash-lite.
-    const primaryModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-    const modelsToTry = [
-      "gemini-2.0-flash-lite",
-      primaryModel,
-      "gemini-1.5-flash-latest",
-    ].filter((m, i, arr) => arr.indexOf(m) === i);
-
-    let streamed = false;
-    let lastError = null;
-
+  // ── Attempt 2: Non-streaming fallback ────────────────────────────────────
+  // If SSE failed for all models (network issue, model mismatch, etc.),
+  // try a plain generateContent call and send the reply as a single chunk.
+  // The user gets a response — just without incremental display.
+  if (!streamed) {
+    console.warn("SSE streaming failed for all models, trying non-streaming fallback…");
     for (const modelName of modelsToTry) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              system_instruction: { parts: [{ text: SYSTEM_PROMPT + groundingBlock }] },
-              contents,
-              generationConfig: {
-                temperature: 0.65,
-                maxOutputTokens: 220, // 1-3 sentences never needs more
-                // No thinkingConfig — trauma chat doesn't need chain-of-thought
-              },
-            }),
+            body: JSON.stringify(requestBody),
           }
         );
 
         if (!response.ok) {
           const errorBody = await response.text().catch(() => "(no body)");
-          lastError = new Error(`Gemini API (${modelName}) returned ${response.status}: ${errorBody}`);
+          console.warn(`Gemini non-stream (${modelName}) ${response.status}: ${errorBody}`);
           continue;
         }
 
-        // Stream SSE chunks from Gemini to the client
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
+        const data = await response.json();
+        const candidate = data.candidates?.[0];
+        const reply = extractText(candidate)?.trim();
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop(); // keep incomplete last line
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const raw = line.slice(6).trim();
-            if (!raw || raw === "[DONE]") continue;
-
-            try {
-              const parsed = JSON.parse(raw);
-              const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (chunk) {
-                sendEvent({ chunk });
-                streamed = true;
-              }
-            } catch {
-              // malformed SSE line — skip silently
-            }
-          }
+        if (reply) {
+          sendEvent({ chunk: reply });
+          streamed = true;
+          break;
         }
-
-        if (streamed) break; // successfully streamed from this model
       } catch (err) {
-        lastError = err;
+        console.warn(`Gemini non-stream error (${modelName}):`, err.message);
       }
     }
+  }
 
-    if (!streamed) {
-      throw lastError || new Error("No content streamed from Gemini");
-    }
-
-    // Send sources after content completes
-    const sources = [
-      ...new Map(retrievedDocs.map((d) => [d.title, { source: d.source, title: d.title }])).values(),
-    ];
-    if (sources.length > 0) {
-      sendEvent({ sources });
-    }
-
-    sendDone();
-  } catch (err) {
-    console.error("Sahara chat generation failed:", err);
-    // Never leave someone mid-crisis staring at a dead chat — a generic
-    // but genuinely safe fallback beats a spinner or an error screen.
+  // ── Final fallback ────────────────────────────────────────────────────────
+  if (!streamed) {
+    console.error("All Sahara AI attempts failed:", streamError?.message);
     sendEvent({
       chunk:
         "I'm having a little trouble right now, but I'm still here with you. Are you safe at this moment?\n\nमुझे अभी थोड़ी दिक्कत हो रही है, पर मैं आपके साथ हूँ। क्या आप अभी सुरक्षित हैं?",
       fallback: true,
     });
-    sendDone();
   }
+
+  // Send sources then close
+  const sources = [
+    ...new Map(
+      retrievedDocs.map((d) => [d.title, { source: d.source, title: d.title }])
+    ).values(),
+  ];
+  if (sources.length > 0) sendEvent({ sources });
+  sendDone();
 });
 
 /**
  * GET /api/sahara/knowledge/:source
- * FR11 — plain, non-similarity-search read of the knowledge base by
- * category (BNS / POSH / NGO directory). Used to populate the Guided
- * Next Steps panels with the full curated set for that topic, rather
- * than a query-matched subset. Costs nothing against the daily Gemini
- * quota — no embedding call involved.
+ * FR11 — plain read of knowledge base by category.
  */
 router.get("/knowledge/:source", async (req, res) => {
   const { source } = req.params;
@@ -312,10 +358,7 @@ router.get("/knowledge/:source", async (req, res) => {
 /**
  * POST /api/sahara/draft-complaint
  * body: { eventId, messages, complaintType: 'police' | 'workplace' }
- * FR11 — OPTIONAL, user-triggered only (never automatic, unlike /chat).
- * Synthesizes what the person has already shared in conversation into a
- * clear, factual draft statement they can review and edit — not a legal
- * document, explicitly framed as a starting point.
+ * FR11 — OPTIONAL, user-triggered only.
  */
 router.post("/draft-complaint", async (req, res) => {
   const { eventId, messages, complaintType } = req.body;
@@ -375,13 +418,11 @@ ${conversationText}`;
   }
 
   try {
-    const primaryModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const envModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not configured");
-    }
+    if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
 
-    const modelsToTry = ["gemini-2.0-flash-lite", primaryModel, "gemini-1.5-flash-latest"].filter(
+    const modelsToTry = [envModel, "gemini-2.0-flash", "gemini-1.5-flash"].filter(
       (m, i, arr) => arr.indexOf(m) === i
     );
     let draft = null;
@@ -397,8 +438,9 @@ ${conversationText}`;
             body: JSON.stringify({
               contents: [{ role: "user", parts: [{ text: draftPrompt }] }],
               generationConfig: {
-                temperature: 0.4, // lower than chat — this should stay close to what was actually said
+                temperature: 0.4,
                 maxOutputTokens: 600,
+                thinkingConfig: { thinkingBudget: 0 },
               },
             }),
           }
@@ -411,7 +453,7 @@ ${conversationText}`;
         }
 
         const data = await response.json();
-        draft = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        draft = extractText(data.candidates?.[0])?.trim();
         if (draft) break;
       } catch (err) {
         lastError = err;
@@ -419,7 +461,6 @@ ${conversationText}`;
     }
 
     if (!draft) throw lastError || new Error("Empty response from Gemini");
-
     res.json({ draft });
   } catch (err) {
     console.error("Complaint draft generation failed:", err);
