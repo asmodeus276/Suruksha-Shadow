@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 
 // Standard universal emergency phrases that always trigger distress detection (English & Devanagari)
 const UNIVERSAL_EMERGENCY_WORDS = [
