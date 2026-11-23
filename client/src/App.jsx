@@ -91,7 +91,16 @@ function loadCodeWord() {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("shield"); // 'shield' | 'checkin' | 'vault' | 'safety' | 'map'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab && ["shield", "checkin", "vault", "safety", "map"].includes(tab)) {
+        return tab;
+      }
+    }
+    return "shield";
+  }); // 'shield' | 'checkin' | 'vault' | 'safety' | 'map'
   const [armed, setArmed] = useState(false);
   const [activeEventId, setActiveEventId] = useState(null);
   const [activeShareToken, setActiveShareToken] = useState(null);

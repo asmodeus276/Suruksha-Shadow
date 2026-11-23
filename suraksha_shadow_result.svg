@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 830" width="1200" height="830" style="background:#f1f5f9; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e4b7a"/>
+      <stop offset="100%" stop-color="#15385e"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#091222"/>
+      <stop offset="100%" stop-color="#050a14"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Card Frame -->
+  <rect x="10" y="10" width="1180" height="810" rx="16" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" filter="url(#shadow)"/>
+
+  <!-- Top RESULT Header -->
+  <rect x="20" y="20" width="1160" height="72" rx="10" fill="url(#headerGrad)"/>
+  <text x="600" y="68" fill="#ffffff" font-size="36" font-weight="800" text-anchor="middle" letter-spacing="4">RESULT</text>
+
+  <!-- Dark Dashboard Container -->
+  <rect x="20" y="106" width="1160" height="584" rx="12" fill="url(#cardGrad)" stroke="#1e293b" stroke-width="2"/>
+
+  <!-- Header Inside Dashboard -->
+  <text x="42" y="154" fill="#38bdf8" font-size="23" font-weight="700" letter-spacing="1">SURAKSHA SHADOW • SHIELD SENTINEL v1</text>
+  
+  <!-- ARMED Badge -->
+  <rect x="878" y="128" width="280" height="36" rx="18" fill="rgba(34, 197, 94, 0.15)" stroke="#22c55e" stroke-width="1.8"/>
+  <text x="1018" y="152" fill="#4ade80" font-size="16" font-weight="700" text-anchor="middle" letter-spacing="1">ARMED • OFFLINE-READY</text>
+
+  <!-- Column 1: MULTIMODAL SENTINELS -->
+  <rect x="36" y="180" width="552" height="340" rx="10" fill="#0d1726" stroke="#1e2d42" stroke-width="1.5"/>
+  <text x="56" y="216" fill="#60a5fa" font-size="18" font-weight="700" letter-spacing="0.5">MULTIMODAL SENTINELS</text>
+  
+  <text x="56" y="270" fill="#e2e8f0" font-size="17">Voice Keyword + VAD</text>
+  <text x="568" y="270" fill="#22c55e" font-size="17" font-weight="700" text-anchor="end">ACTIVE</text>
+
+  <text x="56" y="322" fill="#e2e8f0" font-size="17">Acoustic (125–3kHz)</text>
+  <text x="568" y="322" fill="#f59e0b" font-size="17" font-weight="700" text-anchor="end">76 dB TRIG</text>
+
+  <text x="56" y="374" fill="#e2e8f0" font-size="17">MediaPipe 3D Gesture</text>
+  <text x="568" y="374" fill="#22c55e" font-size="17" font-weight="700" text-anchor="end">30 FPS</text>
+
+  <text x="56" y="426" fill="#e2e8f0" font-size="17">4-Phase Kinetic Shake</text>
+  <text x="568" y="426" fill="#38bdf8" font-size="17" font-weight="700" text-anchor="end">15 m/s²</text>
+
+  <text x="56" y="478" fill="#e2e8f0" font-size="17">Decoy / Duress PIN</text>
+  <text x="568" y="478" fill="#22c55e" font-size="17" font-weight="700" text-anchor="end">STANDBY</text>
+
+  <!-- Column 2: FORENSIC VAULT & MAP -->
+  <rect x="612" y="180" width="552" height="340" rx="10" fill="#0d1726" stroke="#1e2d42" stroke-width="1.5"/>
+  <text x="632" y="216" fill="#60a5fa" font-size="18" font-weight="700" letter-spacing="0.5">FORENSIC VAULT &amp; MAP</text>
+
+  <text x="632" y="270" fill="#e2e8f0" font-size="17">WebCrypto P-256 Key</text>
+  <text x="1144" y="270" fill="#22c55e" font-size="17" font-weight="700" text-anchor="end">ENCLAVE</text>
+
+  <text x="632" y="322" fill="#e2e8f0" font-size="17">Audio / Optical Burst</text>
+  <text x="1144" y="322" fill="#38bdf8" font-size="17" font-weight="700" text-anchor="end">10s / 5-FRM</text>
+
+  <text x="632" y="374" fill="#e2e8f0" font-size="17">Safe Havens Radar</text>
+  <text x="1144" y="374" fill="#22c55e" font-size="17" font-weight="700" text-anchor="end">24/7 GPS</text>
+
+  <text x="632" y="426" fill="#e2e8f0" font-size="17">Guardian Telemetry</text>
+  <text x="1144" y="426" fill="#22c55e" font-size="17" font-weight="700" text-anchor="end">LIVE SYNC</text>
+
+  <text x="632" y="478" fill="#e2e8f0" font-size="17">BNSS §173 FIR + BNS</text>
+  <text x="1144" y="478" fill="#22c55e" font-size="17" font-weight="700" text-anchor="end">1-CLICK</text>
+
+  <!-- Polygon Terminal Banner -->
+  <rect x="36" y="540" width="1128" height="132" rx="8" fill="#040810" stroke="#1e3a5f" stroke-width="1.5"/>
+  <text x="58" y="584" fill="#38bdf8" font-family="'Consolas', monospace" font-size="18" font-weight="700" letter-spacing="0.5">POLYGON AMOY (#80002) • BLOCK #53410347 • BSA §63 VERIFIED</text>
+  <text x="58" y="636" fill="#94a3b8" font-family="'Consolas', monospace" font-size="17">CONTRACT: 0x8E14Fa...C99f24E  |  TX: 0x93838ab7...178c4bb</text>
+
+  <!-- Bottom Metric 1 -->
+  <g transform="translate(20, 706)">
+    <rect width="275" height="108" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="137" y="48" fill="#0f172a" font-size="26" font-weight="800" text-anchor="middle">&lt; 180 ms</text>
+    <text x="137" y="82" fill="#64748b" font-size="16" font-weight="600" text-anchor="middle">Whisper AI</text>
+  </g>
+
+  <!-- Bottom Metric 2 -->
+  <g transform="translate(315, 706)">
+    <rect width="275" height="108" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="137" y="48" fill="#0f172a" font-size="26" font-weight="800" text-anchor="middle">P-256</text>
+    <text x="137" y="82" fill="#64748b" font-size="16" font-weight="600" text-anchor="middle">Enclave Sign</text>
+  </g>
+
+  <!-- Bottom Metric 3 -->
+  <g transform="translate(610, 706)">
+    <rect width="275" height="108" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="137" y="48" fill="#0f172a" font-size="26" font-weight="800" text-anchor="middle">#53410347</text>
+    <text x="137" y="82" fill="#64748b" font-size="16" font-weight="600" text-anchor="middle">Amoy Block</text>
+  </g>
+
+  <!-- Bottom Metric 4 -->
+  <g transform="translate(905, 706)">
+    <rect width="275" height="108" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="137" y="48" fill="#0f172a" font-size="26" font-weight="800" text-anchor="middle">BSA §63</text>
+    <text x="137" y="82" fill="#64748b" font-size="16" font-weight="600" text-anchor="middle">FIR Dossier</text>
+  </g>
+</svg>
