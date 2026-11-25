@@ -211,73 +211,63 @@ export async function sendSms(numbers, message) {
     return { ok: true, demo: true, recipients: numberList.length };
   }
 
-  // --- 1. Textbee Dispatch (Default / Preferred if configured) ---
-  if (isTextbeeConfigured) {
-    try {
-      console.log(
-        `[Textbee] Dispatching alert to ${numberList.length} contact(s)...`
-      );
-      const res = await sendViaTextbee(numberList, message);
-      console.log(`[Textbee] Alert successfully dispatched:`, res);
-      return res;
-    } catch (err) {
-      console.warn("[Textbee] Dispatch failed, falling back to secondary SMS provider:", err.message);
-    }
+  // --- Dispatch: Ordered by SMS_PROVIDER preference, then fallback chain ---
+  // Build an ordered list of providers to try.
+  const providerOrder = [];
+  if (providerPreference === "twilio") {
+    providerOrder.push("twilio", "textbee", "fast2sms");
+  } else if (providerPreference === "fast2sms") {
+    providerOrder.push("fast2sms", "twilio", "textbee");
+  } else {
+    // default: textbee first (original behaviour)
+    providerOrder.push("textbee", "twilio", "fast2sms");
   }
 
-  // --- 2. Twilio Dispatch Fallback ---
-  if (isTwilioConfigured) {
-    try {
-      console.log(
-        `[Twilio] Dispatching alert to ${numberList.length} contact(s)...`
-      );
-      const results = await Promise.allSettled(
-        numberList.map((num) => sendViaTwilio(num, message))
-      );
+  for (const provider of providerOrder) {
+    if (provider === "textbee" && isTextbeeConfigured) {
+      try {
+        console.log(`[Textbee] Dispatching alert to ${numberList.length} contact(s)...`);
+        const res = await sendViaTextbee(numberList, message);
+        console.log(`[Textbee] Alert successfully dispatched:`, res);
+        return res;
+      } catch (err) {
+        console.warn("[Textbee] Dispatch failed, trying next provider:", err.message);
+      }
+    }
 
-      const successful = results.filter((r) => r.status === "fulfilled");
-      const failed = results.filter((r) => r.status === "rejected");
-
-      if (failed.length > 0) {
-        console.warn(
-          `[Twilio] ${failed.length} message(s) failed:`,
-          failed.map((f) => f.reason?.message)
+    if (provider === "twilio" && isTwilioConfigured) {
+      try {
+        console.log(`[Twilio] Dispatching alert to ${numberList.length} contact(s)...`);
+        const results = await Promise.allSettled(
+          numberList.map((num) => sendViaTwilio(num, message))
         );
+        const successful = results.filter((r) => r.status === "fulfilled");
+        const failed = results.filter((r) => r.status === "rejected");
+        if (failed.length > 0) {
+          console.warn(`[Twilio] ${failed.length} message(s) failed:`, failed.map((f) => f.reason?.message));
+        }
+        if (successful.length > 0) {
+          return { ok: true, provider: "twilio", sentCount: successful.length, failedCount: failed.length };
+        }
+      } catch (err) {
+        console.warn("[Twilio] Unexpected error during dispatch, trying next provider:", err.message);
       }
+    }
 
-      if (successful.length > 0) {
-        return {
-          ok: true,
-          provider: "twilio",
-          sentCount: successful.length,
-          failedCount: failed.length,
-        };
+    if (provider === "fast2sms" && isFast2SmsConfigured) {
+      try {
+        const tenDigitNumbers = numberList.map(normalizeToTenDigitIndian).filter(Boolean);
+        if (tenDigitNumbers.length === 0) {
+          console.warn("[Fast2SMS] No valid 10-digit Indian numbers, skipping.");
+          continue;
+        }
+        console.log(`[Fast2SMS] Dispatching alert to ${tenDigitNumbers.join(", ")}...`);
+        return await sendViaFast2Sms(tenDigitNumbers.join(","), message);
+      } catch (err) {
+        console.warn("[Fast2SMS] Dispatch failed:", err.message);
       }
-    } catch (err) {
-      console.warn("[Twilio] Unexpected error during dispatch:", err.message);
     }
   }
 
-  // --- 3. Fast2SMS Dispatch ---
-  if ((providerPreference === "fast2sms" || !providerPreference) && isFast2SmsConfigured) {
-    try {
-      const tenDigitNumbers = numberList
-        .map(normalizeToTenDigitIndian)
-        .filter(Boolean);
-
-      if (tenDigitNumbers.length === 0) {
-        return { ok: false, error: "No valid 10-digit Indian numbers" };
-      }
-
-      console.log(
-        `[Fast2SMS] Dispatching alert to ${tenDigitNumbers.join(", ")}...`
-      );
-      return await sendViaFast2Sms(tenDigitNumbers.join(","), message);
-    } catch (err) {
-      console.error("[Fast2SMS] Dispatch failed:", err.message);
-      return { ok: false, error: err.message };
-    }
-  }
-
-  return { ok: false, error: "No configured SMS gateway available" };
+  return { ok: false, error: "All configured SMS providers failed or are exhausted" };
 }
